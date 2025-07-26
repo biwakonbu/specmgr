@@ -103,7 +103,7 @@ function App() {
           role="separator"
           aria-label="Resize document tree"
           tabIndex={0}
-          className="w-2 cursor-col-resize flex items-center justify-center group relative"
+          className="w-4 cursor-col-resize flex items-center justify-center group relative"
           onMouseDown={handleLeftResize}
           onKeyDown={e => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -113,7 +113,7 @@ function App() {
           }}
         >
           {/* Invisible hit area for better UX */}
-          <div className="absolute inset-0 w-2" />
+          <div className="absolute inset-0 w-4" />
           {/* Visual separator line */}
           <div className="h-full w-px bg-border group-hover:bg-primary/40 transition-colors" />
         </div>
@@ -131,7 +131,7 @@ function App() {
           role="separator"
           aria-label="Resize chat pane"
           tabIndex={0}
-          className="w-2 cursor-col-resize flex items-center justify-center group relative"
+          className="w-4 cursor-col-resize flex items-center justify-center group relative"
           onMouseDown={handleRightResize}
           onKeyDown={e => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -141,7 +141,7 @@ function App() {
           }}
         >
           {/* Invisible hit area for better UX */}
-          <div className="absolute inset-0 w-2" />
+          <div className="absolute inset-0 w-4" />
           {/* Visual separator line */}
           <div className="h-full w-px bg-border group-hover:bg-primary/40 transition-colors" />
         </div>
