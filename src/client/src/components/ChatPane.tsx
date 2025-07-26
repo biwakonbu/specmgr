@@ -1,5 +1,8 @@
 import { Bot, Send, User } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import rehypeHighlight from 'rehype-highlight'
+import remarkGfm from 'remark-gfm'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { ScrollArea } from './ui/scroll-area'
@@ -21,7 +24,7 @@ export function ChatPane(_props: ChatPaneProps) {
       id: '1',
       role: 'assistant',
       content:
-        'こんにちは！私はあなたのドキュメンテーションのアシスタントです。プロジェクトのアーキテクチャ、API、技術仕様について何でもお尋ねください。\n\n**検索モード**: 「/search」で始めるとドキュメント検索を実行\n**チャットモード**: 通常のメッセージでAI対話',
+        'こんにちは！私はあなたのドキュメンテーションのアシスタントです。プロジェクトのアーキテクチャ、API、技術仕様について何でもお尋ねください。\n\n## 使用方法\n\n**検索モード**: `/search`で始めるとドキュメント検索を実行\n**チャットモード**: 通常のメッセージでAI対話\n\n### 例\n\n```bash\n/search API仕様\n```\n\n`TypeScript`のコードスニペットやドキュメントの**マークダウン装飾**が正しく表示されます。',
       timestamp: new Date(Date.now() - 60000),
     },
   ])
@@ -252,7 +255,61 @@ export function ChatPane(_props: ChatPaneProps) {
                     : 'bg-muted text-foreground'
                 }`}
               >
-                <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeHighlight]}
+                    components={{
+                      h1: ({ children }) => (
+                        <h1 className="text-lg font-bold tracking-tight mb-2 text-foreground border-b border-border pb-1">
+                          {children}
+                        </h1>
+                      ),
+                      h2: ({ children }) => (
+                        <h2 className="text-base font-semibold tracking-tight mb-2 mt-3 text-foreground">
+                          {children}
+                        </h2>
+                      ),
+                      h3: ({ children }) => (
+                        <h3 className="text-sm font-semibold tracking-tight mb-1 mt-2 text-foreground">
+                          {children}
+                        </h3>
+                      ),
+                      p: ({ children }) => (
+                        <p className="leading-relaxed mb-2 text-foreground">{children}</p>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="my-2 ml-4 list-disc [&>li]:mt-1">{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="my-2 ml-4 list-decimal [&>li]:mt-1">{children}</ol>
+                      ),
+                      blockquote: ({ children }) => (
+                        <blockquote className="mt-2 border-l-2 border-border pl-3 italic text-muted-foreground">
+                          {children}
+                        </blockquote>
+                      ),
+                      code: ({ children, className }) => {
+                        const isInline = !className
+                        if (isInline) {
+                          return (
+                            <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs font-semibold">
+                              {children}
+                            </code>
+                          )
+                        }
+                        return <code className={className}>{children}</code>
+                      },
+                      pre: ({ children }) => (
+                        <pre className="mb-2 mt-2 overflow-x-auto rounded bg-muted p-2 text-xs">
+                          {children}
+                        </pre>
+                      ),
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
                 <div
                   className={`text-xs mt-1 opacity-70 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
                 >
