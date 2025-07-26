@@ -1,6 +1,7 @@
 """Service integration tests."""
 
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import patch
 
@@ -14,7 +15,7 @@ class TestServiceIntegration:
     """Service integration test class."""
 
     @pytest.fixture
-    def temp_docs_dir(self):
+    def temp_docs_dir(self) -> Generator[Path, None, None]:
         """Create temporary documents directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             docs_dir = Path(tmpdir) / "docs"
@@ -65,7 +66,9 @@ class TestServiceIntegration:
             if len(result_asc.files) > 1:
                 assert result_asc.files[0].name != result_desc.files[0].name
 
-    async def test_file_service_error_handling_integration(self, temp_docs_dir: Path) -> None:
+    async def test_file_service_error_handling_integration(
+        self, temp_docs_dir: Path
+    ) -> None:
         """Test file service error handling integration."""
         file_service = FileService()
 
@@ -82,9 +85,9 @@ class TestServiceIntegration:
         result = await health_service.get_detailed_health()
 
         # Should at least return a result structure
-        assert hasattr(result, 'text_search')
-        assert hasattr(result, 'claude_code')
-        assert hasattr(result, 'overall')
+        assert hasattr(result, "text_search")
+        assert hasattr(result, "claude_code")
+        assert hasattr(result, "overall")
         assert isinstance(result.text_search, bool)
         assert isinstance(result.claude_code, bool)
         assert isinstance(result.overall, bool)
@@ -101,7 +104,9 @@ class TestServiceIntegration:
         claude_result = await health_service._check_claude_code()
         assert isinstance(claude_result, bool)
 
-    async def test_file_service_path_resolution_integration(self, temp_docs_dir: Path) -> None:
+    async def test_file_service_path_resolution_integration(
+        self, temp_docs_dir: Path
+    ) -> None:
         """Test file service path resolution integration."""
         file_service = FileService()
 
@@ -133,7 +138,9 @@ class TestServiceIntegration:
                 assert file_meta.hash
                 assert len(file_meta.hash) == 40  # SHA-1 hash
 
-    async def test_file_service_directory_info_integration(self, temp_docs_dir: Path) -> None:
+    async def test_file_service_directory_info_integration(
+        self, temp_docs_dir: Path
+    ) -> None:
         """Test file service directory info integration."""
         file_service = FileService()
 
@@ -149,13 +156,15 @@ class TestServiceIntegration:
                 assert dir_info.relative_path
                 assert dir_info.file_count >= 0
 
-    async def test_service_error_propagation_integration(self, temp_docs_dir: Path) -> None:
+    async def test_service_error_propagation_integration(
+        self, temp_docs_dir: Path
+    ) -> None:
         """Test error propagation between services."""
         file_service = FileService()
 
         # Test with invalid configuration
         with patch("app.core.config.settings.documents_path", "/nonexistent/path"):
-            with pytest.raises(Exception):
+            with pytest.raises(FileNotFoundError):
                 await file_service.get_files()
 
     async def test_service_performance_integration(self, temp_docs_dir: Path) -> None:
@@ -173,4 +182,3 @@ class TestServiceIntegration:
             # Should complete reasonably quickly
             assert end_time - start_time < 5.0  # 5 seconds max
             assert result.total_count > 0
-

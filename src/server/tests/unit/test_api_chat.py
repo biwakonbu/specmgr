@@ -1,5 +1,6 @@
 """Chat API endpoint tests."""
 
+from collections.abc import AsyncGenerator
 from unittest.mock import Mock, patch
 
 import pytest
@@ -17,10 +18,12 @@ class TestChatAPI:
         return TestClient(app)
 
     @patch("app.services.chat_service.ChatService.chat_stream")
-    def test_chat_stream_success(self, mock_chat_stream: Mock, client: TestClient) -> None:
+    def test_chat_stream_success(
+        self, mock_chat_stream: Mock, client: TestClient
+    ) -> None:
         """Test successful chat streaming."""
 
-        async def mock_stream():
+        async def mock_stream() -> AsyncGenerator[str, None]:
             yield "Hello"
             yield " "
             yield "World"
@@ -47,10 +50,12 @@ class TestChatAPI:
         assert '"type":"done"' in content
 
     @patch("app.services.chat_service.ChatService.chat_stream")
-    def test_chat_stream_with_history(self, mock_chat_stream: Mock, client: TestClient) -> None:
+    def test_chat_stream_with_history(
+        self, mock_chat_stream: Mock, client: TestClient
+    ) -> None:
         """Test chat streaming with conversation history."""
 
-        async def mock_stream():
+        async def mock_stream() -> AsyncGenerator[str, None]:
             yield "Response"
 
         mock_chat_stream.return_value = mock_stream()
@@ -60,7 +65,11 @@ class TestChatAPI:
             json={
                 "message": "Follow up question",
                 "conversationHistory": [
-                    {"role": "user", "content": "Previous question", "timestamp": "2025-01-01T00:00:00Z"},
+                    {
+                        "role": "user",
+                        "content": "Previous question",
+                        "timestamp": "2025-01-01T00:00:00Z",
+                    },
                     {
                         "role": "assistant",
                         "content": "Previous answer",
@@ -75,7 +84,9 @@ class TestChatAPI:
         mock_chat_stream.assert_called_once()
 
     @patch("app.services.chat_service.ChatService.chat_stream")
-    def test_chat_stream_service_error(self, mock_chat_stream: Mock, client: TestClient) -> None:
+    def test_chat_stream_service_error(
+        self, mock_chat_stream: Mock, client: TestClient
+    ) -> None:
         """Test chat streaming with service error."""
         mock_chat_stream.side_effect = Exception("Chat service error")
 
@@ -113,4 +124,3 @@ class TestChatAPI:
         )
 
         assert response.status_code == 422  # Validation error
-

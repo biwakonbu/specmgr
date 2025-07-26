@@ -1,6 +1,7 @@
 """API integration tests."""
 
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -18,7 +19,7 @@ class TestAPIIntegration:
         return TestClient(app)
 
     @pytest.fixture
-    def temp_docs_dir(self):
+    def temp_docs_dir(self) -> Generator[Path, None, None]:
         """Create temporary documents directory."""
         with tempfile.TemporaryDirectory() as tmpdir:
             docs_dir = Path(tmpdir) / "docs"
@@ -88,7 +89,9 @@ Health check endpoint."""
         assert "message" in data
         assert "status" in data
 
-    def test_api_files_integration(self, client: TestClient, temp_docs_dir: Path) -> None:
+    def test_api_files_integration(
+        self, client: TestClient, temp_docs_dir: Path
+    ) -> None:
         """Test files API integration."""
         # Override documents path for test
         with pytest.MonkeyPatch().context() as m:
@@ -103,7 +106,9 @@ Health check endpoint."""
             assert "files" in data["data"]
             assert len(data["data"]["files"]) == 3
 
-    def test_api_file_content_integration(self, client: TestClient, temp_docs_dir: Path) -> None:
+    def test_api_file_content_integration(
+        self, client: TestClient, temp_docs_dir: Path
+    ) -> None:
         """Test file content API integration."""
         with pytest.MonkeyPatch().context() as m:
             m.setattr("app.core.config.settings.documents_path", str(temp_docs_dir))
@@ -117,7 +122,9 @@ Health check endpoint."""
             assert "# README" in data["data"]["content"]
             assert data["data"]["name"] == "readme.md"
 
-    def test_api_file_content_with_frontmatter(self, client: TestClient, temp_docs_dir: Path) -> None:
+    def test_api_file_content_with_frontmatter(
+        self, client: TestClient, temp_docs_dir: Path
+    ) -> None:
         """Test file content with frontmatter integration."""
         with pytest.MonkeyPatch().context() as m:
             m.setattr("app.core.config.settings.documents_path", str(temp_docs_dir))
@@ -132,7 +139,9 @@ Health check endpoint."""
             assert data["data"]["frontmatter"]["title"] == "User Guide"
             assert "guide" in data["data"]["frontmatter"]["tags"]
 
-    def test_api_file_not_found_integration(self, client: TestClient, temp_docs_dir: Path) -> None:
+    def test_api_file_not_found_integration(
+        self, client: TestClient, temp_docs_dir: Path
+    ) -> None:
         """Test file not found integration."""
         with pytest.MonkeyPatch().context() as m:
             m.setattr("app.core.config.settings.documents_path", str(temp_docs_dir))
@@ -148,22 +157,24 @@ Health check endpoint."""
         # Test search endpoint (will use fallback text search)
         response = client.post(
             "/api/search",
-            json={
-                "query": "test query",
-                "limit": 5,
-                "scoreThreshold": 0.1
-            }
+            json={"query": "test query", "limit": 5, "scoreThreshold": 0.1},
         )
 
         # Should not fail even without real documents indexed
-        assert response.status_code in [200, 500]  # May fail due to missing dependencies
+        assert response.status_code in [
+            200,
+            500,
+        ]  # May fail due to missing dependencies
 
     def test_api_search_stats_integration(self, client: TestClient) -> None:
         """Test search stats API integration."""
         response = client.get("/api/search/stats")
 
         # Should not fail completely
-        assert response.status_code in [200, 500]  # May fail due to missing dependencies
+        assert response.status_code in [
+            200,
+            500,
+        ]  # May fail due to missing dependencies
 
     def test_api_health_detailed_integration(self, client: TestClient) -> None:
         """Test detailed health API integration."""
@@ -184,22 +195,18 @@ Health check endpoint."""
 
     def test_api_sync_bulk_integration(self, client: TestClient) -> None:
         """Test bulk sync API integration."""
-        response = client.post(
-            "/api/sync/bulk",
-            json={"force": False}
-        )
+        response = client.post("/api/sync/bulk", json={"force": False})
 
-        assert response.status_code in [200, 500]  # May fail due to missing dependencies
+        assert response.status_code in [
+            200,
+            500,
+        ]  # May fail due to missing dependencies
 
     def test_api_chat_stream_integration(self, client: TestClient) -> None:
         """Test chat stream API integration."""
         response = client.post(
             "/api/chat/stream",
-            json={
-                "message": "Hello",
-                "conversationHistory": [],
-                "useRAG": False
-            }
+            json={"message": "Hello", "conversationHistory": [], "useRAG": False},
         )
 
         # Should handle gracefully even without Claude API key
@@ -221,7 +228,9 @@ Health check endpoint."""
         # Should handle OPTIONS request
         assert response.status_code in [200, 405]
 
-    def test_api_pagination_integration(self, client: TestClient, temp_docs_dir: Path) -> None:
+    def test_api_pagination_integration(
+        self, client: TestClient, temp_docs_dir: Path
+    ) -> None:
         """Test API pagination integration."""
         with pytest.MonkeyPatch().context() as m:
             m.setattr("app.core.config.settings.documents_path", str(temp_docs_dir))
@@ -229,14 +238,9 @@ Health check endpoint."""
             # Test with sorting and ordering
             response = client.get(
                 "/api/files",
-                params={
-                    "sortBy": "name",
-                    "order": "desc",
-                    "recursive": "true"
-                }
+                params={"sortBy": "name", "order": "desc", "recursive": "true"},
             )
 
             assert response.status_code == 200
             data = response.json()
             assert data["success"] is True
-

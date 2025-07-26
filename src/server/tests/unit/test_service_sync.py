@@ -26,7 +26,7 @@ class TestSyncService:
     @patch("app.services.sync_service.SyncService._get_queue")
     @patch("app.services.sync_service.SyncService._scan_documents")
     async def test_execute_bulk_sync_success(
-        self, mock_scan, mock_get_queue, sync_service: SyncService
+        self, mock_scan: Mock, mock_get_queue: Mock, sync_service: SyncService
     ) -> None:
         """Test successful bulk sync execution."""
         # Setup mocks
@@ -34,7 +34,9 @@ class TestSyncService:
         mock_get_queue.return_value = mock_queue
         mock_scan.return_value = ["/docs/file1.md", "/docs/file2.md"]
 
-        with patch("app.services.sync_service.SyncService._process_file") as mock_process:
+        with patch(
+            "app.services.sync_service.SyncService._process_file"
+        ) as mock_process:
             mock_process.return_value = {"chunks": 5, "success": True}
 
             # Execute test
@@ -50,7 +52,7 @@ class TestSyncService:
     @patch("app.services.sync_service.SyncService._get_queue")
     @patch("app.services.sync_service.SyncService._scan_documents")
     async def test_execute_bulk_sync_with_errors(
-        self, mock_scan, mock_get_queue, sync_service: SyncService
+        self, mock_scan: Mock, mock_get_queue: Mock, sync_service: SyncService
     ) -> None:
         """Test bulk sync execution with some errors."""
         # Setup mocks
@@ -93,7 +95,7 @@ class TestSyncService:
             "is_running": True,
             "current_job": {
                 "file_path": "/docs/current.md",
-                "progress": {"current": 5, "total": 10}
+                "progress": {"current": 5, "total": 10},
             },
         }
 
@@ -229,4 +231,3 @@ class TestSyncService:
             # Execute test and verify exception
             with pytest.raises(Exception, match="Indexing error"):
                 await sync_service._index_chunks("/docs/test.md", chunks)
-

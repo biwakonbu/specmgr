@@ -1,6 +1,6 @@
 """Search API endpoint tests."""
 
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -23,7 +23,9 @@ class TestSearchAPI:
         return TestClient(app)
 
     @patch("app.services.search_service.SearchService.search")
-    def test_search_documents_success(self, mock_search, client: TestClient) -> None:
+    def test_search_documents_success(
+        self, mock_search: Mock, client: TestClient
+    ) -> None:
         """Test successful document search."""
         mock_response = SearchResponse(
             results=[
@@ -67,7 +69,9 @@ class TestSearchAPI:
         )
 
     @patch("app.services.search_service.SearchService.search")
-    def test_search_documents_minimal_request(self, mock_search, client: TestClient) -> None:
+    def test_search_documents_minimal_request(
+        self, mock_search: Mock, client: TestClient
+    ) -> None:
         """Test search with minimal request parameters."""
         mock_search.return_value = SearchResponse(
             results=[], totalResults=0, query="simple", processingTime=0.05
@@ -81,7 +85,9 @@ class TestSearchAPI:
         )
 
     @patch("app.services.search_service.SearchService.search")
-    def test_search_documents_error(self, mock_search, client: TestClient) -> None:
+    def test_search_documents_error(
+        self, mock_search: Mock, client: TestClient
+    ) -> None:
         """Test search error handling."""
         mock_search.side_effect = Exception("Search service error")
 
@@ -91,10 +97,15 @@ class TestSearchAPI:
         assert "検索エラー" in response.json()["detail"]
 
     @patch("app.services.search_service.SearchService.get_stats")
-    def test_get_search_stats_success(self, mock_get_stats, client: TestClient) -> None:
+    def test_get_search_stats_success(
+        self, mock_get_stats: Mock, client: TestClient
+    ) -> None:
         """Test successful search stats retrieval."""
         mock_stats = SearchStats(
-            totalFiles=100, totalChunks=500, lastIndexed="2025-01-01T00:00:00Z", indexSize=1048576
+            totalFiles=100,
+            totalChunks=500,
+            lastIndexed="2025-01-01T00:00:00Z",
+            indexSize=1048576,
         )
         mock_get_stats.return_value = mock_stats
 
@@ -107,7 +118,9 @@ class TestSearchAPI:
         assert data["data"]["totalChunks"] == 500
 
     @patch("app.services.search_service.SearchService.get_stats")
-    def test_get_search_stats_error(self, mock_get_stats, client: TestClient) -> None:
+    def test_get_search_stats_error(
+        self, mock_get_stats: Mock, client: TestClient
+    ) -> None:
         """Test search stats error handling."""
         mock_get_stats.side_effect = Exception("Stats service error")
 
@@ -121,4 +134,3 @@ class TestSearchAPI:
         response = client.post("/api/search", json={})
 
         assert response.status_code == 422  # Validation error
-

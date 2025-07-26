@@ -82,14 +82,11 @@ class QueueService:
         job["id"]
 
         try:
-
             # ジョブタイプに応じた処理
             if job["type"] == "sync":
                 await self._process_sync_job(job["data"])
 
-
         except Exception as e:
-
             # リトライ処理
             await self._handle_job_retry(job, str(e))
 

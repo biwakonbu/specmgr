@@ -1,6 +1,7 @@
 """End-to-end workflow tests."""
 
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import patch
 
@@ -20,7 +21,7 @@ class TestFullWorkflow:
         return TestClient(app)
 
     @pytest.fixture
-    def e2e_docs_dir(self):
+    def e2e_docs_dir(self) -> Generator[Path, None, None]:
         """Create documents directory for E2E tests."""
         with tempfile.TemporaryDirectory() as tmpdir:
             docs_dir = Path(tmpdir) / "docs"
@@ -214,7 +215,9 @@ Enable debug logging by setting `LOG_LEVEL=debug` in environment variables."""
             yield docs_dir
 
     @pytest.mark.slow
-    def test_complete_document_workflow(self, client: TestClient, e2e_docs_dir: Path) -> None:
+    def test_complete_document_workflow(
+        self, client: TestClient, e2e_docs_dir: Path
+    ) -> None:
         """Test complete document management workflow."""
         with patch("app.core.config.settings.documents_path", str(e2e_docs_dir)):
             # Step 1: List all documents
@@ -232,7 +235,9 @@ Enable debug logging by setting `LOG_LEVEL=debug` in environment variables."""
             assert "troubleshooting.md" in file_names
 
     @pytest.mark.slow
-    def test_file_content_retrieval_workflow(self, client: TestClient, e2e_docs_dir: Path) -> None:
+    def test_file_content_retrieval_workflow(
+        self, client: TestClient, e2e_docs_dir: Path
+    ) -> None:
         """Test file content retrieval workflow."""
         with patch("app.core.config.settings.documents_path", str(e2e_docs_dir)):
             # Test retrieving file with frontmatter
@@ -254,11 +259,7 @@ Enable debug logging by setting `LOG_LEVEL=debug` in environment variables."""
         # This test expects vector search to fail and fallback to text search
         response = client.post(
             "/api/search",
-            json={
-                "query": "project architecture",
-                "limit": 5,
-                "scoreThreshold": 0.1
-            }
+            json={"query": "project architecture", "limit": 5, "scoreThreshold": 0.1},
         )
 
         # Should either succeed or fail gracefully
@@ -306,8 +307,8 @@ Enable debug logging by setting `LOG_LEVEL=debug` in environment variables."""
             json={
                 "message": "What is this project about?",
                 "conversationHistory": [],
-                "useRAG": True
-            }
+                "useRAG": True,
+            },
         )
 
         # Should handle gracefully even without proper setup
@@ -338,7 +339,9 @@ Enable debug logging by setting `LOG_LEVEL=debug` in environment variables."""
         # Test Claude API connectivity
         pass
 
-    def test_api_consistency_workflow(self, client: TestClient, e2e_docs_dir: Path) -> None:
+    def test_api_consistency_workflow(
+        self, client: TestClient, e2e_docs_dir: Path
+    ) -> None:
         """Test API response consistency across endpoints."""
         with patch("app.core.config.settings.documents_path", str(e2e_docs_dir)):
             # All successful API responses should have consistent structure
@@ -360,4 +363,3 @@ Enable debug logging by setting `LOG_LEVEL=debug` in environment variables."""
                     assert "data" in data
                     assert "timestamp" in data
                     assert data["success"] is True
-

@@ -22,7 +22,10 @@ class TestHealthService:
     @patch("app.services.health_service.HealthService._check_text_search")
     @patch("app.services.health_service.HealthService._check_claude_code")
     async def test_get_detailed_health_all_healthy(
-        self, mock_check_claude, mock_check_text, health_service: HealthService
+        self,
+        mock_check_claude: Mock,
+        mock_check_text: Mock,
+        health_service: HealthService,
     ) -> None:
         """Test detailed health when all services are healthy."""
         # Setup mocks
@@ -40,7 +43,10 @@ class TestHealthService:
     @patch("app.services.health_service.HealthService._check_text_search")
     @patch("app.services.health_service.HealthService._check_claude_code")
     async def test_get_detailed_health_text_search_failed(
-        self, mock_check_claude, mock_check_text, health_service: HealthService
+        self,
+        mock_check_claude: Mock,
+        mock_check_text: Mock,
+        health_service: HealthService,
     ) -> None:
         """Test detailed health when text search fails."""
         # Setup mocks
@@ -58,7 +64,10 @@ class TestHealthService:
     @patch("app.services.health_service.HealthService._check_text_search")
     @patch("app.services.health_service.HealthService._check_claude_code")
     async def test_get_detailed_health_claude_failed(
-        self, mock_check_claude, mock_check_text, health_service: HealthService
+        self,
+        mock_check_claude: Mock,
+        mock_check_text: Mock,
+        health_service: HealthService,
     ) -> None:
         """Test detailed health when Claude Code fails."""
         # Setup mocks
@@ -76,7 +85,10 @@ class TestHealthService:
     @patch("app.services.health_service.HealthService._check_text_search")
     @patch("app.services.health_service.HealthService._check_claude_code")
     async def test_get_detailed_health_all_failed(
-        self, mock_check_claude, mock_check_text, health_service: HealthService
+        self,
+        mock_check_claude: Mock,
+        mock_check_text: Mock,
+        health_service: HealthService,
     ) -> None:
         """Test detailed health when all services fail."""
         # Setup mocks
@@ -91,7 +103,9 @@ class TestHealthService:
         assert result.claude_code is False
         assert result.overall is False
 
-    async def test_check_text_search_success(self, health_service: HealthService) -> None:
+    async def test_check_text_search_success(
+        self, health_service: HealthService
+    ) -> None:
         """Test successful text search health check."""
         with patch("app.services.search_service.SearchService") as mock_search_service:
             mock_instance = Mock()
@@ -105,7 +119,9 @@ class TestHealthService:
             assert result is True
             mock_instance.get_stats.assert_called_once()
 
-    async def test_check_text_search_failure(self, health_service: HealthService) -> None:
+    async def test_check_text_search_failure(
+        self, health_service: HealthService
+    ) -> None:
         """Test text search health check failure."""
         with patch("app.services.search_service.SearchService") as mock_search_service:
             mock_instance = Mock()
@@ -118,7 +134,9 @@ class TestHealthService:
             # Verify results
             assert result is False
 
-    async def test_check_claude_code_success(self, health_service: HealthService) -> None:
+    async def test_check_claude_code_success(
+        self, health_service: HealthService
+    ) -> None:
         """Test successful Claude Code health check."""
         with patch("anthropic.Anthropic") as mock_anthropic:
             mock_client = Mock()
@@ -133,7 +151,9 @@ class TestHealthService:
                 assert result is True
                 mock_client.messages.create.assert_called_once()
 
-    async def test_check_claude_code_no_api_key(self, health_service: HealthService) -> None:
+    async def test_check_claude_code_no_api_key(
+        self, health_service: HealthService
+    ) -> None:
         """Test Claude Code health check without API key."""
         with patch("app.core.config.settings.anthropic_api_key", ""):
             # Execute test
@@ -142,7 +162,9 @@ class TestHealthService:
             # Verify results
             assert result is False
 
-    async def test_check_claude_code_api_failure(self, health_service: HealthService) -> None:
+    async def test_check_claude_code_api_failure(
+        self, health_service: HealthService
+    ) -> None:
         """Test Claude Code health check API failure."""
         with patch("anthropic.Anthropic") as mock_anthropic:
             mock_client = Mock()
@@ -155,4 +177,3 @@ class TestHealthService:
 
                 # Verify results
                 assert result is False
-

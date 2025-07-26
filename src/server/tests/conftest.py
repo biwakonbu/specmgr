@@ -4,12 +4,12 @@ import asyncio
 import tempfile
 from collections.abc import Generator
 from pathlib import Path
-from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.models.api_models import FileMetadata, SearchResult
 from main import app
 
 
@@ -106,12 +106,12 @@ def mock_anthropic_client() -> Generator[Mock, None, None]:
 
         # Mock embeddings response
         mock_client.embeddings.create.return_value.data = [
-            type('EmbeddingData', (), {'embedding': [0.1, 0.2, 0.3, 0.4, 0.5]})()
+            type("EmbeddingData", (), {"embedding": [0.1, 0.2, 0.3, 0.4, 0.5]})()
         ]
 
         # Mock messages response
         mock_client.messages.create.return_value.content = [
-            type('Content', (), {'text': 'Test response from Claude'})()
+            type("Content", (), {"text": "Test response from Claude"})()
         ]
 
         yield mock_client
@@ -124,29 +124,36 @@ def mock_qdrant_client() -> Generator[Mock, None, None]:
         mock_client = mock_qdrant.return_value
 
         # Mock search response
-        mock_client.search.return_value = type('SearchResult', (), {
-            'points': [
-                type('Point', (), {
-                    'id': 'test_id_1',
-                    'score': 0.95,
-                    'payload': {
-                        'content': 'Test search result content',
-                        'file_path': '/test/path.md',
-                        'file_name': 'path.md',
-                        'chunk_index': 0,
-                        'total_chunks': 1,
-                        'modified': '2025-01-01T00:00:00Z',
-                        'size': 1024
-                    }
-                })()
-            ]
-        })()
+        mock_client.search.return_value = type(
+            "SearchResult",
+            (),
+            {
+                "points": [
+                    type(
+                        "Point",
+                        (),
+                        {
+                            "id": "test_id_1",
+                            "score": 0.95,
+                            "payload": {
+                                "content": "Test search result content",
+                                "file_path": "/test/path.md",
+                                "file_name": "path.md",
+                                "chunk_index": 0,
+                                "total_chunks": 1,
+                                "modified": "2025-01-01T00:00:00Z",
+                                "size": 1024,
+                            },
+                        },
+                    )()
+                ]
+            },
+        )()
 
         # Mock collection info
-        mock_client.get_collection.return_value = type('CollectionInfo', (), {
-            'points_count': 100,
-            'vectors_count': 100
-        })()
+        mock_client.get_collection.return_value = type(
+            "CollectionInfo", (), {"points_count": 100, "vectors_count": 100}
+        )()
 
         yield mock_client
 
@@ -167,45 +174,50 @@ def mock_redis_client() -> Generator[Mock, None, None]:
 
 
 @pytest.fixture
-async def mock_async_services() -> Any:
+async def mock_async_services() -> Generator[
+    tuple[Mock, Mock, Mock, Mock, Mock], None, None
+]:
     """Mock async services for testing."""
-    with patch("app.services.file_service.FileService") as mock_file_service, \
-         patch("app.services.search_service.SearchService") as mock_search_service, \
-         patch("app.services.sync_service.SyncService") as mock_sync_service, \
-         patch("app.services.chat_service.ChatService") as mock_chat_service, \
-         patch("app.services.health_service.HealthService") as mock_health_service:
-
+    with (
+        patch("app.services.file_service.FileService") as mock_file_service,
+        patch("app.services.search_service.SearchService") as mock_search_service,
+        patch("app.services.sync_service.SyncService") as mock_sync_service,
+        patch("app.services.chat_service.ChatService") as mock_chat_service,
+        patch("app.services.health_service.HealthService") as mock_health_service,
+    ):
         # Configure mock returns
-        mock_file_service.return_value.get_files.return_value = type('FilesResponse', (), {
-            'files': [],
-            'directories': [],
-            'total_count': 0
-        })()
+        mock_file_service.return_value.get_files.return_value = type(
+            "FilesResponse", (), {"files": [], "directories": [], "total_count": 0}
+        )()
 
-        mock_search_service.return_value.search.return_value = type('SearchResponse', (), {
-            'results': [],
-            'total_results': 0,
-            'query': 'test',
-            'processing_time': 0.1
-        })()
+        mock_search_service.return_value.search.return_value = type(
+            "SearchResponse",
+            (),
+            {
+                "results": [],
+                "total_results": 0,
+                "query": "test",
+                "processing_time": 0.1,
+            },
+        )()
 
-        mock_health_service.return_value.get_detailed_health.return_value = type('HealthStatus', (), {
-            'text_search': True,
-            'claude_code': True,
-            'overall': True
-        })()
+        mock_health_service.return_value.get_detailed_health.return_value = type(
+            "HealthStatus",
+            (),
+            {"text_search": True, "claude_code": True, "overall": True},
+        )()
 
         yield {
-            'file_service': mock_file_service,
-            'search_service': mock_search_service,
-            'sync_service': mock_sync_service,
-            'chat_service': mock_chat_service,
-            'health_service': mock_health_service
+            "file_service": mock_file_service,
+            "search_service": mock_search_service,
+            "sync_service": mock_sync_service,
+            "chat_service": mock_chat_service,
+            "health_service": mock_health_service,
         }
 
 
 @pytest.fixture
-def sample_file_metadata():
+def sample_file_metadata() -> FileMetadata:
     """Sample file metadata for testing."""
     from datetime import datetime
 
@@ -221,12 +233,12 @@ def sample_file_metadata():
         created=datetime.now(),
         hash="abc123def456",
         lineCount=20,
-        wordCount=150
+        wordCount=150,
     )
 
 
 @pytest.fixture
-def sample_search_result():
+def sample_search_result() -> SearchResult:
     """Sample search result for testing."""
     from app.models.api_models import SearchResult, SearchResultMetadata
 
@@ -240,20 +252,20 @@ def sample_search_result():
             chunkIndex=0,
             totalChunks=2,
             modified="2025-01-01T00:00:00Z",
-            size=2048
-        )
+            size=2048,
+        ),
     )
 
 
 # Pytest markers for test categorization
 pytest_plugins = []
 
+
 # Custom markers
-def pytest_configure(config: Any) -> None:
+def pytest_configure(config) -> None:  # noqa: ANN001
     """Configure custom pytest markers."""
     config.addinivalue_line("markers", "unit: Unit tests")
     config.addinivalue_line("markers", "integration: Integration tests")
     config.addinivalue_line("markers", "e2e: End-to-end tests")
     config.addinivalue_line("markers", "slow: Slow running tests")
     config.addinivalue_line("markers", "external: Tests requiring external services")
-

@@ -1,12 +1,9 @@
-import { Moon, Sun } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { ChatPane } from './components/ChatPane'
 import { DocTree } from './components/DocTree'
 import { MarkdownPane } from './components/MarkdownPane'
-import { Button } from './components/ui/button'
 
 function App() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
 
   // Pane sizes (as percentages)
@@ -14,12 +11,6 @@ function App() {
   const [rightWidth, setRightWidth] = useState(25) // Reduced from 35% to 25%
 
   const centerWidth = 100 - leftWidth - rightWidth
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light'
-    setTheme(newTheme)
-    document.documentElement.classList.toggle('dark', newTheme === 'dark')
-  }
 
   // Handle left pane resize
   const handleLeftResize = useCallback(
@@ -81,13 +72,6 @@ function App() {
 
   return (
     <div className="flex h-screen bg-background text-foreground">
-      {/* Header */}
-      <div className="absolute top-4 right-4 z-10">
-        <Button variant="outline" size="icon" onClick={toggleTheme}>
-          {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-        </Button>
-      </div>
-
       {/* Resizable three-pane layout */}
       <div className="flex w-full">
         {/* Left Pane - DocTree */}

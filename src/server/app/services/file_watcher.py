@@ -77,7 +77,6 @@ class MarkdownFileHandler(FileSystemEventHandler):
                 }
             )
 
-
         except Exception:  # noqa: S110
             pass
 

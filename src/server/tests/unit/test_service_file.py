@@ -19,7 +19,7 @@ class TestFileService:
         return FileService()
 
     @pytest.fixture
-    def temp_dir(self):
+    def temp_dir(self) -> Path:
         """Create temporary directory for tests."""
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
@@ -30,7 +30,9 @@ class TestFileService:
 
     @patch("app.services.file_service.FileService._get_base_path")
     @patch("pathlib.Path.glob")
-    async def test_get_files_basic(self, mock_glob, mock_base_path, file_service: FileService) -> None:
+    async def test_get_files_basic(
+        self, mock_glob: Mock, mock_base_path: Mock, file_service: FileService
+    ) -> None:
         """Test basic file listing."""
         # Setup mocks
         mock_base_path.return_value = Path("/docs")
@@ -54,7 +56,9 @@ class TestFileService:
             assert result.files[0].name == "test.md"
 
     @patch("app.services.file_service.FileService._get_base_path")
-    async def test_get_file_content_success(self, mock_base_path, file_service: FileService) -> None:
+    async def test_get_file_content_success(
+        self, mock_base_path: Mock, file_service: FileService
+    ) -> None:
         """Test successful file content retrieval."""
         # Setup
         mock_base_path.return_value = Path("/docs")
@@ -75,7 +79,9 @@ class TestFileService:
                     assert result.name == "test.md"
 
     @patch("app.services.file_service.FileService._get_base_path")
-    async def test_get_file_content_not_found(self, mock_base_path, file_service: FileService) -> None:
+    async def test_get_file_content_not_found(
+        self, mock_base_path: Mock, file_service: FileService
+    ) -> None:
         """Test file not found error."""
         mock_base_path.return_value = Path("/docs")
 
@@ -87,7 +93,9 @@ class TestFileService:
                 await file_service.get_file_content("nonexistent.md")
 
     @patch("app.services.file_service.FileService._get_base_path")
-    async def test_get_file_content_not_a_file(self, mock_base_path, file_service: FileService) -> None:
+    async def test_get_file_content_not_a_file(
+        self, mock_base_path: Mock, file_service: FileService
+    ) -> None:
         """Test error when path is not a file."""
         mock_base_path.return_value = Path("/docs")
 
@@ -100,7 +108,9 @@ class TestFileService:
                 with pytest.raises(FileNotFoundError):
                     await file_service.get_file_content("directory")
 
-    def test_calculate_file_hash(self, file_service: FileService, temp_dir: Path) -> None:
+    def test_calculate_file_hash(
+        self, file_service: FileService, temp_dir: Path
+    ) -> None:
         """Test file hash calculation."""
         # Create test file
         test_file = temp_dir / "test.md"
@@ -162,4 +172,3 @@ invalid: [unclosed list
         result = file_service._parse_frontmatter(content)
 
         assert result == {}  # Should return empty dict on parse error
-

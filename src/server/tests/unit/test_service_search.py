@@ -22,7 +22,10 @@ class TestSearchService:
     @patch("app.services.search_service.SearchService._vector_search")
     @patch("app.services.search_service.SearchService._text_search")
     async def test_search_vector_success(
-        self, mock_text_search, mock_vector_search, search_service: SearchService
+        self,
+        mock_text_search: Mock,
+        mock_vector_search: Mock,
+        search_service: SearchService,
     ) -> None:
         """Test successful vector search."""
         # Setup mock vector search response
@@ -58,7 +61,10 @@ class TestSearchService:
     @patch("app.services.search_service.SearchService._vector_search")
     @patch("app.services.search_service.SearchService._text_search")
     async def test_search_fallback_to_text(
-        self, mock_text_search, mock_vector_search, search_service: SearchService
+        self,
+        mock_text_search: Mock,
+        mock_vector_search: Mock,
+        search_service: SearchService,
     ) -> None:
         """Test fallback to text search when vector search fails."""
         # Setup mocks
@@ -94,7 +100,9 @@ class TestSearchService:
         mock_text_search.assert_called_once()
 
     @patch("app.services.search_service.SearchService._get_qdrant_client")
-    async def test_vector_search_success(self, mock_get_client, search_service: SearchService) -> None:
+    async def test_vector_search_success(
+        self, mock_get_client: Mock, search_service: SearchService
+    ) -> None:
         """Test successful vector search."""
         # Setup mock Qdrant client
         mock_client = Mock()
@@ -119,7 +127,9 @@ class TestSearchService:
         ]
         mock_client.search.return_value = mock_response
 
-        with patch("app.services.search_service.SearchService._generate_embedding") as mock_embedding:
+        with patch(
+            "app.services.search_service.SearchService._generate_embedding"
+        ) as mock_embedding:
             mock_embedding.return_value = [0.1, 0.2, 0.3]  # Mock embedding vector
 
             # Execute test
@@ -131,7 +141,9 @@ class TestSearchService:
             mock_embedding.assert_called_once_with("vector query")
 
     @patch("app.services.search_service.SearchService._get_text_search_engine")
-    async def test_text_search_success(self, mock_get_engine, search_service: SearchService) -> None:
+    async def test_text_search_success(
+        self, mock_get_engine: Mock, search_service: SearchService
+    ) -> None:
         """Test successful text search."""
         # Setup mock text search engine
         mock_engine = Mock()
@@ -162,10 +174,14 @@ class TestSearchService:
         # Verify results
         assert len(result.results) == 1
         assert result.processing_time == 0.05
-        mock_engine.search.assert_called_once_with("text query", limit=10, score_threshold=None)
+        mock_engine.search.assert_called_once_with(
+            "text query", limit=10, score_threshold=None
+        )
 
     @patch("app.services.search_service.SearchService._get_qdrant_client")
-    async def test_get_stats_success(self, mock_get_client, search_service: SearchService) -> None:
+    async def test_get_stats_success(
+        self, mock_get_client: Mock, search_service: SearchService
+    ) -> None:
         """Test successful stats retrieval."""
         # Setup mock client
         mock_client = Mock()
@@ -188,7 +204,9 @@ class TestSearchService:
             assert result.index_size == 5242880
 
     @patch("anthropic.Anthropic")
-    async def test_generate_embedding_success(self, mock_anthropic, search_service: SearchService) -> None:
+    async def test_generate_embedding_success(
+        self, mock_anthropic: Mock, search_service: SearchService
+    ) -> None:
         """Test successful embedding generation."""
         # Setup mock Claude client
         mock_client = Mock()
@@ -205,9 +223,10 @@ class TestSearchService:
             assert result == [0.1, 0.2, 0.3, 0.4, 0.5]
             mock_client.embeddings.create.assert_called_once()
 
-    async def test_generate_embedding_no_api_key(self, search_service: SearchService) -> None:
+    async def test_generate_embedding_no_api_key(
+        self, search_service: SearchService
+    ) -> None:
         """Test embedding generation without API key."""
         with patch("app.core.config.settings.anthropic_api_key", ""):
             with pytest.raises(ValueError, match="API key not configured"):
                 await search_service._generate_embedding("test text")
-

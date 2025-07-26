@@ -28,7 +28,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     queue_service = QueueService()
     await queue_service.start()
 
-
     yield
 
     # Shutdown

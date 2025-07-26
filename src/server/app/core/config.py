@@ -25,10 +25,9 @@ class ServerConfig(BaseModel):
 
     host: str = "0.0.0.0"  # noqa: S104
     port: int = 3000
-    cors: dict[str, Any] = Field(default_factory=lambda: {
-        "enabled": True,
-        "origins": ["http://localhost:5173"]
-    })
+    cors: dict[str, Any] = Field(
+        default_factory=lambda: {"enabled": True, "origins": ["http://localhost:5173"]}
+    )
 
 
 class SearchConfig(BaseModel):
@@ -93,7 +92,7 @@ def find_git_root() -> Path:
             capture_output=True,
             text=True,
             check=True,
-            cwd=Path(__file__).parent
+            cwd=Path(__file__).parent,
         )
         return Path(result.stdout.strip())
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -158,6 +157,16 @@ class Settings(BaseSettings):
     watch_directory: str = "docs"
 
     def __init__(self, **kwargs) -> None:  # noqa: ANN003
+        # Store original environment values before processing
+        import os
+
+        env_overrides = {
+            "host": os.environ.get("HOST"),
+            "port": int(os.environ.get("PORT")) if os.environ.get("PORT") else None,
+            "qdrant_collection": os.environ.get("QDRANT_COLLECTION"),
+            "log_level": os.environ.get("LOG_LEVEL"),
+        }
+
         # Find git repository root first
         git_root = find_git_root()
 
@@ -175,35 +184,34 @@ class Settings(BaseSettings):
             app_config=app_config,
             documents_path=documents_path,
             watch_directory=watch_directory,
-            **kwargs
+            **kwargs,
         )
 
-        # Apply configuration file overrides
-        self._apply_config_overrides()
+        # Apply configuration file overrides (environment variables take priority)
+        self._apply_config_overrides(env_overrides)
 
-    def _apply_config_overrides(self) -> None:
-        """Apply configuration file overrides to settings."""
-        # Override server settings
-        if hasattr(self.app_config.server, 'host'):
-            object.__setattr__(self, 'host', self.app_config.server.host)
-        if hasattr(self.app_config.server, 'port'):
-            object.__setattr__(self, 'port', self.app_config.server.port)
+    def _apply_config_overrides(self, env_overrides: dict[str, Any]) -> None:
+        """Apply configuration file overrides to settings.
 
-        # Override vector DB settings
-        if hasattr(self.app_config.vector_db, 'collection'):
+        Environment variables take priority over config file values.
+        """
+        # Apply server configuration from YAML (if not overridden by env)
+        if env_overrides["host"] is None:
+            object.__setattr__(self, "host", self.app_config.server.host)
+        if env_overrides["port"] is None:
+            object.__setattr__(self, "port", self.app_config.server.port)
+
+        # Apply vector DB configuration from YAML (if not overridden by env)
+        if env_overrides["qdrant_collection"] is None:
             object.__setattr__(
-                self, 'qdrant_collection', self.app_config.vector_db.collection
+                self, "qdrant_collection", self.app_config.vector_db.collection
             )
 
-        # Override logging settings
-        if hasattr(self.app_config.logging, 'level'):
-            object.__setattr__(self, 'log_level', self.app_config.logging.level)
+        # Apply logging configuration from YAML (if not overridden by env)
+        if env_overrides["log_level"] is None:
+            object.__setattr__(self, "log_level", self.app_config.logging.level)
 
-
-    model_config = {
-        "env_file": ".env",
-        "extra": "ignore"
-    }
+    model_config = {"env_file": ".env", "extra": "ignore"}
 
 
 # Global settings instance

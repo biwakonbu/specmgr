@@ -51,13 +51,22 @@ class TestFilesAPI:
         assert data["data"]["files"][0]["name"] == "test.md"
 
     @patch("app.services.file_service.FileService.get_files")
-    def test_get_files_with_params(self, mock_get_files: Mock, client: TestClient) -> None:
+    def test_get_files_with_params(
+        self, mock_get_files: Mock, client: TestClient
+    ) -> None:
         """Test file list retrieval with parameters."""
-        mock_get_files.return_value = FilesResponse(files=[], directories=[], totalCount=0)
+        mock_get_files.return_value = FilesResponse(
+            files=[], directories=[], totalCount=0
+        )
 
         response = client.get(
             "/api/files",
-            params={"path": "/docs", "recursive": "true", "sortBy": "modified", "order": "desc"},
+            params={
+                "path": "/docs",
+                "recursive": "true",
+                "sortBy": "modified",
+                "order": "desc",
+            },
         )
 
         assert response.status_code == 200
@@ -66,7 +75,9 @@ class TestFilesAPI:
         )
 
     @patch("app.services.file_service.FileService.get_file_content")
-    def test_get_file_content_success(self, mock_get_content, client: TestClient) -> None:
+    def test_get_file_content_success(
+        self, mock_get_content: Mock, client: TestClient
+    ) -> None:
         """Test successful file content retrieval."""
         mock_content = FileContent(
             path="/docs/test.md",
@@ -93,7 +104,9 @@ class TestFilesAPI:
         assert data["data"]["content"] == "# Test\nContent"
 
     @patch("app.services.file_service.FileService.get_file_content")
-    def test_get_file_content_not_found(self, mock_get_content, client: TestClient) -> None:
+    def test_get_file_content_not_found(
+        self, mock_get_content: Mock, client: TestClient
+    ) -> None:
         """Test file not found error."""
         mock_get_content.side_effect = FileNotFoundError("File not found")
 
@@ -103,7 +116,9 @@ class TestFilesAPI:
         assert "File not found" in response.json()["detail"]
 
     @patch("app.services.file_service.FileService.get_files")
-    def test_get_files_server_error(self, mock_get_files, client: TestClient) -> None:
+    def test_get_files_server_error(
+        self, mock_get_files: Mock, client: TestClient
+    ) -> None:
         """Test server error handling."""
         mock_get_files.side_effect = Exception("Database error")
 
@@ -111,4 +126,3 @@ class TestFilesAPI:
 
         assert response.status_code == 500
         assert "File list retrieval error" in response.json()["detail"]
-
