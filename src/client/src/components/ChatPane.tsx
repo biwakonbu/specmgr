@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
-import remarkMermaid from 'remark-mermaidjs'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { ScrollArea } from './ui/scroll-area'
@@ -17,7 +16,9 @@ interface Message {
   searchResults?: SearchResponse
 }
 
-type ChatPaneProps = {}
+interface ChatPaneProps {
+  // No props needed currently
+}
 
 export function ChatPane(_props: ChatPaneProps) {
   const [messages, setMessages] = useState<Message[]>([
@@ -226,11 +227,13 @@ export function ChatPane(_props: ChatPaneProps) {
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-border">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
+        <h2 className="text-[14px] font-semibold flex items-center gap-2">
           <Bot className="h-5 w-5" />
           AI Assistant
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">Ask questions about your documentation</p>
+        <p className="text-[12px] text-muted-foreground mt-1">
+          Ask questions about your documentation
+        </p>
       </div>
 
       {/* Messages */}
@@ -256,41 +259,43 @@ export function ChatPane(_props: ChatPaneProps) {
                     : 'bg-muted text-foreground'
                 }`}
               >
-                <div className="prose prose-sm max-w-none dark:prose-invert text-xs">
+                <div className="prose prose-sm max-w-none dark:prose-invert text-[12px]">
                   <ReactMarkdown
-                    remarkPlugins={[remarkGfm, remarkMermaid]}
+                    remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeHighlight]}
                     components={{
                       h1: ({ children }) => (
-                        <h1 className="text-sm font-bold tracking-tight mb-1.5 mt-0 text-foreground border-b border-border pb-0.5">
+                        <h1 className="text-[14px] font-bold tracking-tight mb-1.5 mt-0 text-foreground border-b border-border pb-0.5">
                           {children}
                         </h1>
                       ),
                       h2: ({ children }) => (
-                        <h2 className="text-xs font-semibold tracking-tight mb-1.5 mt-2 text-foreground">
+                        <h2 className="text-[13px] font-semibold tracking-tight mb-1.5 mt-2 text-foreground">
                           {children}
                         </h2>
                       ),
                       h3: ({ children }) => (
-                        <h3 className="text-xs font-medium tracking-tight mb-1 mt-1.5 text-foreground">
+                        <h3 className="text-[12px] font-medium tracking-tight mb-1 mt-1.5 text-foreground">
                           {children}
                         </h3>
                       ),
                       p: ({ children }) => (
-                        <p className="text-xs leading-relaxed mb-1.5 text-foreground">{children}</p>
+                        <p className="text-[12px] leading-relaxed mb-1.5 text-foreground">
+                          {children}
+                        </p>
                       ),
                       ul: ({ children }) => (
-                        <ul className="my-1.5 ml-3 list-disc text-xs [&>li]:mt-0.5 [&>li]:leading-relaxed">
+                        <ul className="my-1.5 ml-3 list-disc text-[12px] [&>li]:mt-0.5 [&>li]:leading-relaxed">
                           {children}
                         </ul>
                       ),
                       ol: ({ children }) => (
-                        <ol className="my-1.5 ml-3 list-decimal text-xs [&>li]:mt-0.5 [&>li]:leading-relaxed">
+                        <ol className="my-1.5 ml-3 list-decimal text-[12px] [&>li]:mt-0.5 [&>li]:leading-relaxed">
                           {children}
                         </ol>
                       ),
                       blockquote: ({ children }) => (
-                        <blockquote className="mt-1.5 mb-1.5 border-l-2 border-border pl-2 italic text-muted-foreground text-xs">
+                        <blockquote className="mt-1.5 mb-1.5 border-l-2 border-border pl-2 italic text-muted-foreground text-[12px]">
                           {children}
                         </blockquote>
                       ),
@@ -298,7 +303,7 @@ export function ChatPane(_props: ChatPaneProps) {
                         const isInline = !className
                         if (isInline) {
                           return (
-                            <code className="relative rounded bg-muted px-1 py-0.5 font-mono text-[10px] font-medium">
+                            <code className="relative rounded bg-muted px-1 py-0.5 font-mono text-[11px] font-medium">
                               {children}
                             </code>
                           )
@@ -306,7 +311,7 @@ export function ChatPane(_props: ChatPaneProps) {
                         return <code className={className}>{children}</code>
                       },
                       pre: ({ children }) => (
-                        <pre className="mb-1.5 mt-1.5 overflow-x-auto rounded bg-muted p-2 text-[10px] leading-tight">
+                        <pre className="mb-1.5 mt-1.5 overflow-x-auto rounded bg-muted p-2 text-[11px] leading-tight">
                           {children}
                         </pre>
                       ),
@@ -320,7 +325,7 @@ export function ChatPane(_props: ChatPaneProps) {
                   </ReactMarkdown>
                 </div>
                 <div
-                  className={`text-xs mt-1 opacity-70 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
+                  className={`text-[11px] mt-1 opacity-70 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
                 >
                   {formatTimestamp(message.timestamp)}
                 </div>
@@ -350,7 +355,7 @@ export function ChatPane(_props: ChatPaneProps) {
                     <div className="w-2 h-2 bg-current rounded-full animate-pulse delay-100" />
                     <div className="w-2 h-2 bg-current rounded-full animate-pulse delay-200" />
                   </div>
-                  <span className="text-xs opacity-70 ml-2">Thinking...</span>
+                  <span className="text-[11px] opacity-70 ml-2">Thinking...</span>
                 </div>
               </div>
             </div>
@@ -378,7 +383,7 @@ export function ChatPane(_props: ChatPaneProps) {
             <Send className="h-4 w-4" />
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
+        <p className="text-[11px] text-muted-foreground mt-2">
           Press Enter to send, Shift+Enter for new line
         </p>
       </div>

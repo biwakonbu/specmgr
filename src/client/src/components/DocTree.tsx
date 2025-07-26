@@ -37,7 +37,7 @@ function TreeNode({ node, level, onFileSelect, selectedFile }: TreeNodeProps) {
         aria-selected={isSelected}
         tabIndex={0}
         className={cn(
-          'flex items-center gap-1 py-1 px-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm',
+          'flex items-center gap-1 py-1 px-2 text-[12px] cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm',
           isSelected && 'bg-accent text-accent-foreground',
           'transition-colors focus:outline-none focus:ring-2 focus:ring-primary'
         )}
@@ -63,7 +63,7 @@ function TreeNode({ node, level, onFileSelect, selectedFile }: TreeNodeProps) {
         {node.type === 'file' && <File className="h-4 w-4 text-green-600" />}
         <span className="flex-1 truncate">{node.name}</span>
         {node.metadata && node.type === 'file' && (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[11px] text-muted-foreground">
             {(node.metadata.size / 1024).toFixed(1)}KB
           </span>
         )}
@@ -95,13 +95,13 @@ export function DocTree({ onFileSelect, selectedFile }: DocTreeProps) {
     try {
       setLoading(true)
       setError(null)
-      
+
       const data = await apiClient.getFiles({
         recursive: true,
         sortBy: 'name',
         order: 'asc',
       })
-      
+
       const tree = buildFileTree(data.files, data.directories)
       setFileTree(tree)
     } catch (err) {
@@ -121,12 +121,12 @@ export function DocTree({ onFileSelect, selectedFile }: DocTreeProps) {
     return (
       <div className="h-full flex flex-col">
         <div className="p-4 border-b border-border">
-          <h3 className="text-sm font-medium">Documents</h3>
+          <h3 className="text-[12px] font-medium">Documents</h3>
         </div>
         <div className="flex-1 flex items-center justify-center">
           <div className="flex items-center gap-2 text-muted-foreground">
             <RefreshCw className="h-4 w-4 animate-spin" />
-            <span className="text-sm">Loading documents...</span>
+            <span className="text-[12px]">Loading documents...</span>
           </div>
         </div>
       </div>
@@ -137,14 +137,15 @@ export function DocTree({ onFileSelect, selectedFile }: DocTreeProps) {
     return (
       <div className="h-full flex flex-col">
         <div className="p-4 border-b border-border">
-          <h3 className="text-sm font-medium">Documents</h3>
+          <h3 className="text-[12px] font-medium">Documents</h3>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
-          <p className="text-sm text-center text-muted-foreground mb-3">{error}</p>
+          <p className="text-[12px] text-center text-muted-foreground mb-3">{error}</p>
           <button
+            type="button"
             onClick={loadFiles}
-            className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+            className="px-3 py-1 text-[11px] bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
           >
             Retry
           </button>
@@ -156,8 +157,9 @@ export function DocTree({ onFileSelect, selectedFile }: DocTreeProps) {
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b border-border flex items-center justify-between">
-        <h3 className="text-sm font-medium">Documents</h3>
+        <h3 className="text-[12px] font-medium">Documents</h3>
         <button
+          type="button"
           onClick={loadFiles}
           className="p-1 hover:bg-accent rounded transition-colors"
           title="Refresh file tree"
@@ -165,7 +167,7 @@ export function DocTree({ onFileSelect, selectedFile }: DocTreeProps) {
           <RefreshCw className="h-3 w-3" />
         </button>
       </div>
-      
+
       <div className="flex-1 overflow-auto">
         {fileTree.length > 0 ? (
           <div className="p-2">
@@ -182,7 +184,7 @@ export function DocTree({ onFileSelect, selectedFile }: DocTreeProps) {
         ) : (
           <div className="p-4 text-center text-muted-foreground">
             <File className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No documents found</p>
+            <p className="text-[12px]">No documents found</p>
           </div>
         )}
       </div>
