@@ -13,7 +13,7 @@
     "build:server": "echo 'Python server build not required'",
     "build:client": "pnpm --filter specmgr-client build",
     "start": "cd src/server && uv run uvicorn main:app --host 0.0.0.0 --port 3000",
-    "install": "pnpm install && pnpm install:server",
+    "install": "pnpm install:server",
     "install:server": "cd src/server && uv sync",
     "install:client": "pnpm --filter specmgr-client install",
     "test": "pnpm test:client && pnpm test:server",

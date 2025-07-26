@@ -15,10 +15,8 @@ function MermaidDiagram({ chart }: { chart: string }) {
 
   useEffect(() => {
     const renderDiagram = async () => {
-      console.log('MermaidDiagram: Starting render process, chart:', chart.substring(0, 100))
       if (elementRef.current && chart) {
         try {
-          console.log('MermaidDiagram: Importing mermaid...')
           const mermaid = (await import('mermaid')).default
 
           // Initialize mermaid with Nord Dark theme
@@ -122,10 +120,8 @@ function MermaidDiagram({ chart }: { chart: string }) {
           // Generate unique ID for this diagram
           const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`
 
-          console.log('MermaidDiagram: Rendering with ID:', id)
           // Render the diagram
           const { svg } = await mermaid.render(id, chart)
-          console.log('MermaidDiagram: Render successful, setting innerHTML')
           elementRef.current.innerHTML = svg
         } catch (error) {
           console.error('Mermaid rendering error:', error)
@@ -242,11 +238,6 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
               </blockquote>
             ),
             code: ({ children, className }) => {
-              console.log('Code block detected:', {
-                className,
-                children: String(children).substring(0, 50),
-              })
-
               const isInline = !className
               if (isInline) {
                 return (
@@ -258,7 +249,6 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
 
               // Check for mermaid code blocks (handles both 'language-mermaid' and 'hljs language-mermaid')
               if (className?.includes('language-mermaid')) {
-                console.log('Mermaid diagram detected! Rendering...')
                 return <MermaidDiagram chart={String(children).replace(/\n$/, '')} />
               }
 
