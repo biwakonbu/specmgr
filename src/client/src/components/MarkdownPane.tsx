@@ -264,7 +264,7 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
                 return <MermaidDiagram chart={String(chartContent).replace(/\n$/, '')} />
               }
 
-              return <pre className="mb-4 mt-6 overflow-x-auto text-[12px]">{children}</pre>
+              return <pre className="mb-4 mt-6 overflow-x-auto text-[12px] p-3">{children}</pre>
             },
           }}
         >

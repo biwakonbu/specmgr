@@ -242,21 +242,45 @@ export function ChatPane(_props: ChatPaneProps) {
           {messages.map(message => (
             <div
               key={message.id}
-              className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}
             >
-              {message.role === 'assistant' && (
+              {/* Message Header with Avatar and Role */}
+              <div
+                className={`flex items-center gap-2 mb-1 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+              >
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Bot className="h-4 w-4 text-primary" />
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                      message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-primary/10 text-primary'
+                    }`}
+                  >
+                    {message.role === 'user' ? (
+                      <User className="h-3 w-3" />
+                    ) : (
+                      <Bot className="h-3 w-3" />
+                    )}
                   </div>
                 </div>
-              )}
+                <div
+                  className={`flex items-center gap-2 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                >
+                  <span className="text-[11px] font-medium text-foreground/80">
+                    {message.role === 'user' ? 'You' : 'AI Assistant'}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {formatTimestamp(message.timestamp)}
+                  </span>
+                </div>
+              </div>
 
+              {/* Message Content */}
               <div
-                className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                className={`w-full max-w-[95%] rounded-xl px-4 py-3 ${
                   message.role === 'user'
                     ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-foreground'
+                    : 'bg-muted/50 text-foreground border border-border/50'
                 }`}
               >
                 <div className="prose prose-sm max-w-none dark:prose-invert text-[12px]">
@@ -265,7 +289,7 @@ export function ChatPane(_props: ChatPaneProps) {
                     rehypePlugins={[rehypeHighlight]}
                     components={{
                       h1: ({ children }) => (
-                        <h1 className="text-[14px] font-bold tracking-tight mb-1.5 mt-0 text-foreground border-b border-border pb-0.5">
+                        <h1 className="text-[14px] font-bold tracking-tight mb-1.5 mt-0 text-foreground border-b border-border/30 pb-0.5">
                           {children}
                         </h1>
                       ),
@@ -295,7 +319,7 @@ export function ChatPane(_props: ChatPaneProps) {
                         </ol>
                       ),
                       blockquote: ({ children }) => (
-                        <blockquote className="mt-1.5 mb-1.5 border-l-2 border-border pl-2 italic text-muted-foreground text-[12px]">
+                        <blockquote className="mt-1.5 mb-1.5 border-l-2 border-border/50 pl-2 italic text-muted-foreground text-[12px]">
                           {children}
                         </blockquote>
                       ),
@@ -303,7 +327,7 @@ export function ChatPane(_props: ChatPaneProps) {
                         const isInline = !className
                         if (isInline) {
                           return (
-                            <code className="relative rounded bg-muted px-1 py-0.5 font-mono text-[12px] font-medium">
+                            <code className="relative rounded bg-muted/70 px-1 py-0.5 font-mono text-[12px] font-medium">
                               {children}
                             </code>
                           )
@@ -311,7 +335,7 @@ export function ChatPane(_props: ChatPaneProps) {
                         return <code className={className}>{children}</code>
                       },
                       pre: ({ children }) => (
-                        <pre className="mb-1.5 mt-1.5 overflow-x-auto rounded bg-muted p-2 text-[12px] leading-tight">
+                        <pre className="mb-1.5 mt-1.5 overflow-x-auto rounded bg-muted/70 p-1.5 text-[12px] leading-tight">
                           {children}
                         </pre>
                       ),
@@ -324,38 +348,31 @@ export function ChatPane(_props: ChatPaneProps) {
                     {message.content}
                   </ReactMarkdown>
                 </div>
-                <div
-                  className={`text-[11px] mt-1 opacity-70 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
-                >
-                  {formatTimestamp(message.timestamp)}
-                </div>
               </div>
-
-              {message.role === 'user' && (
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                    <User className="h-4 w-4 text-secondary-foreground" />
-                  </div>
-                </div>
-              )}
             </div>
           ))}
 
           {isLoading && (
-            <div className="flex gap-3 justify-start">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Bot className="h-4 w-4 text-primary" />
+            <div className="flex flex-col items-start">
+              {/* Loading Header */}
+              <div className="flex items-center gap-2 mb-1">
+                <div className="flex-shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                    <Bot className="h-3 w-3" />
+                  </div>
                 </div>
+                <span className="text-[11px] font-medium text-foreground/80">AI Assistant</span>
               </div>
-              <div className="bg-muted text-foreground rounded-lg px-3 py-2">
-                <div className="flex items-center gap-1">
+
+              {/* Loading Content */}
+              <div className="w-full max-w-[95%] rounded-xl px-4 py-3 bg-muted/50 text-foreground border border-border/50">
+                <div className="flex items-center gap-2">
                   <div className="flex gap-1">
                     <div className="w-2 h-2 bg-current rounded-full animate-pulse" />
                     <div className="w-2 h-2 bg-current rounded-full animate-pulse delay-100" />
                     <div className="w-2 h-2 bg-current rounded-full animate-pulse delay-200" />
                   </div>
-                  <span className="text-[11px] opacity-70 ml-2">Thinking...</span>
+                  <span className="text-[11px] opacity-70">Thinking...</span>
                 </div>
               </div>
             </div>
