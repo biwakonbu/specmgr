@@ -3,7 +3,7 @@
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, Mock
 
 if TYPE_CHECKING:
     pass
@@ -17,9 +17,25 @@ class TestSyncService:
     """Sync service test class."""
 
     @pytest.fixture
-    def sync_service(self) -> SyncService:
-        """Create sync service instance."""
-        return SyncService()
+    def mock_embedding_service(self):
+        """Mock embedding service."""
+        mock_service = Mock()
+        mock_service.is_available.return_value = False
+        mock_service._get_zero_vector.return_value = [0.0] * 1536
+        return mock_service
+
+    @pytest.fixture
+    def mock_qdrant_service(self):
+        """Mock Qdrant service."""
+        mock_service = AsyncMock()
+        return mock_service
+
+    @pytest.fixture
+    def sync_service(self, mock_embedding_service, mock_qdrant_service) -> SyncService:
+        """Create sync service instance with mocked dependencies."""
+        with patch("app.services.sync_service.EmbeddingService", return_value=mock_embedding_service), \
+             patch("app.services.sync_service.QdrantService", return_value=mock_qdrant_service):
+            return SyncService()
 
     @pytest.fixture
     def temp_docs_dir(self) -> Path:
@@ -39,7 +55,7 @@ class TestSyncService:
 
     @pytest.mark.asyncio
     async def test_execute_bulk_sync_success(
-        self, sync_service: SyncService, temp_docs_dir: Path
+        self, sync_service: SyncService, temp_docs_dir: Path, mock_qdrant_service
     ) -> None:
         """Test successful bulk sync execution."""
         # Mock the docs_path to use temp directory
@@ -60,6 +76,9 @@ class TestSyncService:
             assert result.processed_files == 2
             assert result.total_chunks > 0
             assert len(result.errors) == 0
+            
+            # Verify Qdrant initialization was called
+            mock_qdrant_service.initialize_collection.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_execute_bulk_sync_with_errors(
@@ -105,6 +124,87 @@ class TestSyncService:
         assert result.current == 5
         assert result.total == 10
         assert result.current_file == "/docs/current.md"
+
+    @pytest.mark.asyncio
+    async def test_sync_file_with_embedding(
+        self, sync_service: SyncService, temp_docs_dir: Path, 
+        mock_embedding_service, mock_qdrant_service
+    ) -> None:
+        """Test syncing individual file with embedding generation."""
+        # Setup embedding service to be available
+        mock_embedding_service.is_available.return_value = True
+        mock_embedding_service.generate_embedding = AsyncMock(return_value=[0.1] * 1536)
+        
+        # Create test file
+        test_file = temp_docs_dir / "test.md"
+        test_content = "# Test\n\nTest content"
+        test_file.write_text(test_content)
+        
+        # Mock docs_path
+        sync_service.docs_path = temp_docs_dir
+        
+        # Execute sync
+        await sync_service.sync_file(str(test_file))
+        
+        # Verify embedding was generated
+        mock_embedding_service.generate_embedding.assert_called_once_with(test_content)
+        
+        # Verify document was stored in Qdrant
+        mock_qdrant_service.store_document.assert_called_once_with(
+            file_path="test.md",
+            content=test_content,
+            vector=[0.1] * 1536
+        )
+
+    @pytest.mark.asyncio
+    async def test_sync_file_without_embedding(
+        self, sync_service: SyncService, temp_docs_dir: Path,
+        mock_embedding_service, mock_qdrant_service
+    ) -> None:
+        """Test syncing individual file without embedding (API key not available)."""
+        # Setup embedding service to not be available
+        mock_embedding_service.is_available.return_value = False
+        
+        # Create test file
+        test_file = temp_docs_dir / "test.md"
+        test_content = "# Test\n\nTest content"
+        test_file.write_text(test_content)
+        
+        # Mock docs_path
+        sync_service.docs_path = temp_docs_dir
+        
+        # Execute sync
+        await sync_service.sync_file(str(test_file))
+        
+        # Verify embedding was NOT generated
+        mock_embedding_service.generate_embedding.assert_not_called()
+        
+        # Verify zero vector was used
+        mock_embedding_service._get_zero_vector.assert_called_once()
+        
+        # Verify document was stored in Qdrant with zero vector
+        mock_qdrant_service.store_document.assert_called_once_with(
+            file_path="test.md",
+            content=test_content,
+            vector=[0.0] * 1536
+        )
+
+    @pytest.mark.asyncio
+    async def test_remove_file(
+        self, sync_service: SyncService, temp_docs_dir: Path, mock_qdrant_service
+    ) -> None:
+        """Test file removal."""
+        # Create test file path
+        test_file_path = temp_docs_dir / "test.md"
+        
+        # Mock docs_path
+        sync_service.docs_path = temp_docs_dir
+        
+        # Execute removal
+        await sync_service.remove_file(str(test_file_path))
+        
+        # Verify document was deleted from Qdrant
+        mock_qdrant_service.delete_document.assert_called_once_with("test.md")
 
     @pytest.mark.asyncio
     async def test_get_sync_status_idle(self, sync_service: SyncService) -> None:

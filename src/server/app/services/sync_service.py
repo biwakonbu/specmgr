@@ -7,6 +7,8 @@ from typing import Any
 
 from app.core.config import settings
 from app.models.api_models import BulkSyncResult, SyncStatus
+from app.services.embedding_service import EmbeddingService
+from app.services.qdrant_service import QdrantService
 
 
 class SyncService:
@@ -14,6 +16,8 @@ class SyncService:
 
     def __init__(self) -> None:
         self.docs_path = Path(settings.documents_path).resolve()
+        self.embedding_service = EmbeddingService()
+        self.qdrant_service = QdrantService()
         self._sync_status: dict[str, Any] = {
             "is_running": False,
             "current": 0,
@@ -41,6 +45,9 @@ class SyncService:
 
         try:
             self._sync_status["is_running"] = True
+
+            # Initialize Qdrant collection
+            await self.qdrant_service.initialize_collection()
 
             # Get Markdown files
             if not self.docs_path.exists():
@@ -110,10 +117,43 @@ class SyncService:
         Args:
             file_path: Target file path for sync
         """
-        # TODO: Actual sync processing (embeddings generation, vector DB storage, etc.)
+        try:
+            # ファイル読み込み
+            with open(file_path, encoding="utf-8") as f:
+                content = f.read()
 
-        # Mock processing - take some time
-        await asyncio.sleep(0.05)
+            # 相対パスを取得
+            relative_path = str(Path(file_path).relative_to(self.docs_path))
+
+            # ベクトル化を実行（APIキーがない場合はダミーベクトルを使用）
+            try:
+                if self.embedding_service.is_available():
+                    # Embedding生成
+                    vector = await self.embedding_service.generate_embedding(content)
+                else:
+                    # APIキーがない場合はダミーベクトルを使用
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"Using dummy vector for {relative_path} (no API key)")
+                    vector = self.embedding_service._get_zero_vector()
+                
+                # Qdrantに保存
+                await self.qdrant_service.store_document(
+                    file_path=relative_path,
+                    content=content,
+                    vector=vector,
+                )
+            except Exception as e:
+                # 保存に失敗した場合はログに記録して続行
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to store document {relative_path}: {e}")
+
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to sync file {file_path}: {e}")
+            raise
 
     async def remove_file(self, file_path: str) -> None:
         """
@@ -122,7 +162,15 @@ class SyncService:
         Args:
             file_path: Target file path for removal
         """
-        # TODO: Actual removal processing (vector DB deletion, etc.)
-
-        # Mock processing - take some time
-        await asyncio.sleep(0.05)
+        try:
+            # 相対パスに変換
+            relative_path = str(Path(file_path).relative_to(self.docs_path))
+            
+            # Qdrantから削除
+            await self.qdrant_service.delete_document(relative_path)
+            
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to remove file {file_path}: {e}")
+            raise

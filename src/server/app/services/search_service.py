@@ -10,6 +10,8 @@ from app.models.api_models import (
     SearchResultMetadata,
     SearchStats,
 )
+from app.services.embedding_service import EmbeddingService
+from app.services.qdrant_service import QdrantService
 
 
 class SearchService:
@@ -17,6 +19,8 @@ class SearchService:
 
     def __init__(self) -> None:
         self.docs_path = Path(settings.documents_path).resolve()
+        self.embedding_service = EmbeddingService()
+        self.qdrant_service = QdrantService()
 
     async def search(
         self,
@@ -39,13 +43,35 @@ class SearchService:
         """
         start_time = time.time()
 
-        # シンプルなテキスト検索を実装（実際の実装では vector search + text search）
-        results = await self._simple_text_search(
+        # ハイブリッド検索: ベクトル検索 + テキスト検索
+        results = []
+        
+        # ベクトル検索を試行（APIキーが設定されている場合）
+        if self.embedding_service.is_available():
+            try:
+                vector_results = await self._vector_search(
+                    query=query,
+                    limit=limit or 10,
+                    score_threshold=score_threshold or 0.5,
+                    file_path=file_path,
+                )
+                results.extend(vector_results)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Vector search failed, falling back to text search: {e}")
+
+        # テキスト検索でフォールバック/補完
+        text_results = await self._simple_text_search(
             query=query,
             limit=limit or 10,
             score_threshold=score_threshold,
             file_path=file_path,
         )
+        
+        # ベクトル検索結果がない場合はテキスト検索結果を使用
+        if not results:
+            results = text_results
 
         processing_time = time.time() - start_time
 
@@ -162,3 +188,71 @@ class SearchService:
         # スコア順にソートして上位を返す
         results.sort(key=lambda x: x.score, reverse=True)
         return results[:limit]
+
+    async def _vector_search(
+        self,
+        query: str,
+        limit: int,
+        score_threshold: float,
+        file_path: str | None,
+    ) -> list[SearchResult]:
+        """
+        ベクトル検索実装.
+
+        Args:
+            query: 検索クエリ
+            limit: 結果の最大数
+            score_threshold: スコア閾値
+            file_path: 特定ファイル
+
+        Returns:
+            検索結果リスト
+        """
+        try:
+            # クエリのembeddingを生成
+            query_vector = await self.embedding_service.generate_embedding(query)
+            
+            # Qdrantで検索
+            qdrant_results = await self.qdrant_service.search_documents(
+                query_vector=query_vector,
+                limit=limit,
+                score_threshold=score_threshold,
+            )
+
+            results = []
+            for idx, result in enumerate(qdrant_results):
+                # ファイルパスフィルタ
+                if file_path and result["path"] != file_path:
+                    continue
+
+                # ファイル情報取得
+                file_full_path = self.docs_path / result["path"]
+                if not file_full_path.exists():
+                    continue
+
+                # スニペット作成（bodyから最初の200文字）
+                content = result["body"] or ""
+                snippet = content[:200] + "..." if len(content) > 200 else content
+
+                search_result = SearchResult(
+                    id=f"vector_{idx}",
+                    content=snippet,
+                    score=result["score"],
+                    metadata=SearchResultMetadata(
+                        filePath=result["path"],
+                        fileName=result["file_name"],
+                        chunkIndex=0,
+                        totalChunks=1,
+                        modified=str(file_full_path.stat().st_mtime),
+                        size=file_full_path.stat().st_size,
+                    ),
+                )
+                results.append(search_result)
+
+            return results
+
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Vector search failed: {e}")
+            return []

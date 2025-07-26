@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import api_router
 from app.services.file_watcher import FileWatcherService
 from app.services.queue_service import QueueService
+from app.services.scheduler_service import SchedulerService
 
 # Load environment variables
 load_dotenv()
@@ -28,11 +29,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     queue_service = QueueService()
     await queue_service.start()
 
+    # Start scheduler service
+    scheduler_service = SchedulerService()
+    await scheduler_service.start()
+
     yield
 
     # Shutdown
     await file_watcher.stop()
     await queue_service.stop()
+    await scheduler_service.stop()
 
 
 def create_app() -> FastAPI:
