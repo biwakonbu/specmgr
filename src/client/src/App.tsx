@@ -98,8 +98,6 @@ function App() {
         >
           {/* Invisible hit area for better UX */}
           <div className="absolute inset-0 w-4" />
-          {/* Visual separator line */}
-          <div className="h-full w-px bg-border group-hover:bg-primary/40 transition-colors" />
         </div>
 
         {/* Center Pane - MarkdownPane */}
@@ -126,8 +124,6 @@ function App() {
         >
           {/* Invisible hit area for better UX */}
           <div className="absolute inset-0 w-4" />
-          {/* Visual separator line */}
-          <div className="h-full w-px bg-border group-hover:bg-primary/40 transition-colors" />
         </div>
 
         {/* Right Pane - ChatPane */}

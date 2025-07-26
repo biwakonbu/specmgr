@@ -76,7 +76,7 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
 
   return (
     <div className="h-full overflow-auto">
-      <div className="max-w-none prose prose-slate dark:prose-invert p-6">
+      <div className="w-full p-6">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeHighlight]}

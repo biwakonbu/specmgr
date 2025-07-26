@@ -1,6 +1,5 @@
 import { Bot, Send, User } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { ScrollArea } from './ui/scroll-area'
@@ -236,10 +235,7 @@ export function ChatPane(_props: ChatPaneProps) {
           {messages.map(message => (
             <div
               key={message.id}
-              className={cn(
-                'flex gap-3',
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              )}
+              className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {message.role === 'assistant' && (
                 <div className="flex-shrink-0">
@@ -250,19 +246,15 @@ export function ChatPane(_props: ChatPaneProps) {
               )}
 
               <div
-                className={cn(
-                  'max-w-[80%] rounded-lg px-3 py-2',
+                className={`max-w-[80%] rounded-lg px-3 py-2 ${
                   message.role === 'user'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-foreground'
-                )}
+                }`}
               >
                 <div className="text-sm whitespace-pre-wrap">{message.content}</div>
                 <div
-                  className={cn(
-                    'text-xs mt-1 opacity-70',
-                    message.role === 'user' ? 'text-right' : 'text-left'
-                  )}
+                  className={`text-xs mt-1 opacity-70 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
                 >
                   {formatTimestamp(message.timestamp)}
                 </div>
