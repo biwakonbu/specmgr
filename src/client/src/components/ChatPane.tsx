@@ -21,7 +21,7 @@ export function ChatPane(_props: ChatPaneProps) {
       id: '1',
       role: 'assistant',
       content:
-        'こんにちは！私はあなたのドキュメンテーションのアシスタントです。プロジェクトのアーキテクチャ、API、技術仕様について何でもお尋ねください。\n\n🔍 **検索モード**: 「/search」で始めるとドキュメント検索を実行\n💬 **チャットモード**: 通常のメッセージでAI対話',
+        'こんにちは！私はあなたのドキュメンテーションのアシスタントです。プロジェクトのアーキテクチャ、API、技術仕様について何でもお尋ねください。\n\n**検索モード**: 「/search」で始めるとドキュメント検索を実行\n**チャットモード**: 通常のメッセージでAI対話',
       timestamp: new Date(Date.now() - 60000),
     },
   ])
@@ -87,7 +87,7 @@ export function ChatPane(_props: ChatPaneProps) {
         )
       )
     } else if (data.type === 'complete') {
-      console.log('🎉 Chat streaming completed')
+      console.log('Chat streaming completed')
     } else if (data.type === 'error') {
       throw new Error(data.error?.message || 'Unknown error')
     }
@@ -118,7 +118,7 @@ export function ChatPane(_props: ChatPaneProps) {
             const isDone = processStreamData(data, assistantMessageId)
             if (isDone) return
           } catch (parseError) {
-            console.error('❌ Failed to parse SSE data:', parseError)
+            console.error('Failed to parse SSE data:', parseError)
           }
         }
       }
@@ -135,7 +135,7 @@ export function ChatPane(_props: ChatPaneProps) {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `🔍 **検索結果**: "${query}"\n\n見つかった結果: ${searchResponse.totalResults}件 (処理時間: ${searchResponse.processingTime.toFixed(3)}秒)\n\n${
+        content: `**検索結果**: "${query}"\n\n見つかった結果: ${searchResponse.totalResults}件 (処理時間: ${searchResponse.processingTime.toFixed(3)}秒)\n\n${
           searchResponse.results.length === 0
             ? '関連するドキュメントが見つかりませんでした。別のキーワードで検索してみてください。'
             : searchResponse.results
@@ -151,11 +151,11 @@ export function ChatPane(_props: ChatPaneProps) {
 
       setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
-      console.error('❌ Search failed:', error)
+      console.error('Search failed:', error)
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `❌ 検索エラー: ${error instanceof Error ? error.message : '検索に失敗しました。'}`,
+        content: `検索エラー: ${error instanceof Error ? error.message : '検索に失敗しました。'}`,
         timestamp: new Date(),
       }
       setMessages(prev => [...prev, errorMessage])
@@ -178,7 +178,7 @@ export function ChatPane(_props: ChatPaneProps) {
           await handleSearchRequest(query)
         } else {
           const errorMessage = createAssistantMessage()
-          errorMessage.content = '❌ 検索クエリを入力してください。例: /search API仕様'
+          errorMessage.content = '検索クエリを入力してください。例: /search API仕様'
           setMessages(prev => [...prev, errorMessage])
         }
         return
@@ -191,7 +191,7 @@ export function ChatPane(_props: ChatPaneProps) {
       const response = await sendChatRequest(userMessage)
       await handleStreamResponse(response, assistantMessage.id)
     } catch (error) {
-      console.error('❌ Request failed:', error)
+      console.error('Request failed:', error)
       setMessages(prev =>
         prev.map(msg =>
           msg.id === prev[prev.length - 1]?.id
