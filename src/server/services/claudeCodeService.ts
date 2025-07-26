@@ -27,6 +27,7 @@ export interface SearchContext {
 
 export class ClaudeCodeService {
   private textSearchService: TextSearchService
+  private systemPrompt: string
 
   constructor(watchDirectory?: string) {
     this.textSearchService = new TextSearchService(watchDirectory)
