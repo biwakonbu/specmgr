@@ -215,50 +215,37 @@ function MermaidDiagram({ chart }: { chart: string }) {
               edges.forEach(edge => {
                 const pathElement = edge as SVGPathElement
 
-                // Set up flowing light effect
+                // Set up flowing light effect with golden tint
                 pathElement.style.strokeDasharray = '4 2'
                 pathElement.style.animation = 'flowingLight 3s ease-in-out infinite'
-                pathElement.style.stroke = '#81a1c1'
+                pathElement.style.stroke = '#b8986d' // Golden-tinted blue
                 pathElement.style.strokeWidth = '2'
+                pathElement.style.filter = 'drop-shadow(0 0 2px rgba(184, 152, 109, 0.3))'
 
-                // Add hover glow effect
+                // Add hover glow effect with stronger golden glow
                 pathElement.addEventListener('mouseenter', () => {
                   pathElement.style.animation =
                     'edgeGlow 1.5s ease-in-out infinite, flowingLight 1.5s ease-in-out infinite'
                   pathElement.style.strokeWidth = '3'
-                  pathElement.style.stroke = '#88c0d0'
+                  pathElement.style.stroke = '#d4af37' // More golden on hover
+                  pathElement.style.filter = 'drop-shadow(0 0 6px rgba(212, 175, 55, 0.6))'
                 })
 
                 pathElement.addEventListener('mouseleave', () => {
                   pathElement.style.animation = 'flowingLight 3s ease-in-out infinite'
                   pathElement.style.strokeWidth = '2'
-                  pathElement.style.stroke = '#81a1c1'
+                  pathElement.style.stroke = '#b8986d'
+                  pathElement.style.filter = 'drop-shadow(0 0 2px rgba(184, 152, 109, 0.3))'
                 })
               })
 
-              // Apply subtle breathing to nodes
+              // Apply subtle breathing to nodes only (no hover effects)
               const nodes = svgElement.querySelectorAll(
                 '.node rect, .node circle, .node ellipse, .flowchart-node'
               )
               nodes.forEach(node => {
                 const nodeElement = node as SVGElement
                 nodeElement.style.animation = 'nodeBreath 4s ease-in-out infinite'
-
-                // Enhanced hover interaction
-                nodeElement.addEventListener('mouseenter', () => {
-                  nodeElement.style.animation = 'none'
-                  nodeElement.style.filter =
-                    'drop-shadow(0 0 12px rgba(94, 129, 172, 0.8)) brightness(1.1)'
-                  nodeElement.style.transform = 'scale(1.02)'
-                  nodeElement.style.transformOrigin = 'center'
-                  nodeElement.style.transition = 'all 0.2s ease-out'
-                })
-
-                nodeElement.addEventListener('mouseleave', () => {
-                  nodeElement.style.animation = 'nodeBreath 4s ease-in-out infinite'
-                  nodeElement.style.filter = ''
-                  nodeElement.style.transform = 'scale(1)'
-                })
               })
 
               // Add arrow head glow animation
