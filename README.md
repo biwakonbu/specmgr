@@ -1,0 +1,2 @@
+# specmgr
+specification management system
