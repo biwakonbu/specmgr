@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
+import remarkMermaid from 'remark-mermaidjs'
 import { apiClient } from '../services/api'
 
 interface MarkdownPaneProps {
@@ -18,21 +19,100 @@ function MermaidDiagram({ chart }: { chart: string }) {
       if (elementRef.current && chart) {
         try {
           const mermaid = (await import('mermaid')).default
-
-          // Initialize mermaid with dark theme
+          // Initialize mermaid with Nord Dark theme
           mermaid.initialize({
             startOnLoad: false,
             theme: 'dark',
             themeVariables: {
-              primaryColor: '#81a1c1',
-              primaryTextColor: '#d8dee9',
-              primaryBorderColor: '#5e81ac',
-              lineColor: '#4c566a',
-              sectionBkgColor: '#3b4252',
-              altSectionBkgColor: '#2e3440',
-              gridColor: '#4c566a',
-              secondaryColor: '#88c0d0',
-              tertiaryColor: '#8fbcbb',
+              // Nord Color Palette
+              primaryColor: '#5e81ac', // Nord10 (Blue)
+              primaryTextColor: '#eceff4', // Nord6 (Light)
+              primaryBorderColor: '#81a1c1', // Nord9 (Light Blue)
+              lineColor: '#4c566a', // Nord3 (Dark Gray)
+              secondaryColor: '#88c0d0', // Nord8 (Cyan)
+              tertiaryColor: '#8fbcbb', // Nord7 (Teal)
+
+              // Background colors
+              background: '#2e3440', // Nord0 (Darkest)
+              mainBkg: '#3b4252', // Nord1 (Dark)
+              secondBkg: '#434c5e', // Nord2 (Medium Dark)
+              tertiaryBkg: '#4c566a', // Nord3 (Gray)
+
+              // Section backgrounds
+              sectionBkgColor: '#3b4252', // Nord1
+              altSectionBkgColor: '#434c5e', // Nord2
+
+              // Grid and borders
+              gridColor: '#4c566a', // Nord3
+              edgeLabelBackground: '#3b4252', // Nord1
+
+              // Text colors
+              textColor: '#eceff4', // Nord6 (Light)
+              taskTextColor: '#eceff4', // Nord6
+              activeTaskBkgColor: '#5e81ac', // Nord10
+              activeTaskBorderColor: '#81a1c1', // Nord9
+
+              // Node colors
+              fillType0: '#5e81ac', // Nord10 (Blue)
+              fillType1: '#88c0d0', // Nord8 (Cyan)
+              fillType2: '#8fbcbb', // Nord7 (Teal)
+              fillType3: '#a3be8c', // Nord14 (Green)
+              fillType4: '#ebcb8b', // Nord13 (Yellow)
+              fillType5: '#d08770', // Nord12 (Orange)
+              fillType6: '#bf616a', // Nord11 (Red)
+              fillType7: '#b48ead', // Nord15 (Purple)
+
+              // Additional colors for different diagram types
+              errorBkgColor: '#bf616a', // Nord11 (Red)
+              errorTextColor: '#eceff4', // Nord6
+              taskBkgColor: '#434c5e', // Nord2
+              taskTextOutsideColor: '#eceff4', // Nord6
+              taskTextLightColor: '#2e3440', // Nord0
+              taskTextDarkColor: '#eceff4', // Nord6
+
+              // Gantt chart colors
+              todayLineColor: '#bf616a', // Nord11 (Red)
+
+              // Git graph colors
+              git0: '#5e81ac', // Nord10
+              git1: '#88c0d0', // Nord8
+              git2: '#8fbcbb', // Nord7
+              git3: '#a3be8c', // Nord14
+              git4: '#ebcb8b', // Nord13
+              git5: '#d08770', // Nord12
+              git6: '#bf616a', // Nord11
+              git7: '#b48ead', // Nord15
+
+              // Journey diagram colors
+              personBorder: '#5e81ac', // Nord10
+              taskBorder: '#4c566a', // Nord3
+
+              // State diagram colors
+              stateLabelColor: '#eceff4', // Nord6
+              stateBkg: '#3b4252', // Nord1
+              labelBackgroundColor: '#3b4252', // Nord1
+              compositeBackground: '#434c5e', // Nord2
+              compositeTitleBackground: '#2e3440', // Nord0
+
+              // Sequence diagram colors
+              actorBorder: '#5e81ac', // Nord10
+              actorBkg: '#3b4252', // Nord1
+              actorTextColor: '#eceff4', // Nord6
+              actorLineColor: '#4c566a', // Nord3
+              signalColor: '#eceff4', // Nord6
+              signalTextColor: '#eceff4', // Nord6
+              labelBoxBkgColor: '#3b4252', // Nord1
+              labelBoxBorderColor: '#5e81ac', // Nord10
+              labelTextColor: '#eceff4', // Nord6
+              loopTextColor: '#eceff4', // Nord6
+              noteBorderColor: '#81a1c1', // Nord9
+              noteBkgColor: '#434c5e', // Nord2
+              noteTextColor: '#eceff4', // Nord6
+
+              // Class diagram colors
+              classText: '#eceff4', // Nord6
+
+              // Journey colors already defined above in fillType0-2
             },
           })
 
@@ -131,7 +211,7 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
     <div className="h-full overflow-auto">
       <div className="w-full p-6">
         <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
+          remarkPlugins={[remarkGfm, remarkMermaid]}
           rehypePlugins={[rehypeHighlight]}
           components={{
             h1: ({ children }) => (
@@ -168,6 +248,17 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
                   </code>
                 )
               }
+
+              // Check for various possible mermaid class names
+              const isMermaid =
+                className?.includes('mermaid') ||
+                className?.includes('language-mermaid') ||
+                className === 'mermaid'
+
+              if (isMermaid) {
+                return <MermaidDiagram chart={String(children).replace(/\n$/, '')} />
+              }
+
               return <code className={className}>{children}</code>
             },
             pre: ({ children }) => <pre className="mb-4 mt-6 overflow-x-auto">{children}</pre>,
