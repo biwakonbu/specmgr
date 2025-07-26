@@ -155,7 +155,7 @@ function MermaidDiagram({ chart }: { chart: string }) {
     renderDiagram()
   }, [chart])
 
-  return <div ref={elementRef} className="mermaid-diagram my-4" />
+  return <div ref={elementRef} className="mermaid-diagram my-4 bg-[#2e3440] rounded-lg p-4" />
 }
 
 export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
