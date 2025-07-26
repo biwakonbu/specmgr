@@ -82,61 +82,79 @@ Current Stage: **Project Initialization Phase**
 
 ## Development Commands
 
+**IMPORTANT**: This project uses **pnpm** for workspace management. npm will not work correctly.
+
+### Prerequisites
+- Node.js 18.0.0+
+- pnpm 8.0.0+ (install with: `npm install -g pnpm`)
+- Docker & Docker Compose
+
 ### Setup
 ```bash
-# Install dependencies
-npm install
-cd src/client && npm install
+# Install dependencies (pnpm required)
+pnpm install
 
 # Start Docker services (Redis, Qdrant)
-npm run docker:up
+pnpm docker:up
 
 # Start development servers
-npm run dev
+pnpm dev
 ```
 
 ### Build & Test
 ```bash
 # Build project
-npm run build
+pnpm build
 
-# Run tests
-npm run test
-npm run test:watch
+# Run tests across all workspaces
+pnpm -r test
 
 # Lint and type checking
-npm run lint
-npm run typecheck
+pnpm -r lint
+pnpm -r typecheck
+```
+
+### Workspace Commands
+```bash
+# Frontend only
+pnpm --filter specmgr-client dev
+
+# Backend only
+pnpm --filter specmgr-server dev
+
+# Install workspace-specific dependency
+pnpm --filter specmgr-client add <package>
 ```
 
 ### Docker Management
 ```bash
 # Start services
-npm run docker:up
+pnpm docker:up
 
 # Stop services
-npm run docker:down
+pnpm docker:down
 
 # View logs
-npm run docker:logs
+pnpm docker:logs
 ```
 
 ## Project Structure
 
 ```
-src/
-├── server/           # Backend Node.js/Express application
-│   ├── routes/       # API routes
-│   ├── services/     # Business logic services
-│   ├── workers/      # BullMQ job workers
-│   ├── utils/        # Utility functions
-│   └── types/        # TypeScript type definitions
-├── client/           # React frontend application
-│   └── src/
-│       ├── components/  # React components
-│       ├── hooks/       # Custom React hooks
-│       ├── services/    # API client services
-│       ├── types/       # TypeScript type definitions
-│       └── utils/       # Utility functions
-└── shared/           # Shared types and utilities
+├── src/
+│   ├── client/          # React frontend (pnpm workspace)
+│   │   ├── src/
+│   │   │   ├── components/  # React components
+│   │   │   ├── hooks/       # Custom React hooks
+│   │   │   ├── lib/         # Utility functions
+│   │   │   └── types/       # TypeScript definitions
+│   │   └── package.json     # Client dependencies
+│   ├── server/          # Node.js backend (pnpm workspace)
+│   │   ├── routes/      # API routes
+│   │   ├── services/    # Business logic
+│   │   ├── workers/     # BullMQ job workers
+│   │   └── package.json     # Server dependencies
+│   └── shared/          # Shared utilities and types
+├── pnpm-workspace.yaml  # pnpm workspace configuration
+└── package.json         # Root workspace configuration
 ```
