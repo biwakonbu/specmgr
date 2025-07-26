@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Local DocSearch & Chat Assistant** - A system for managing Git-local Markdown documents with vector search and LLM chat capabilities
 
 ### Documentation References
-- **Technical Stack**: See [techstack.md](./techstack.md) for comprehensive technology selection rationale and architecture decisions
-- **Product Requirements**: See [PRD.md](./PRD.md) for detailed functional and non-functional requirements
+- **Technical Stack**: See @techstack.md for comprehensive technology selection rationale and architecture decisions
+- **Product Requirements**: See @PRD.md for detailed functional and non-functional requirements
 
 ### Architecture
 - **Sync Agent (Node.js)**: Markdown file change monitoring and differential synchronization
