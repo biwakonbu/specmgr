@@ -15,8 +15,10 @@ function MermaidDiagram({ chart }: { chart: string }) {
 
   useEffect(() => {
     const renderDiagram = async () => {
+      console.log('MermaidDiagram: Starting render process, chart:', chart.substring(0, 100))
       if (elementRef.current && chart) {
         try {
+          console.log('MermaidDiagram: Importing mermaid...')
           const mermaid = (await import('mermaid')).default
 
           // Initialize mermaid with Nord Dark theme
@@ -120,8 +122,10 @@ function MermaidDiagram({ chart }: { chart: string }) {
           // Generate unique ID for this diagram
           const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`
 
+          console.log('MermaidDiagram: Rendering with ID:', id)
           // Render the diagram
           const { svg } = await mermaid.render(id, chart)
+          console.log('MermaidDiagram: Render successful, setting innerHTML')
           elementRef.current.innerHTML = svg
         } catch (error) {
           console.error('Mermaid rendering error:', error)
@@ -176,7 +180,7 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
         <div className="text-center">
           <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
           <p className="text-lg font-medium">Select a document to view</p>
-          <p className="text-sm">Choose a markdown file from the document tree</p>
+          <p className="text-[12px]">Choose a markdown file from the document tree</p>
         </div>
       </div>
     )
@@ -199,7 +203,7 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
         <div className="text-center text-destructive">
           <AlertCircle className="mx-auto h-12 w-12 mb-4" />
           <p className="text-lg font-medium">Error loading document</p>
-          <p className="text-sm">{error}</p>
+          <p className="text-[12px]">{error}</p>
         </div>
       </div>
     )
@@ -252,8 +256,8 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
                 )
               }
 
-              // Check for mermaid code blocks
-              if (className === 'language-mermaid' || className?.includes('lang-mermaid')) {
+              // Check for mermaid code blocks (handles both 'language-mermaid' and 'hljs language-mermaid')
+              if (className?.includes('language-mermaid')) {
                 console.log('Mermaid diagram detected! Rendering...')
                 return <MermaidDiagram chart={String(children).replace(/\n$/, '')} />
               }
