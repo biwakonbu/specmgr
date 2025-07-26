@@ -117,11 +117,7 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
               }
               return <code className={className}>{children}</code>
             },
-            pre: ({ children }) => (
-              <pre className="mb-4 mt-6 overflow-x-auto rounded-lg border bg-muted p-4">
-                {children}
-              </pre>
-            ),
+            pre: ({ children }) => <pre className="mb-4 mt-6 overflow-x-auto">{children}</pre>,
           }}
         >
           {content}
