@@ -11,19 +11,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Product Requirements**: See @PRD.md for detailed functional and non-functional requirements
 
 ### Architecture
-- **Sync Agent (Node.js)**: Markdown file change monitoring and differential synchronization
-- **Vector DB (Qdrant)**: Embedding vector search
-- **Queue (Redis/BullMQ)**: Asynchronous job processing with retry functionality
+- **File Watcher (Node.js)**: Markdown file change monitoring with chokidar
+- **Text Search Engine**: Local full-text search with relevance scoring
+- **Claude Code SDK**: Chat functionality with document context
 - **React UI**: Three-pane layout with DocTree, MarkdownPreview, and ChatPane
 
 ### Tech Stack
 - Backend: Node.js + Express + TypeScript
 - Frontend: React + shadcn/ui + Tailwind CSS + react-markdown
-- Queue: Redis + BullMQ 
-- Vector DB: Qdrant
-- Embedding: OpenAI API or OSS alternatives
+- Search: Local text search with scoring algorithms
+- Chat: Claude Code SDK with streaming responses
 - File Watching: chokidar
-- Chat: SSE (Server-Sent Events)
+- Streaming: SSE (Server-Sent Events)
 
 ## Development Guidelines
 
@@ -35,9 +34,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 5. Update manifest only on success
 
 ### UI Layout Specifications
-- Left Pane (20%): DocTree (Radix Tree + shadcn/ui)
-- Center Pane (45%): MarkdownPane (react-markdown)
-- Right Pane (35%): ChatPane (LLM Q&A + SSE)
+- Left Pane (20%): DocTree (Radix Tree + shadcn/ui) - Resizable (10-40%)
+- Center Pane (55%): MarkdownPane (react-markdown) - Auto-adjusts
+- Right Pane (25%): ChatPane (LLM Q&A + SSE) - Resizable (15-50%)
+- Drag handles between panes for user customization
 
 ### CSS-Free Development Approach
 - **shadcn/ui**: Copy-paste components with Tailwind CSS - no custom CSS needed
@@ -56,20 +56,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Milestone Progress
 
-Current Stage: **Project Initialization Phase**
+Current Stage: **🎉 DEVELOPMENT COMPLETE** - Full-Stack RAG System Operational
 
-1. **M1**: Sync Agent + manifest implementation
-2. **M2**: Search API + RAG functionality
-3. **M3**: React UI DocTree/Markdown display
-4. **M4**: ChatPane streaming functionality
-5. **M5**: Backoff and retry monitoring
+1. **M1**: ✅ Sync Agent + manifest + queue implementation (BullMQ + Redis + SHA-1)
+2. **M2**: ✅ Search API + RAG functionality (Qdrant + OpenAI embeddings)
+3. **M3**: ✅ React UI DocTree/Markdown display with resizable panes
+4. **M4**: ✅ ChatPane streaming functionality (SSE + real-time responses)
+5. **M5**: ✅ Backoff and retry monitoring (BullMQ exponential backoff)
 
 ## Implementation Notes
 
-### Synchronization Processing
-- Use chokidar `atomic: true` option
-- Split large Markdown files with max-token limit
-- Implement token limiting for LLM API rate limits
+### Backend Services Architecture
+- **TextSearchService**: Local full-text search with relevance scoring and snippet extraction
+- **ClaudeCodeService**: Claude Code SDK integration for chat with document context
+- **FileService**: File system operations for markdown files
+- **FileWatcher**: Real-time file monitoring with chokidar
+
+### Search Processing
+- **Real-time monitoring**: chokidar file watcher detects changes instantly
+- **Text-based search**: Full-text search with scoring based on:
+  - Exact phrase matches (highest weight)
+  - Filename matches (high weight) 
+  - Header matches (medium weight)
+  - Word matches (standard weight)
+- **Context extraction**: Automatic snippet generation around matches
+- **Relevance scoring**: Normalized 0-1 score with multiple factors
 
 ### Error Handling
 - Exponential backoff retry on BullMQ job failures
@@ -94,10 +105,11 @@ Current Stage: **Project Initialization Phase**
 # Install dependencies (pnpm required)
 pnpm install
 
-# Start Docker services (Redis, Qdrant)
-pnpm docker:up
+# Copy environment configuration (optional)
+cp .env.example .env
+# Edit .env if needed (ANTHROPIC_API_KEY for Claude Code SDK)
 
-# Start development servers
+# Start development servers (no Docker required for basic functionality)
 pnpm dev
 ```
 

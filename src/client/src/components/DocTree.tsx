@@ -1,5 +1,5 @@
+import { ChevronDown, ChevronRight, File, Folder } from 'lucide-react'
 import { useState } from 'react'
-import { ChevronRight, ChevronDown, File, Folder } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface FileNode {
@@ -27,8 +27,12 @@ const mockFileTree: FileNode[] = [
         path: 'docs/architecture',
         children: [
           { name: 'system-design.md', type: 'file', path: 'docs/architecture/system-design.md' },
-          { name: 'database-schema.md', type: 'file', path: 'docs/architecture/database-schema.md' },
-        ]
+          {
+            name: 'database-schema.md',
+            type: 'file',
+            path: 'docs/architecture/database-schema.md',
+          },
+        ],
       },
       {
         name: 'api',
@@ -37,11 +41,11 @@ const mockFileTree: FileNode[] = [
         children: [
           { name: 'endpoints.md', type: 'file', path: 'docs/api/endpoints.md' },
           { name: 'authentication.md', type: 'file', path: 'docs/api/authentication.md' },
-        ]
+        ],
       },
       { name: 'README.md', type: 'file', path: 'docs/README.md' },
       { name: 'getting-started.md', type: 'file', path: 'docs/getting-started.md' },
-    ]
+    ],
   },
   {
     name: 'specs',
@@ -50,8 +54,8 @@ const mockFileTree: FileNode[] = [
     children: [
       { name: 'requirements.md', type: 'file', path: 'specs/requirements.md' },
       { name: 'user-stories.md', type: 'file', path: 'specs/user-stories.md' },
-    ]
-  }
+    ],
+  },
 ]
 
 interface TreeNodeProps {
@@ -77,13 +81,23 @@ function TreeNode({ node, level, onFileSelect, selectedFile }: TreeNodeProps) {
   return (
     <div>
       <div
+        role={node.type === 'folder' ? 'treeitem' : 'treeitem'}
+        aria-expanded={node.type === 'folder' ? isExpanded : undefined}
+        aria-selected={isSelected}
+        tabIndex={0}
         className={cn(
-          "flex items-center gap-1 py-1 px-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm",
-          isSelected && "bg-accent text-accent-foreground",
-          "transition-colors"
+          'flex items-center gap-1 py-1 px-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm',
+          isSelected && 'bg-accent text-accent-foreground',
+          'transition-colors focus:outline-none focus:ring-2 focus:ring-primary'
         )}
         style={{ paddingLeft: `${level * 12 + 8}px` }}
         onClick={handleClick}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            handleClick()
+          }
+        }}
       >
         {node.type === 'folder' && (
           <>
@@ -106,7 +120,7 @@ function TreeNode({ node, level, onFileSelect, selectedFile }: TreeNodeProps) {
 
       {node.type === 'folder' && isExpanded && node.children && (
         <div>
-          {node.children.map((child) => (
+          {node.children.map(child => (
             <TreeNode
               key={child.path}
               node={child}
@@ -128,7 +142,7 @@ export function DocTree({ onFileSelect, selectedFile }: DocTreeProps) {
         <h2 className="text-lg font-semibold">Documents</h2>
       </div>
       <div className="flex-1 overflow-auto p-2">
-        {mockFileTree.map((node) => (
+        {mockFileTree.map(node => (
           <TreeNode
             key={node.path}
             node={node}

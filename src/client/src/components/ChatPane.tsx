@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from 'react'
+import { Bot, Send, User } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { ScrollArea } from './ui/scroll-area'
-import { Send, Bot, User } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 interface Message {
   id: string
@@ -12,16 +12,17 @@ interface Message {
   timestamp: Date
 }
 
-interface ChatPaneProps {}
+type ChatPaneProps = {}
 
-export function ChatPane({}: ChatPaneProps) {
+export function ChatPane(_props: ChatPaneProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: 'Hello! I\'m here to help you with your documentation. Ask me anything about your project, architecture, or API endpoints.',
-      timestamp: new Date(Date.now() - 60000)
-    }
+      content:
+        'こんにちは！私はあなたのドキュメンテーションのアシスタントです。プロジェクトのアーキテクチャ、API、技術仕様について何でもお尋ねください。\n\nベクトル検索を使用してMarkdownファイルから関連情報を見つけ、リアルタイムで回答いたします。',
+      timestamp: new Date(Date.now() - 60000),
+    },
   ])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -31,53 +32,126 @@ export function ChatPane({}: ChatPaneProps) {
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollAreaRef.current) {
-      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') || scrollAreaRef.current
+      const scrollElement =
+        scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]') ||
+        scrollAreaRef.current
       scrollElement.scrollTop = scrollElement.scrollHeight
     }
-  }, [messages])
+  }, [])
+
+  const createUserMessage = (content: string): Message => ({
+    id: Date.now().toString(),
+    role: 'user',
+    content: content.trim(),
+    timestamp: new Date(),
+  })
+
+  const createAssistantMessage = (): Message => ({
+    id: (Date.now() + 1).toString(),
+    role: 'assistant',
+    content: '',
+    timestamp: new Date(),
+  })
+
+  const sendChatRequest = async (userMessage: Message) => {
+    const response = await fetch('/api/chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: userMessage.content,
+        conversationHistory: messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp.toISOString(),
+        })),
+        useRAG: true,
+      }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return response
+  }
+
+  const processStreamData = (
+    data: { type: string; content?: string; error?: { message: string } },
+    assistantMessageId: string
+  ) => {
+    if (data.type === 'chunk') {
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === assistantMessageId ? { ...msg, content: msg.content + data.content } : msg
+        )
+      )
+    } else if (data.type === 'complete') {
+      console.log('🎉 Chat streaming completed')
+    } else if (data.type === 'error') {
+      throw new Error(data.error.message)
+    }
+    return data.type === 'done'
+  }
+
+  const handleStreamResponse = async (response: Response, assistantMessageId: string) => {
+    const reader = response.body?.getReader()
+    if (!reader) {
+      throw new Error('No response body reader available')
+    }
+
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6))
+            const isDone = processStreamData(data, assistantMessageId)
+            if (isDone) return
+          } catch (parseError) {
+            console.error('❌ Failed to parse SSE data:', parseError)
+          }
+        }
+      }
+    }
+  }
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: inputValue.trim(),
-      timestamp: new Date()
-    }
+    const userMessage = createUserMessage(inputValue)
+    const assistantMessage = createAssistantMessage()
 
-    setMessages(prev => [...prev, userMessage])
+    setMessages(prev => [...prev, userMessage, assistantMessage])
     setInputValue('')
     setIsLoading(true)
 
-    // Simulate API call with typing delay
-    setTimeout(() => {
-      // Mock AI responses based on user input
-      let aiResponse = ''
-      const query = userMessage.content.toLowerCase()
-      
-      if (query.includes('install') || query.includes('setup')) {
-        aiResponse = 'To set up the development environment:\n\n1. **Install dependencies**: `npm install`\n2. **Start Docker services**: `npm run docker:up`\n3. **Run development server**: `npm run dev`\n\nMake sure you have Node.js 18+ and Docker installed first. Check the getting-started.md file for detailed instructions.'
-      } else if (query.includes('architecture') || query.includes('design')) {
-        aiResponse = 'The system follows a three-tier architecture:\n\n**Frontend**: React + shadcn/ui for the user interface\n**Backend**: Node.js + Express for the API server\n**Data Layer**: Qdrant for vector storage and Redis for queuing\n\nThe sync agent monitors file changes using chokidar and processes them through BullMQ. See system-design.md for more details.'
-      } else if (query.includes('api') || query.includes('endpoint')) {
-        aiResponse = 'Key API endpoints include:\n\n- `GET /api/files` - List all markdown files\n- `GET /api/files/:path` - Get specific file content\n- `POST /api/search` - Vector search across documents\n- `POST /api/chat` - Send chat messages (SSE stream)\n\nAll endpoints return JSON responses. Check the endpoints.md file for complete documentation.'
-      } else if (query.includes('search') || query.includes('vector')) {
-        aiResponse = 'The search functionality uses:\n\n**Vector Database**: Qdrant for storing embeddings\n**Embeddings**: OpenAI\'s text-embedding-ada-002 model\n**Search Method**: Semantic similarity search with cosine distance\n\nFiles are automatically indexed when changed. The system supports both exact text matching and semantic search.'
-      } else {
-        aiResponse = `I understand you're asking about "${userMessage.content}". I can help you with:\n\n- Project setup and installation\n- System architecture and design\n- API endpoints and usage\n- Search and vector database functionality\n\nCould you be more specific about what you'd like to know?`
-      }
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: aiResponse,
-        timestamp: new Date()
-      }
-
-      setMessages(prev => [...prev, assistantMessage])
+    try {
+      const response = await sendChatRequest(userMessage)
+      await handleStreamResponse(response, assistantMessage.id)
+    } catch (error) {
+      console.error('❌ Chat streaming failed:', error)
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === assistantMessage.id
+            ? {
+                ...msg,
+                content: `エラー: ${error instanceof Error ? error.message : 'チャットの送信に失敗しました。'}`,
+              }
+            : msg
+        )
+      )
+    } finally {
       setIsLoading(false)
-    }, 1500)
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -99,19 +173,17 @@ export function ChatPane({}: ChatPaneProps) {
           <Bot className="h-5 w-5" />
           AI Assistant
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Ask questions about your documentation
-        </p>
+        <p className="text-sm text-muted-foreground mt-1">Ask questions about your documentation</p>
       </div>
 
       {/* Messages */}
       <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
         <div className="space-y-4">
-          {messages.map((message) => (
+          {messages.map(message => (
             <div
               key={message.id}
               className={cn(
-                "flex gap-3",
+                'flex gap-3',
                 message.role === 'user' ? 'justify-end' : 'justify-start'
               )}
             >
@@ -122,21 +194,19 @@ export function ChatPane({}: ChatPaneProps) {
                   </div>
                 </div>
               )}
-              
+
               <div
                 className={cn(
-                  "max-w-[80%] rounded-lg px-3 py-2",
+                  'max-w-[80%] rounded-lg px-3 py-2',
                   message.role === 'user'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-foreground'
                 )}
               >
-                <div className="text-sm whitespace-pre-wrap">
-                  {message.content}
-                </div>
+                <div className="text-sm whitespace-pre-wrap">{message.content}</div>
                 <div
                   className={cn(
-                    "text-xs mt-1 opacity-70",
+                    'text-xs mt-1 opacity-70',
                     message.role === 'user' ? 'text-right' : 'text-left'
                   )}
                 >
@@ -153,7 +223,7 @@ export function ChatPane({}: ChatPaneProps) {
               )}
             </div>
           ))}
-          
+
           {isLoading && (
             <div className="flex gap-3 justify-start">
               <div className="flex-shrink-0">
@@ -182,7 +252,7 @@ export function ChatPane({}: ChatPaneProps) {
           <Input
             ref={inputRef}
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={e => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask about your documentation..."
             disabled={isLoading}

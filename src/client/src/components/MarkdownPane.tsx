@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import rehypeHighlight from 'rehype-highlight'
 import { FileText } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import rehypeHighlight from 'rehype-highlight'
+import remarkGfm from 'remark-gfm'
 
 interface MarkdownPaneProps {
   selectedFile: string | null
@@ -221,7 +221,7 @@ data: {"type": "token", "content": " set"}
 data: {"type": "token", "content": " up"}
 data: {"type": "done"}
 \`\`\`
-`
+`,
 }
 
 export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
@@ -233,7 +233,8 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
       setLoading(true)
       // Simulate API call delay
       setTimeout(() => {
-        const mockContent = mockMarkdownContent[selectedFile] || `# ${selectedFile}\n\nContent not found.`
+        const mockContent =
+          mockMarkdownContent[selectedFile] || `# ${selectedFile}\n\nContent not found.`
         setContent(mockContent)
         setLoading(false)
       }, 300)
@@ -280,19 +281,13 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
                 </h1>
               ),
               h2: ({ children }) => (
-                <h2 className="text-xl font-semibold mb-3 text-foreground mt-6">
-                  {children}
-                </h2>
+                <h2 className="text-xl font-semibold mb-3 text-foreground mt-6">{children}</h2>
               ),
               h3: ({ children }) => (
-                <h3 className="text-lg font-medium mb-2 text-foreground mt-4">
-                  {children}
-                </h3>
+                <h3 className="text-lg font-medium mb-2 text-foreground mt-4">{children}</h3>
               ),
               p: ({ children }) => (
-                <p className="mb-4 text-foreground leading-relaxed">
-                  {children}
-                </p>
+                <p className="mb-4 text-foreground leading-relaxed">{children}</p>
               ),
               code: ({ children, className }) => {
                 const isInline = !className
@@ -303,16 +298,10 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
                     </code>
                   )
                 }
-                return (
-                  <code className={className}>
-                    {children}
-                  </code>
-                )
+                return <code className={className}>{children}</code>
               },
               pre: ({ children }) => (
-                <pre className="bg-muted p-4 rounded-lg overflow-x-auto mb-4">
-                  {children}
-                </pre>
+                <pre className="bg-muted p-4 rounded-lg overflow-x-auto mb-4">{children}</pre>
               ),
               blockquote: ({ children }) => (
                 <blockquote className="border-l-4 border-primary pl-4 italic text-muted-foreground mb-4">
@@ -320,14 +309,10 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
                 </blockquote>
               ),
               ul: ({ children }) => (
-                <ul className="list-disc list-inside mb-4 space-y-1">
-                  {children}
-                </ul>
+                <ul className="list-disc list-inside mb-4 space-y-1">{children}</ul>
               ),
               ol: ({ children }) => (
-                <ol className="list-decimal list-inside mb-4 space-y-1">
-                  {children}
-                </ol>
+                <ol className="list-decimal list-inside mb-4 space-y-1">{children}</ol>
               ),
             }}
           >

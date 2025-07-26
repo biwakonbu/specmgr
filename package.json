@@ -15,22 +15,27 @@
     "start": "pnpm --filter specmgr-server start",
     "test": "pnpm -r test",
     "test:watch": "pnpm -r test --watch",
-    "lint": "pnpm -r lint",
-    "lint:fix": "pnpm -r lint --fix",
+    "lint": "biome lint ./src",
+    "lint:fix": "biome lint --write ./src",
+    "format": "biome format --write ./src",
+    "format:check": "biome format ./src",
+    "check": "biome check ./src",
+    "check:fix": "biome check --write ./src",
     "typecheck": "pnpm -r typecheck",
     "clean": "pnpm -r clean && rm -rf node_modules",
     "reset": "pnpm clean && pnpm install",
+    "prepare": "husky",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
     "docker:clean": "docker-compose down -v --remove-orphans"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.1.2",
     "concurrently": "^8.2.2",
-    "typescript": "^5.3.3",
-    "eslint": "^8.56.0",
-    "@typescript-eslint/eslint-plugin": "^6.16.0",
-    "@typescript-eslint/parser": "^6.16.0"
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=18.0.0",
@@ -58,5 +63,13 @@
   "bugs": {
     "url": "https://github.com/biwakonbu/specmgr/issues"
   },
-  "homepage": "https://github.com/biwakonbu/specmgr#readme"
+  "homepage": "https://github.com/biwakonbu/specmgr#readme",
+  "lint-staged": {
+    "src/**/*.{ts,tsx,js,jsx}": [
+      "biome format --write --no-errors-on-unmatched"
+    ],
+    "src/**/*.json": [
+      "biome format --write --no-errors-on-unmatched"
+    ]
+  }
 }

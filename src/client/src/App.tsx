@@ -1,13 +1,20 @@
-import { useState } from 'react'
+import { Moon, Move3D, Sun } from 'lucide-react'
+import { useCallback, useState } from 'react'
+import { ChatPane } from './components/ChatPane'
 import { DocTree } from './components/DocTree'
 import { MarkdownPane } from './components/MarkdownPane'
-import { ChatPane } from './components/ChatPane'
 import { Button } from './components/ui/button'
-import { Moon, Sun } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip'
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
+
+  // Pane sizes (as percentages)
+  const [leftWidth, setLeftWidth] = useState(20)
+  const [rightWidth, setRightWidth] = useState(25) // Reduced from 35% to 25%
+
+  const centerWidth = 100 - leftWidth - rightWidth
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light'
@@ -15,37 +22,176 @@ function App() {
     document.documentElement.classList.toggle('dark', newTheme === 'dark')
   }
 
+  // Handle left pane resize
+  const handleLeftResize = useCallback(
+    (e: React.MouseEvent) => {
+      const startX = e.clientX
+      const startWidth = leftWidth
+
+      const handleMouseMove = (e: MouseEvent) => {
+        const deltaX = e.clientX - startX
+        const containerWidth = window.innerWidth
+        const deltaPercent = (deltaX / containerWidth) * 100
+        const newWidth = Math.min(Math.max(startWidth + deltaPercent, 10), 40) // Min 10%, Max 40%
+        setLeftWidth(newWidth)
+      }
+
+      const handleMouseUp = () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+        document.body.style.cursor = 'default'
+        document.body.style.userSelect = 'auto'
+      }
+
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+    },
+    [leftWidth]
+  )
+
+  // Handle right pane resize
+  const handleRightResize = useCallback(
+    (e: React.MouseEvent) => {
+      const startX = e.clientX
+      const startWidth = rightWidth
+
+      const handleMouseMove = (e: MouseEvent) => {
+        const deltaX = startX - e.clientX // Inverted for right pane
+        const containerWidth = window.innerWidth
+        const deltaPercent = (deltaX / containerWidth) * 100
+        const newWidth = Math.min(Math.max(startWidth + deltaPercent, 15), 50) // Min 15%, Max 50%
+        setRightWidth(newWidth)
+      }
+
+      const handleMouseUp = () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+        document.body.style.cursor = 'default'
+        document.body.style.userSelect = 'auto'
+      }
+
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+    },
+    [rightWidth]
+  )
+
   return (
-    <div className="flex h-screen bg-background text-foreground">
-      {/* Header */}
-      <div className="absolute top-4 right-4 z-10">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={toggleTheme}
-        >
-          {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-        </Button>
+    <TooltipProvider>
+      <div className="flex h-screen bg-background text-foreground">
+        {/* Header */}
+        <div className="absolute top-4 right-4 z-10">
+          <Button variant="outline" size="icon" onClick={toggleTheme}>
+            {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+          </Button>
+        </div>
+
+        {/* Resizable three-pane layout */}
+        <div className="flex w-full">
+          {/* Left Pane - DocTree */}
+          <div
+            className="border-r border-border flex-shrink-0 relative group"
+            style={{ width: `${leftWidth}%` }}
+          >
+            <DocTree onFileSelect={setSelectedFile} selectedFile={selectedFile} />
+
+            {/* Resize indicator overlay */}
+            <div className="absolute top-4 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+              <div className="bg-primary/10 border border-primary/20 rounded-md px-2 py-1 text-xs text-primary flex items-center gap-1">
+                <Move3D className="h-3 w-3" />
+                Drag to resize
+              </div>
+            </div>
+          </div>
+
+          {/* Left Resize Handle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                role="separator"
+                aria-label="Resize document tree"
+                tabIndex={0}
+                className="w-2 cursor-col-resize flex items-center justify-center group relative"
+                onMouseDown={handleLeftResize}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    // Could add keyboard resize functionality here
+                  }
+                }}
+              >
+                {/* Invisible hit area for better UX */}
+                <div className="absolute inset-0 w-2" />
+                {/* Visual separator line */}
+                <div className="h-full w-px bg-border group-hover:bg-primary/40 transition-colors" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Drag to resize document tree (10-40%)</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Center Pane - MarkdownPane */}
+          <div
+            className="border-r border-border flex-1 relative group"
+            style={{ width: `${centerWidth}%` }}
+          >
+            <MarkdownPane selectedFile={selectedFile} />
+
+            {/* Center pane size indicator */}
+            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+              <div className="bg-secondary/80 border border-border rounded-md px-2 py-1 text-xs text-muted-foreground">
+                {Math.round(centerWidth)}% width
+              </div>
+            </div>
+          </div>
+
+          {/* Right Resize Handle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                role="separator"
+                aria-label="Resize chat pane"
+                tabIndex={0}
+                className="w-2 cursor-col-resize flex items-center justify-center group relative"
+                onMouseDown={handleRightResize}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    // Could add keyboard resize functionality here
+                  }
+                }}
+              >
+                {/* Invisible hit area for better UX */}
+                <div className="absolute inset-0 w-2" />
+                {/* Visual separator line */}
+                <div className="h-full w-px bg-border group-hover:bg-primary/40 transition-colors" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              <p>Drag to resize AI assistant (15-50%)</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Right Pane - ChatPane */}
+          <div className="flex-shrink-0 relative group" style={{ width: `${rightWidth}%` }}>
+            <ChatPane />
+
+            {/* Resize indicator overlay */}
+            <div className="absolute top-4 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+              <div className="bg-primary/10 border border-primary/20 rounded-md px-2 py-1 text-xs text-primary flex items-center gap-1">
+                <Move3D className="h-3 w-3" />
+                Drag to resize
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* Three-pane layout */}
-      <div className="flex w-full">
-        {/* Left Pane - DocTree (20%) */}
-        <div className="w-1/5 border-r border-border">
-          <DocTree onFileSelect={setSelectedFile} selectedFile={selectedFile} />
-        </div>
-
-        {/* Center Pane - MarkdownPane (45%) */}
-        <div className="w-[45%] border-r border-border">
-          <MarkdownPane selectedFile={selectedFile} />
-        </div>
-
-        {/* Right Pane - ChatPane (35%) */}
-        <div className="w-[35%]">
-          <ChatPane />
-        </div>
-      </div>
-    </div>
+    </TooltipProvider>
   )
 }
 
