@@ -230,6 +230,9 @@ Trigger bulk synchronization.
 }
 ```
 
+**Parameters**:
+- `force` (boolean): When `false` (default), performs differential sync using manifest. When `true`, forces full re-sync of all files.
+
 **Response**:
 ```json
 {
@@ -237,12 +240,43 @@ Trigger bulk synchronization.
   "data": {
     "success": true,
     "totalFiles": 42,
-    "processedFiles": 38,
+    "processedFiles": 3,
     "totalChunks": 156,
-    "processingTime": 12.345,
-    "errors": [
-      "Failed to process docs/broken.md: file not found"
-    ]
+    "processingTime": 1.234,
+    "errors": []
+  },
+  "timestamp": "2025-01-26T10:00:00Z"
+}
+```
+
+**Note**: With differential sync, `processedFiles` will be much lower than `totalFiles` when only a few files have changed, resulting in significant performance improvement.
+
+#### `GET /api/sync/manifest/stats`
+Get manifest statistics and health information.
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "totalFiles": 42,
+    "lastUpdated": "2025-01-26T10:00:00Z",
+    "manifestExists": true,
+    "manifestSize": 2048
+  },
+  "timestamp": "2025-01-26T10:00:00Z"
+}
+```
+
+#### `DELETE /api/sync/manifest`
+Clear the manifest file to force full re-sync on next operation.
+
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Manifest cleared successfully"
   },
   "timestamp": "2025-01-26T10:00:00Z"
 }
@@ -333,12 +367,25 @@ Get current sync status.
   - `check_text_search()`: Verify search functionality
 
 #### SyncService
-- **Purpose**: Document synchronization and manifest management
-- **Dependencies**: FileService, EmbeddingService, QdrantService
+- **Purpose**: Document synchronization with differential sync and manifest management
+- **Dependencies**: FileService, EmbeddingService, QdrantService, ManifestService
 - **Key Methods**:
-  - `bulk_sync()`: Full document synchronization
-  - `sync_file()`: Individual file processing
+  - `execute_bulk_sync(force=False)`: Differential or full document synchronization
+  - `sync_single_file()`: Individual file processing with manifest update
+  - `remove_file()`: File deletion with manifest cleanup
   - `get_sync_status()`: Current sync progress
+  - `_get_current_file_hashes()`: SHA-1 hash calculation for all files
+
+#### ManifestService
+- **Purpose**: SHA-1 based file change tracking and manifest management
+- **Key Methods**:
+  - `get_file_changes()`: Compare current files with manifest (returns added/modified/deleted)
+  - `update_file_in_manifest()`: Update single file hash
+  - `remove_file_from_manifest()`: Remove file from tracking
+  - `load_manifest()`: Load `.specmgr-manifest.json`
+  - `save_manifest()`: Save manifest with timestamp
+  - `clear_manifest()`: Reset manifest for force sync
+  - `get_manifest_stats()`: Manifest statistics and health
 
 ## Configuration
 

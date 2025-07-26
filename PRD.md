@@ -27,10 +27,12 @@
 ## 5. Use Cases (Examples)
 
 1. Engineer wants to check new API specifications → Ask chat for summary without opening files.
-2. Edit and save Markdown → Immediately reflect in search results.
+2. Edit and save Markdown → Immediately reflect in search results (differential sync).
 3. Sync failure (network disconnection) → Confirm recovery through automatic retry.
 4. Share specific document → Copy URL and send to colleague for direct access.
 5. Navigate between documents → Use browser back/forward buttons naturally.
+6. Large codebase with 1000+ docs → Only changed files processed, 97%+ DB load reduction.
+7. System restart after manifest corruption → Auto-recovery with empty manifest fallback.
 
 ## 6. Core Functional Requirements
 
@@ -51,7 +53,7 @@
 
 | Category      | Metrics                               |
 | ------- | -------------------------------- |
-| Performance | Vector search < 1.5s, Text search < 0.5s (95th percentile) |
+| Performance | Vector search < 1.5s, Text search < 0.5s (95th percentile), Differential sync 97%+ DB load reduction |
 | Reliability     | Sync job success rate 99%+ (including automatic retry)        |
 | Security  | Local environment only. External communication only via Claude Code SDK with TLS |
 | Portability     | One-command startup with Docker Compose              |
@@ -61,10 +63,11 @@
 ## 8. Architecture Diagram (Text)
 
 ```
-Markdown (.md) ─▶ Sync Agent (Python) ─▶ Redis Queue ─▶ Qdrant
-                                    │                     ▲
-                                    └──── Search API ─────┘
-React UI (URL Navigation) ◀─── SSE/REST + History API ─────────┘
+Markdown (.md) ─▶ FileWatcher ─▶ ManifestService ─▶ Redis Queue ─▶ Qdrant
+                     │              │ (SHA-1 diff)      │         ▲
+                     │              └─── .specmgr-manifest.json   │
+                     └──────── Search API ─────────────────────────┘
+React UI (URL Navigation) ◀─── SSE/REST + History API ─────────────┘
      │
      ├── DocTree (File Navigation)
      ├── MarkdownPane (Document View)  
@@ -73,11 +76,30 @@ React UI (URL Navigation) ◀─── SSE/REST + History API ──────
 
 ## 9. Synchronization Flow Details
 
-1. watchdog detects `add/change/unlink`
-2. SHA-1 calculation → manifest comparison
-3. Queue only differentials to Redis (attempts=5, exponential back-off)
-4. Worker generates embeddings with Claude Code SDK → Qdrant Upsert/Delete
-5. Update manifest on success
+### 9.1 Differential Sync Process
+1. **File Detection**: watchdog detects `add/change/unlink` events
+2. **Hash Calculation**: Generate SHA-1 for changed files
+3. **Manifest Comparison**: Compare against `.specmgr-manifest.json`
+4. **Change Classification**: Identify added/modified/deleted files
+5. **Selective Queueing**: Queue only differential changes to Redis (97%+ load reduction)
+6. **Processing**: Worker generates embeddings → Qdrant Upsert/Delete (attempts=5, exponential back-off)
+7. **Atomic Update**: Update manifest only after successful processing
+
+### 9.2 Manifest Structure
+```json
+{
+  "files": {
+    "docs/api.md": "a1b2c3d4e5f6...",
+    "docs/guide.md": "f6e5d4c3b2a1..."
+  },
+  "last_updated": "2025-01-26T10:00:00Z"
+}
+```
+
+### 9.3 Performance Optimization
+- **Before**: 100 files → 100 DB operations (every sync)
+- **After**: 3 changed files → 3 DB operations (97% reduction)
+- **Force Sync**: `force=true` bypasses manifest for complete re-indexing
 
 ## 10. UI Requirements
 

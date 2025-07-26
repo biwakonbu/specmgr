@@ -31,12 +31,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Guidelines
 
 ### Synchronization Flow Implementation Principles
-1. Detect Markdown file changes with watchdog (Python)
-2. SHA-1 based manifest for differential detection
-3. Asynchronous processing with Redis queue (auto-retry: 5 times, exponential backoff)
-4. Generate embeddings using Claude Code SDK (requires subscription)
-5. Index documents in both text search and Qdrant vector database
-6. Update manifest only on success
+1. **File Change Detection**: watchdog (Python) monitors Markdown files in real-time
+2. **SHA-1 Manifest System**: `.specmgr-manifest.json` tracks file hashes for differential sync
+3. **Differential Processing**: Only process changed, added, or deleted files (97%+ DB load reduction)
+4. **Asynchronous Queue**: Redis queue with auto-retry (5 attempts, exponential backoff)
+5. **Embedding Generation**: Claude Code SDK for semantic vectors (subscription required)
+6. **Database Indexing**: Store in both Qdrant vector DB and text search index
+7. **Atomic Manifest Updates**: Update manifest only after successful processing
+8. **Force Sync Option**: `force=true` bypasses manifest for full re-sync
 
 ### UI Layout Specifications
 - Left Pane (20%): DocTree (File tree + shadcn/ui) - Resizable (10-40%)
@@ -69,6 +71,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Text search fallback: < 0.5 seconds 
 - Sync job success rate: 99%+
 - Single file change reflection: < 5 seconds (including embedding generation)
+- **Differential sync efficiency**: 97%+ reduction in DB operations for unchanged files
+- **Manifest operations**: < 50ms for file change detection (JSON-based)
 
 ### Security Policy
 - Local environment only operation
@@ -78,9 +82,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Milestone Progress
 
-Current Stage: **🌐 URL NAVIGATION & UI ENHANCEMENT** - Browser-Native Navigation with Enhanced UX
+Current Stage: **📊 MANIFEST OPTIMIZATION** - High-Performance Differential Sync with DB Load Reduction
 
-1. **M1**: ✅ Sync Agent + manifest + queue implementation (Redis + SHA-1)
+1. **M1**: ✅ Sync Agent + manifest + queue implementation (Redis + SHA-1 differential sync)
 2. **M2**: ✅ Search API + RAG functionality (Hybrid search + Claude Code SDK)
 3. **M3**: ✅ React UI DocTree/Markdown display with resizable panes
 4. **M4**: ✅ ChatPane streaming functionality (SSE + real-time responses)
@@ -102,7 +106,8 @@ Current Stage: **🌐 URL NAVIGATION & UI ENHANCEMENT** - Browser-Native Navigat
 - **QueueService**: Redis-based async job processing with retry logic
 - **SchedulerService**: Background task scheduling and management
 - **HealthService**: System health monitoring and status checks
-- **SyncService**: Document synchronization and manifest management
+- **SyncService**: Document synchronization with differential sync and manifest management
+- **ManifestService**: SHA-1 based file change tracking and manifest management
 
 ### Frontend Architecture
 
@@ -156,12 +161,49 @@ Current Stage: **🌐 URL NAVIGATION & UI ENHANCEMENT** - Browser-Native Navigat
 - **Context extraction**: Automatic snippet generation around matches
 - **Relevance scoring**: Normalized 0-1 score with multiple factors
 
+### Manifest-Based Differential Sync System
+
+#### SHA-1 Manifest Implementation
+- **Manifest File**: `.specmgr-manifest.json` in docs directory
+- **File Tracking**: SHA-1 hash of each Markdown file for change detection
+- **JSON Structure**: `{"files": {"path/to/file.md": "sha1hash"}, "last_updated": "ISO8601"}`
+- **Atomic Updates**: Manifest updated only after successful DB operations
+
+#### Differential Sync Process
+1. **Hash Calculation**: Generate SHA-1 for all current Markdown files
+2. **Change Detection**: Compare with manifest to identify:
+   - **Added files**: New files not in manifest
+   - **Modified files**: Files with different SHA-1 hashes
+   - **Deleted files**: Files in manifest but not on filesystem
+3. **Selective Processing**: Only process changed files (97%+ DB load reduction)
+4. **Manifest Update**: Update hashes after successful processing
+
+#### Performance Benefits
+- **Before**: 100 files → 100 DB operations (every sync)
+- **After**: 3 changed files → 3 DB operations (97% reduction)
+- **Manifest Operations**: < 50ms for change detection
+- **Memory Efficient**: Lightweight JSON-based tracking
+
+#### Operational Features
+- **Force Sync**: `force=true` bypasses manifest for complete re-indexing
+- **Corruption Recovery**: Auto-reset to empty manifest on JSON corruption
+- **Statistics**: Manifest size, file count, last update tracking
+- **Clear Function**: Manual manifest reset for troubleshooting
+
+#### FileWatcher Integration
+- **Real-time Updates**: File changes trigger individual manifest updates
+- **Queue Processing**: Changed files processed via Redis queue
+- **Debouncing**: Prevent duplicate processing with 1-second cooldown
+
 ### Error Handling & Quality Assurance
 - **Comprehensive Error Detection**: TypeScript strict mode with comprehensive static analysis
 - **Import/Export Validation**: Circular dependency detection and missing file checks
 - **Real-time Error Monitoring**: TypeScript, Biome lint, and syntax validation
 - **pnpm Workspace Integration**: Multi-package error checking across client and server
 - **Automated Validation Pipeline**: Complete project validation with single commands
+- **Manifest Error Handling**: Graceful recovery from corrupted manifest files
+- **File Hash Failures**: Continue processing with warnings for unreadable files
+- **Atomic Operations**: Rollback manifest updates on sync failures
 - Exponential backoff retry on Redis queue job failures
 - Auto-recovery functionality during network outages
 - Logging and monitoring for sync failures
