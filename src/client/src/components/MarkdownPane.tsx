@@ -1,9 +1,8 @@
 import { FileText, AlertCircle } from 'lucide-react'
-import { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
-import remarkMermaid from 'remark-mermaidjs'
 import { apiClient } from '../services/api'
 
 interface MarkdownPaneProps {
@@ -19,6 +18,7 @@ function MermaidDiagram({ chart }: { chart: string }) {
       if (elementRef.current && chart) {
         try {
           const mermaid = (await import('mermaid')).default
+
           // Initialize mermaid with Nord Dark theme
           mermaid.initialize({
             startOnLoad: false,
@@ -111,8 +111,6 @@ function MermaidDiagram({ chart }: { chart: string }) {
 
               // Class diagram colors
               classText: '#eceff4', // Nord6
-
-              // Journey colors already defined above in fillType0-2
             },
           })
 
@@ -211,7 +209,7 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
     <div className="h-full overflow-auto">
       <div className="w-full p-6">
         <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMermaid]}
+          remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeHighlight]}
           components={{
             h1: ({ children }) => (
@@ -240,28 +238,40 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
               </blockquote>
             ),
             code: ({ children, className }) => {
+              console.log('Code block detected:', {
+                className,
+                children: String(children).substring(0, 50),
+              })
+
               const isInline = !className
               if (isInline) {
                 return (
-                  <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold">
+                  <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-[12px] font-semibold">
                     {children}
                   </code>
                 )
               }
 
-              // Check for various possible mermaid class names
-              const isMermaid =
-                className?.includes('mermaid') ||
-                className?.includes('language-mermaid') ||
-                className === 'mermaid'
-
-              if (isMermaid) {
+              // Check for mermaid code blocks
+              if (className === 'language-mermaid' || className?.includes('lang-mermaid')) {
+                console.log('Mermaid diagram detected! Rendering...')
                 return <MermaidDiagram chart={String(children).replace(/\n$/, '')} />
               }
 
               return <code className={className}>{children}</code>
             },
-            pre: ({ children }) => <pre className="mb-4 mt-6 overflow-x-auto">{children}</pre>,
+            pre: ({ children }) => {
+              // Check if this pre contains a mermaid code block
+              if (
+                React.isValidElement(children) &&
+                children.props?.className === 'language-mermaid'
+              ) {
+                const chartContent = children.props.children
+                return <MermaidDiagram chart={String(chartContent).replace(/\n$/, '')} />
+              }
+
+              return <pre className="mb-4 mt-6 overflow-x-auto text-[12px]">{children}</pre>
+            },
           }}
         >
           {content}

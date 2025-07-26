@@ -303,7 +303,7 @@ export function ChatPane(_props: ChatPaneProps) {
                         const isInline = !className
                         if (isInline) {
                           return (
-                            <code className="relative rounded bg-muted px-1 py-0.5 font-mono text-[11px] font-medium">
+                            <code className="relative rounded bg-muted px-1 py-0.5 font-mono text-[12px] font-medium">
                               {children}
                             </code>
                           )
@@ -311,7 +311,7 @@ export function ChatPane(_props: ChatPaneProps) {
                         return <code className={className}>{children}</code>
                       },
                       pre: ({ children }) => (
-                        <pre className="mb-1.5 mt-1.5 overflow-x-auto rounded bg-muted p-2 text-[11px] leading-tight">
+                        <pre className="mb-1.5 mt-1.5 overflow-x-auto rounded bg-muted p-2 text-[12px] leading-tight">
                           {children}
                         </pre>
                       ),
