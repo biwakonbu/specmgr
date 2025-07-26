@@ -1,4 +1,4 @@
-import { Moon, Move3D, Sun } from 'lucide-react'
+import { Moon, Sun } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { ChatPane } from './components/ChatPane'
 import { DocTree } from './components/DocTree'
@@ -96,14 +96,6 @@ function App() {
           style={{ width: `${leftWidth}%` }}
         >
           <DocTree onFileSelect={setSelectedFile} selectedFile={selectedFile} />
-
-          {/* Resize indicator overlay */}
-          <div className="absolute top-4 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-            <div className="bg-primary/10 border border-primary/20 rounded-md px-2 py-1 text-xs text-primary flex items-center gap-1">
-              <Move3D className="h-3 w-3" />
-              Drag to resize
-            </div>
-          </div>
         </div>
 
         {/* Left Resize Handle */}
@@ -132,13 +124,6 @@ function App() {
           style={{ width: `${centerWidth}%` }}
         >
           <MarkdownPane selectedFile={selectedFile} />
-
-          {/* Center pane size indicator */}
-          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-            <div className="bg-secondary/80 border border-border rounded-md px-2 py-1 text-xs text-muted-foreground">
-              {Math.round(centerWidth)}% width
-            </div>
-          </div>
         </div>
 
         {/* Right Resize Handle */}
@@ -164,14 +149,6 @@ function App() {
         {/* Right Pane - ChatPane */}
         <div className="flex-shrink-0 relative group" style={{ width: `${rightWidth}%` }}>
           <ChatPane />
-
-          {/* Resize indicator overlay */}
-          <div className="absolute top-4 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-            <div className="bg-primary/10 border border-primary/20 rounded-md px-2 py-1 text-xs text-primary flex items-center gap-1">
-              <Move3D className="h-3 w-3" />
-              Drag to resize
-            </div>
-          </div>
         </div>
       </div>
     </div>
