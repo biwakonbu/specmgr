@@ -54,7 +54,9 @@ class TestEmbeddingService:
         mock_anthropic_client.embeddings.create.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_generate_embedding_no_api_key(self, embedding_service_no_key) -> None:
+    async def test_generate_embedding_no_api_key(
+        self, embedding_service_no_key
+    ) -> None:
         """Test embedding generation without API key."""
         text = "This is a test document."
 

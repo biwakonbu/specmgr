@@ -15,7 +15,8 @@
 | ------------------------- | ------------------ |
 | Local PC operation              | Cloud / SaaS deployment |
 | Markdown (`.md`) files     | PDF, Word and other formats    |
-| Qdrant / Redis / Node server | External LLM API cost management   |
+| Qdrant / Redis / Python server | External LLM API cost management   |
+| URL-based navigation | Complex multi-page routing |
 
 ## 4. Target Users / Personas
 
@@ -28,19 +29,23 @@
 1. Engineer wants to check new API specifications → Ask chat for summary without opening files.
 2. Edit and save Markdown → Immediately reflect in search results.
 3. Sync failure (network disconnection) → Confirm recovery through automatic retry.
+4. Share specific document → Copy URL and send to colleague for direct access.
+5. Navigate between documents → Use browser back/forward buttons naturally.
 
 ## 6. Core Functional Requirements
 
 | ID | Requirement                               | Priority    |
 | -- | -------------------------------- | ------ |
-| F1 | Markdown change detection (chokidar)         | High   |
+| F1 | Markdown change detection (watchdog)         | High   |
 | F2 | SHA-1 manifest differential comparison                 | High   |
 | F3 | Embedding generation (Claude Code SDK)     | High   |
 | F4 | Upsert/Delete to Qdrant          | High   |
-| F5 | Job & retry with BullMQ             | Medium |
+| F5 | Job & retry with Redis queue             | Medium |
 | F6 | React UI: DocTree / MarkdownPane | High   |
 | F7 | React UI: ChatPane + SSE         | High   |
-| F8 | Source line highlighting (optional)                   | Low    |
+| F8 | URL-based navigation with History API | High |
+| F9 | Compact chat UI with optimized sizing | Medium |
+| F10 | Source line highlighting (optional)                   | Low    |
 
 ## 7. Non-Functional Requirements
 
@@ -50,21 +55,27 @@
 | Reliability     | Sync job success rate 99%+ (including automatic retry)        |
 | Security  | Local environment only. External communication only via Claude Code SDK with TLS |
 | Portability     | One-command startup with Docker Compose              |
+| Navigation | URL state change < 100ms, browser back/forward support |
+| UI Responsiveness | Chat message render < 200ms, compact design for space efficiency |
 
 ## 8. Architecture Diagram (Text)
 
 ```
-Markdown (.md) ─▶ Sync Agent (Node) ─▶ Redis/BullMQ ─▶ Qdrant
-                                 │                        ▲
-                                 └───── Search API ───────┘
-React UI (DocTree / Chat) ◀──── SSE/REST ────────────────────┘
+Markdown (.md) ─▶ Sync Agent (Python) ─▶ Redis Queue ─▶ Qdrant
+                                    │                     ▲
+                                    └──── Search API ─────┘
+React UI (URL Navigation) ◀─── SSE/REST + History API ─────────┘
+     │
+     ├── DocTree (File Navigation)
+     ├── MarkdownPane (Document View)  
+     └── ChatPane (AI Assistant)
 ```
 
 ## 9. Synchronization Flow Details
 
-1. chokidar detects `add/change/unlink`
+1. watchdog detects `add/change/unlink`
 2. SHA-1 calculation → manifest comparison
-3. Queue only differentials to BullMQ (attempts=5, exponential back-off)
+3. Queue only differentials to Redis (attempts=5, exponential back-off)
 4. Worker generates embeddings with Claude Code SDK → Qdrant Upsert/Delete
 5. Update manifest on success
 
@@ -74,15 +85,24 @@ React UI (DocTree / Chat) ◀──── SSE/REST ─────────�
 
 | Area   | Width   | Content                            |
 | ---- | --- | ----------------------------- |
-| Left Pane | 20% | DocTree (MUI TreeView)        |
-| Center   | 45% | MarkdownPane (react-markdown) |
-| Right Pane | 35% | ChatPane (LLM Q&A)            |
+| Left Pane | 20% | DocTree (shadcn/ui TreeView)        |
+| Center   | 55% | MarkdownPane (react-markdown) |
+| Right Pane | 25% | ChatPane (LLM Q&A)            |
 
-### 10.2 Chat Specifications
+### 10.2 Navigation Specifications
 
-- Token stream display with SSE (0.1s buffer)
-- User input → `/chat` POST (JSON)
-- Claude Code SDK generates RAG
+- **URL Integration**: File selection preserved in URL (`?file=path/to/doc.md`)
+- **Browser Navigation**: Back/forward buttons work naturally
+- **State Synchronization**: Automatic sync between URL and app state
+- **Sharing**: Direct file access via URL sharing
+
+### 10.3 Chat Specifications
+
+- **Compact Design**: 12px base font, 8x8px avatars, 98% message width
+- **Token Stream**: Display with SSE (0.1s buffer)
+- **User Input**: `/chat` POST (JSON)
+- **RAG Generation**: Claude Code SDK with document context
+- **Layout**: Stacked avatar/role above message content for better space utilization
 
 ## 11. KPIs / Metrics
 
@@ -91,6 +111,8 @@ React UI (DocTree / Chat) ◀──── SSE/REST ─────────�
 | Initial full sync time     | < 60s (10k lines) |
 | Single file change reflection  | < 5s (including embedding generation) |
 | RAG accuracy rate (@5) | > 80%         |
+| URL navigation response time | < 100ms |
+| Chat message render time | < 200ms |
 
 ## 12. Milestones
 
@@ -101,6 +123,8 @@ React UI (DocTree / Chat) ◀──── SSE/REST ─────────�
 | M3   | React UI DocTree/Markdown | Document browsing available       |
 | M4   | ChatPane streaming            | Integrated chat fully operational        |
 | M5   | Backoff & retry monitoring            | Pass 30-minute error injection test |
+| M6   | URL-based navigation | Browser back/forward works, URLs shareable |
+| M7   | Chat UI optimization | Compact design with optimal space usage |
 
 ## 13. Risks & Countermeasures
 
@@ -108,16 +132,22 @@ React UI (DocTree / Chat) ◀──── SSE/REST ─────────�
 | -------------- | ----------------------------------- |
 | Claude Code SDK rate limiting | Implement token limits in embedding queue, fallback to text search |
 | Large Markdown files   | Re-split for max-token and above / operate with text search only |
-| chokidar monitoring limit | `atomic: true` / `cwd` filtering         |
+| watchdog monitoring limit | Event filtering / pattern matching |
+| URL state conflicts | Proper encoding/decoding and state validation |
+| Browser history pollution | Smart history state management with replaceState |
 
 ## 14. Future Extensions (Out-of-Scope)
 
 - Integration with external LLM clients through MCP tooling
 - PDF generation, Docusaurus site auto-build
 - GUI for Docker Desktop (Electron)
+- Multi-tab document viewing
+- Advanced URL routing with nested paths
+- PWA (Progressive Web App) capabilities
 
 ---
 
 *Update History*
 
 - 2025-07-26  Initial version created
+- 2025-01-26  Added URL navigation, chat UI optimization, and updated architecture

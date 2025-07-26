@@ -141,7 +141,12 @@ function MermaidDiagram({ chart }: { chart: string }) {
             // Enhanced configuration for better visual experience
             flowchart: {
               htmlLabels: true,
-              curve: 'basis', // Smooth curves for elegant flow
+              curve: 'basis',
+              useMaxWidth: true,
+              defaultRenderer: 'elk', // Use ELK for better edge alignment
+              nodeSpacing: 80,
+              rankSpacing: 100,
+              diagramPadding: 30,
             },
             sequence: {
               diagramMarginX: 50,
@@ -168,16 +173,23 @@ function MermaidDiagram({ chart }: { chart: string }) {
           // Generate unique ID for this diagram
           const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`
 
-          // Pre-inject CSS animations before rendering
-          if (!document.getElementById('mermaid-animations')) {
-            const style = document.createElement('style')
-            style.id = 'mermaid-animations'
-            style.textContent = `
+          // ALWAYS pre-inject CSS to prevent color flash
+          const existingStyles = document.getElementById('mermaid-animations')
+          if (existingStyles) {
+            existingStyles.remove()
+          }
+          
+          const style = document.createElement('style')
+          style.id = 'mermaid-animations'
+          style.textContent = `
               /* Flowing light animation along edges */
               @keyframes flowingLight {
-                0% { stroke-dashoffset: 20; opacity: 0.6; }
-                50% { opacity: 1; }
-                100% { stroke-dashoffset: 0; opacity: 0.6; }
+                from { 
+                  stroke-dashoffset: 10;
+                }
+                to { 
+                  stroke-dashoffset: 0;
+                }
               }
               
               /* Pulsing glow effect for edges */
@@ -210,6 +222,9 @@ function MermaidDiagram({ chart }: { chart: string }) {
                 filter: drop-shadow(0 0 2px rgba(184, 152, 109, 0.3)) !important;
                 animation: flowingLight 3s ease-in-out infinite !important;
                 transition: all 0.3s ease-in-out !important;
+                /* Ensure clean grid-style connections */
+                stroke-linecap: round !important;
+                stroke-linejoin: round !important;
               }
 
               .mermaid-diagram svg path.edge-path:hover,
@@ -298,41 +313,15 @@ function MermaidDiagram({ chart }: { chart: string }) {
                 /* This will be dynamically injected */
               }
 
-              /* Group/Cluster background styling with elegant gradients */
+              /* Group/Cluster basic styling - no fill to allow individual colors */
               .mermaid-diagram svg .cluster rect {
-                fill: linear-gradient(135deg, rgba(59, 66, 82, 0.15), rgba(67, 76, 94, 0.25)) !important;
-                stroke: rgba(129, 161, 193, 0.3) !important;
                 stroke-width: 1.5 !important;
                 rx: 8 !important;
                 ry: 8 !important;
                 filter: drop-shadow(0 2px 8px rgba(46, 52, 64, 0.3)) !important;
               }
 
-              /* Different group background colors */
-              .mermaid-diagram svg .cluster:nth-child(1) rect {
-                fill: rgba(94, 129, 172, 0.08) !important; /* Nord10 - Blue tint */
-                stroke: rgba(94, 129, 172, 0.3) !important;
-              }
-              
-              .mermaid-diagram svg .cluster:nth-child(2) rect {
-                fill: rgba(136, 192, 208, 0.08) !important; /* Nord8 - Cyan tint */
-                stroke: rgba(136, 192, 208, 0.3) !important;
-              }
-              
-              .mermaid-diagram svg .cluster:nth-child(3) rect {
-                fill: rgba(143, 188, 187, 0.08) !important; /* Nord7 - Teal tint */
-                stroke: rgba(143, 188, 187, 0.3) !important;
-              }
-              
-              .mermaid-diagram svg .cluster:nth-child(4) rect {
-                fill: rgba(163, 190, 140, 0.08) !important; /* Nord14 - Green tint */
-                stroke: rgba(163, 190, 140, 0.3) !important;
-              }
-
-              .mermaid-diagram svg .cluster:nth-child(5) rect {
-                fill: rgba(235, 203, 139, 0.08) !important; /* Nord13 - Yellow tint */
-                stroke: rgba(235, 203, 139, 0.3) !important;
-              }
+              /* Dynamic group coloring - will be applied via JavaScript */
 
               /* Node type-based styling with semantic colors */
               .mermaid-diagram svg .node rect {
@@ -354,7 +343,20 @@ function MermaidDiagram({ chart }: { chart: string }) {
               .mermaid-diagram svg .node[id*="UI"] rect,
               .mermaid-diagram svg .node[id*="React"] rect,
               .mermaid-diagram svg .node[id*="Frontend"] rect,
-              .mermaid-diagram svg .node[id*="Client"] rect {
+              .mermaid-diagram svg .node[id*="Client"] rect,
+              .mermaid-diagram svg .node[id*="DT"] rect,
+              .mermaid-diagram svg .node[id*="DocTree"] rect,
+              .mermaid-diagram svg .node[id*="MP"] rect,
+              .mermaid-diagram svg .node[id*="MarkdownPane"] rect,
+              .mermaid-diagram svg .node[id*="CP"] rect,
+              .mermaid-diagram svg .node[id*="ChatPane"] rect,
+              .mermaid-diagram svg .node[id*="App"] rect,
+              .mermaid-diagram svg .node[id*="DevClient"] rect,
+              .mermaid-diagram svg .node[id*="Vite"] rect,
+              .mermaid-diagram svg .node[id*="Tailwind"] rect,
+              .mermaid-diagram svg .node[id*="ShadcnUI"] rect,
+              .mermaid-diagram svg .node[id*="ReactMD"] rect,
+              .mermaid-diagram svg .node[id*="Mermaid"] rect {
                 fill: rgba(94, 129, 172, 0.15) !important; /* Nord10 */
                 stroke: #5e81ac !important;
               }
@@ -363,7 +365,16 @@ function MermaidDiagram({ chart }: { chart: string }) {
               .mermaid-diagram svg .node[id*="API"] rect,
               .mermaid-diagram svg .node[id*="Server"] rect,
               .mermaid-diagram svg .node[id*="Backend"] rect,
-              .mermaid-diagram svg .node[id*="FastAPI"] rect {
+              .mermaid-diagram svg .node[id*="FastAPI"] rect,
+              .mermaid-diagram svg .node[id*="Routes"] rect,
+              .mermaid-diagram svg .node[id*="FileAPI"] rect,
+              .mermaid-diagram svg .node[id*="SearchAPI"] rect,
+              .mermaid-diagram svg .node[id*="ChatAPI"] rect,
+              .mermaid-diagram svg .node[id*="SyncAPI"] rect,
+              .mermaid-diagram svg .node[id*="DevServer"] rect,
+              .mermaid-diagram svg .node[id*="Uvicorn"] rect,
+              .mermaid-diagram svg .node[id*="Pydantic"] rect,
+              .mermaid-diagram svg .node[id*="AsyncIO"] rect {
                 fill: rgba(136, 192, 208, 0.15) !important; /* Nord8 */
                 stroke: #88c0d0 !important;
               }
@@ -371,7 +382,21 @@ function MermaidDiagram({ chart }: { chart: string }) {
               /* Service/Business logic nodes - Teal theme */
               .mermaid-diagram svg .node[id*="Service"] rect,
               .mermaid-diagram svg .node[id*="Business"] rect,
-              .mermaid-diagram svg .node[id*="Logic"] rect {
+              .mermaid-diagram svg .node[id*="Logic"] rect,
+              .mermaid-diagram svg .node[id*="FS"] rect,
+              .mermaid-diagram svg .node[id*="SS"] rect,
+              .mermaid-diagram svg .node[id*="CS"] rect,
+              .mermaid-diagram svg .node[id*="SYS"] rect,
+              .mermaid-diagram svg .node[id*="FW"] rect,
+              .mermaid-diagram svg .node[id*="FileService"] rect,
+              .mermaid-diagram svg .node[id*="SearchService"] rect,
+              .mermaid-diagram svg .node[id*="ChatService"] rect,
+              .mermaid-diagram svg .node[id*="SyncService"] rect,
+              .mermaid-diagram svg .node[id*="QueueService"] rect,
+              .mermaid-diagram svg .node[id*="FileWatcher"] rect,
+              .mermaid-diagram svg .node[id*="TextSearch"] rect,
+              .mermaid-diagram svg .node[id*="Watcher"] rect,
+              .mermaid-diagram svg .node[id*="Watchdog"] rect {
                 fill: rgba(143, 188, 187, 0.15) !important; /* Nord7 */
                 stroke: #8fbcbb !important;
               }
@@ -381,7 +406,21 @@ function MermaidDiagram({ chart }: { chart: string }) {
               .mermaid-diagram svg .node[id*="Database"] rect,
               .mermaid-diagram svg .node[id*="Storage"] rect,
               .mermaid-diagram svg .node[id*="Qdrant"] rect,
-              .mermaid-diagram svg .node[id*="Redis"] rect {
+              .mermaid-diagram svg .node[id*="Redis"] rect,
+              .mermaid-diagram svg .node[id*="QD"] rect,
+              .mermaid-diagram svg .node[id*="RD"] rect,
+              .mermaid-diagram svg .node[id*="MD"] rect,
+              .mermaid-diagram svg .node[id*="MF"] rect,
+              .mermaid-diagram svg .node[id*="Vector"] rect,
+              .mermaid-diagram svg .node[id*="Queue"] rect,
+              .mermaid-diagram svg .node[id*="RedisQueue"] rect,
+              .mermaid-diagram svg .node[id*="QdrantDB"] rect,
+              .mermaid-diagram svg .node[id*="DevRedis"] rect,
+              .mermaid-diagram svg .node[id*="DevQdrant"] rect,
+              .mermaid-diagram svg .node[id*="Files"] rect,
+              .mermaid-diagram svg .node[id*="Docs"] rect,
+              .mermaid-diagram svg .node[id*="Manifest"] rect,
+              .mermaid-diagram svg .node[id*="Env"] rect {
                 fill: rgba(163, 190, 140, 0.15) !important; /* Nord14 */
                 stroke: #a3be8c !important;
               }
@@ -391,15 +430,35 @@ function MermaidDiagram({ chart }: { chart: string }) {
               .mermaid-diagram svg .node[id*="Claude"] rect,
               .mermaid-diagram svg .node[id*="AI"] rect,
               .mermaid-diagram svg .node[id*="LLM"] rect,
-              .mermaid-diagram svg .node[id*="Voyage"] rect {
+              .mermaid-diagram svg .node[id*="Voyage"] rect,
+              .mermaid-diagram svg .node[id*="CC"] rect,
+              .mermaid-diagram svg .node[id*="VA"] rect,
+              .mermaid-diagram svg .node[id*="ClaudeSDK"] rect,
+              .mermaid-diagram svg .node[id*="VoyageAI"] rect,
+              .mermaid-diagram svg .node[id*="SSE"] rect {
                 fill: rgba(208, 135, 112, 0.15) !important; /* Nord12 */
                 stroke: #d08770 !important;
               }
 
-              /* Critical/Error nodes - Red theme */
+              /* Development/Tools nodes - Yellow theme */
+              .mermaid-diagram svg .node[id*="Docker"] rect,
+              .mermaid-diagram svg .node[id*="Compose"] rect,
+              .mermaid-diagram svg .node[id*="Python"] rect,
+              .mermaid-diagram svg .node[id*="NodeJS"] rect,
+              .mermaid-diagram svg .node[id*="pnpm"] rect,
+              .mermaid-diagram svg .node[id*="UV"] rect {
+                fill: rgba(235, 203, 139, 0.15) !important; /* Nord13 */
+                stroke: #ebcb8b !important;
+              }
+
+              /* Security nodes - Red theme */
               .mermaid-diagram svg .node[id*="Error"] rect,
               .mermaid-diagram svg .node[id*="Critical"] rect,
-              .mermaid-diagram svg .node[id*="Alert"] rect {
+              .mermaid-diagram svg .node[id*="Alert"] rect,
+              .mermaid-diagram svg .node[id*="TLS"] rect,
+              .mermaid-diagram svg .node[id*="ENV"] rect,
+              .mermaid-diagram svg .node[id*="CORS"] rect,
+              .mermaid-diagram svg .node[id*="Rate"] rect {
                 fill: rgba(191, 97, 106, 0.15) !important; /* Nord11 */
                 stroke: #bf616a !important;
               }
@@ -407,7 +466,6 @@ function MermaidDiagram({ chart }: { chart: string }) {
               /* Special/Advanced nodes - Purple theme */
               .mermaid-diagram svg .node[id*="Special"] rect,
               .mermaid-diagram svg .node[id*="Advanced"] rect,
-              .mermaid-diagram svg .node[id*="Queue"] rect,
               .mermaid-diagram svg .node[id*="Worker"] rect {
                 fill: rgba(180, 142, 173, 0.15) !important; /* Nord15 */
                 stroke: #b48ead !important;
@@ -586,6 +644,35 @@ function MermaidDiagram({ chart }: { chart: string }) {
                 stroke-width: 1.5 !important;
                 animation: flowingLight 4s ease-in-out infinite !important;
               }
+              
+              /* === NOTE TEXT STYLING === */
+              
+              /* Note labels in diagrams */
+              .mermaid-diagram svg .noteText {
+                fill: #d8dee9 !important; /* Nord4 */
+                font-size: 14px !important;
+                font-style: italic !important;
+                opacity: 0.9 !important;
+              }
+              
+              .mermaid-diagram svg .note {
+                fill: rgba(67, 76, 94, 0.3) !important; /* Nord2 */
+                stroke: #4c566a !important;
+                stroke-width: 1 !important;
+                rx: 6 !important;
+                ry: 6 !important;
+              }
+              
+              /* Make all text more readable */
+              .mermaid-diagram svg text {
+                fill: #e5e9f0 !important; /* Nord5 */
+                font-weight: 500 !important;
+              }
+              
+              .mermaid-diagram svg .nodeLabel {
+                fill: #eceff4 !important; /* Nord6 */
+                font-weight: 600 !important;
+              }
 
               /* === PIE CHART STYLING === */
               
@@ -624,17 +711,25 @@ function MermaidDiagram({ chart }: { chart: string }) {
                 stroke-width: 4 !important;
               }
             `
-            document.head.appendChild(style)
-          }
+          document.head.appendChild(style)
 
           // Render the diagram with pre-styled CSS
           const { svg } = await mermaid.render(id, chart)
+          
+          // Temporarily hide to prevent color flash during styling
+          elementRef.current.style.visibility = 'hidden'
           elementRef.current.innerHTML = svg
 
           // Add dynamic edge coloring based on node relationships
           const addDynamicEdgeColoring = () => {
             const svgElement = elementRef.current?.querySelector('svg')
             if (!svgElement) return
+            
+            // Detect diagram type based on SVG content
+            const hasFlowchartElements = svgElement.querySelector('.flowchart-link') !== null
+            const hasSequenceElements = svgElement.querySelector('.actor, .messageLine0, .messageLine1') !== null
+            
+            // console.log(`Diagram type detection: flowchart=${hasFlowchartElements}, sequence=${hasSequenceElements}`)
 
             // Create gradient definitions for cross-layer connections
             const defs =
@@ -660,7 +755,7 @@ function MermaidDiagram({ chart }: { chart: string }) {
             // Get all nodes and edges for relationship analysis
             const nodes = svgElement.querySelectorAll('.node')
             const edges = svgElement.querySelectorAll(
-              'path.edge-path, .edgePath path, .flowchart-link'
+              'path.edge-path, .edgePath path, path.flowchart-link'
             )
 
             // Create node type mapping
@@ -722,66 +817,396 @@ function MermaidDiagram({ chart }: { chart: string }) {
               nodeTypes.set(nodeId, type)
             })
 
-            // Apply dynamic edge coloring
-            edges.forEach(edge => {
-              const edgeElement = edge as SVGPathElement
-
-              // Try to determine edge relationship from class names or data attributes
-              const edgeClasses = edgeElement.className.baseVal || ''
-              const edgeId = edgeElement.id || ''
-
-              // Color based on edge context
-              if (
-                edgeClasses.includes('Frontend') ||
-                edgeId.includes('Frontend') ||
-                edgeClasses.includes('UI')
-              ) {
-                edgeElement.style.stroke = '#6b8db5' // Blue-Cyan blend
-                edgeElement.style.filter = 'drop-shadow(0 0 3px rgba(107, 141, 181, 0.4))'
-              } else if (
-                edgeClasses.includes('Backend') ||
-                edgeId.includes('API') ||
-                edgeClasses.includes('Server')
-              ) {
-                edgeElement.style.stroke = '#8bc0d2' // Cyan-Teal blend
-                edgeElement.style.filter = 'drop-shadow(0 0 3px rgba(139, 192, 210, 0.4))'
-              } else if (edgeClasses.includes('Service') || edgeId.includes('Service')) {
-                edgeElement.style.stroke = '#97bb9e' // Teal-Green blend
-                edgeElement.style.filter = 'drop-shadow(0 0 3px rgba(151, 187, 158, 0.4))'
-              } else if (
-                edgeClasses.includes('Database') ||
-                edgeId.includes('DB') ||
-                edgeClasses.includes('Storage')
-              ) {
-                edgeElement.style.stroke = '#a3be8c' // Nord14 Green
-                edgeElement.style.filter = 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))'
-              } else if (
-                edgeClasses.includes('External') ||
-                edgeId.includes('Claude') ||
-                edgeClasses.includes('AI')
-              ) {
-                edgeElement.style.stroke = '#d08770' // Nord12 Orange
-                edgeElement.style.strokeWidth = '2.5'
-                edgeElement.style.filter = 'drop-shadow(0 0 4px rgba(208, 135, 112, 0.6))'
-                edgeElement.style.animation = 'flowingLight 2s ease-in-out infinite'
-              } else if (edgeClasses.includes('Critical') || edgeId.includes('Error')) {
-                edgeElement.style.stroke = '#bf616a' // Nord11 Red
-                edgeElement.style.strokeWidth = '3'
-                edgeElement.style.filter = 'drop-shadow(0 0 5px rgba(191, 97, 106, 0.7))'
-                edgeElement.style.animation = 'edgeGlow 1s ease-in-out infinite'
-              } else if (edgeClasses.includes('Queue') || edgeId.includes('Worker')) {
-                edgeElement.style.stroke = '#b48ead' // Nord15 Purple
-                edgeElement.style.strokeDasharray = '6 3'
-                edgeElement.style.filter = 'drop-shadow(0 0 3px rgba(180, 142, 173, 0.5))'
+            // Apply edge coloring based on CSS class names (LS-source LE-target pattern)
+            const applyClassBasedEdgeColors = () => {
+              // Check if this is a flowchart (has LS-/LE- pattern edges)
+              const isFlowchart = Array.from(edges).some(edge => {
+                const className = (edge as SVGElement).className.baseVal || ''
+                return className.includes('LS-') && className.includes('LE-')
+              })
+              
+              // Only apply class-based coloring to flowcharts
+              if (!isFlowchart) {
+                // console.log('🎨 Not a flowchart, skipping class-based edge coloring')
+                return
               }
-            })
+              
+              // console.log('🎨 New Approach: CSS class-based edge coloring...')
+              // console.log(`🎨 Total edges found: ${edges.length}`)
+              
+              // If no edges found with initial selectors, return early
+              if (edges.length === 0) {
+                // console.log('🎨 No flowchart edges found')
+                return
+              }
+              
+              // Define node type to color mapping based on semantic analysis
+              const nodeTypeColors = {
+                // Frontend components - Blue theme
+                'UI': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' }, // Nord10 Blue
+                'DT': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'MP': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'CP': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'DocTree': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'MarkdownPane': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'ChatPane': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'App': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'React': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'Vite': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'Tailwind': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'ShadcnUI': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'ReactMD': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'Mermaid': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'MermaidDiagram': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'Client': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                'DevClient': { stroke: '#5e81ac', filter: 'drop-shadow(0 0 3px rgba(94, 129, 172, 0.5))' },
+                
+                // Backend API layer - Cyan theme  
+                'API': { stroke: '#88c0d0', filter: 'drop-shadow(0 0 3px rgba(136, 192, 208, 0.5))' }, // Nord8 Cyan
+                'FastAPI': { stroke: '#88c0d0', filter: 'drop-shadow(0 0 3px rgba(136, 192, 208, 0.5))' },
+                'Routes': { stroke: '#88c0d0', filter: 'drop-shadow(0 0 3px rgba(136, 192, 208, 0.5))' },
+                'Middleware': { stroke: '#88c0d0', filter: 'drop-shadow(0 0 3px rgba(136, 192, 208, 0.5))' },
+                'FileAPI': { stroke: '#88c0d0', filter: 'drop-shadow(0 0 3px rgba(136, 192, 208, 0.5))' },
+                'SearchAPI': { stroke: '#88c0d0', filter: 'drop-shadow(0 0 3px rgba(136, 192, 208, 0.5))' },
+                'ChatAPI': { stroke: '#88c0d0', filter: 'drop-shadow(0 0 3px rgba(136, 192, 208, 0.5))' },
+                'SyncAPI': { stroke: '#88c0d0', filter: 'drop-shadow(0 0 3px rgba(136, 192, 208, 0.5))' },
+                'Server': { stroke: '#88c0d0', filter: 'drop-shadow(0 0 3px rgba(136, 192, 208, 0.5))' },
+                'DevServer': { stroke: '#88c0d0', filter: 'drop-shadow(0 0 3px rgba(136, 192, 208, 0.5))' },
+                'Uvicorn': { stroke: '#88c0d0', filter: 'drop-shadow(0 0 3px rgba(136, 192, 208, 0.5))' },
+                'Pydantic': { stroke: '#88c0d0', filter: 'drop-shadow(0 0 3px rgba(136, 192, 208, 0.5))' },
+                'AsyncIO': { stroke: '#88c0d0', filter: 'drop-shadow(0 0 3px rgba(136, 192, 208, 0.5))' },
+                
+                // Services layer - Teal theme
+                'FS': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' }, // Nord7 Teal
+                'SS': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' },
+                'CS': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' },
+                'SYS': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' },
+                'FW': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' },
+                'FileService': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' },
+                'SearchService': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' },
+                'ChatService': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' },
+                'SyncService': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' },
+                'QueueService': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' },
+                'Search': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' },
+                'TextSearch': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' },
+                'Watcher': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' },
+                'Watchdog': { stroke: '#8fbcbb', filter: 'drop-shadow(0 0 3px rgba(143, 188, 187, 0.5))' },
+                
+                // Database/Storage - Green theme
+                'QD': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' }, // Nord14 Green
+                'RD': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'MD': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'MF': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'Qdrant': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'Redis': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'Queue': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'RedisQueue': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'QdrantDB': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'DevRedis': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'DevQdrant': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'Vector': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'Files': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'Docs': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'Manifest': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'Env': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                'DB': { stroke: '#a3be8c', filter: 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))' },
+                
+                // External APIs - Orange theme
+                'CC': { stroke: '#d08770', filter: 'drop-shadow(0 0 3px rgba(208, 135, 112, 0.5))' }, // Nord12 Orange
+                'VA': { stroke: '#d08770', filter: 'drop-shadow(0 0 3px rgba(208, 135, 112, 0.5))' },
+                'Claude': { stroke: '#d08770', filter: 'drop-shadow(0 0 3px rgba(208, 135, 112, 0.5))' },
+                'ClaudeSDK': { stroke: '#d08770', filter: 'drop-shadow(0 0 3px rgba(208, 135, 112, 0.5))' },
+                'Voyage': { stroke: '#d08770', filter: 'drop-shadow(0 0 3px rgba(208, 135, 112, 0.5))' },
+                'VoyageAI': { stroke: '#d08770', filter: 'drop-shadow(0 0 3px rgba(208, 135, 112, 0.5))' },
+                'LLM': { stroke: '#d08770', filter: 'drop-shadow(0 0 3px rgba(208, 135, 112, 0.5))' },
+                'SSE': { stroke: '#d08770', filter: 'drop-shadow(0 0 3px rgba(208, 135, 112, 0.5))' },
+                
+                // Development/Tools - Yellow theme
+                'Docker': { stroke: '#ebcb8b', filter: 'drop-shadow(0 0 3px rgba(235, 203, 139, 0.5))' }, // Nord13 Yellow
+                'Compose': { stroke: '#ebcb8b', filter: 'drop-shadow(0 0 3px rgba(235, 203, 139, 0.5))' },
+                'Python': { stroke: '#ebcb8b', filter: 'drop-shadow(0 0 3px rgba(235, 203, 139, 0.5))' },
+                'NodeJS': { stroke: '#ebcb8b', filter: 'drop-shadow(0 0 3px rgba(235, 203, 139, 0.5))' },
+                'pnpm': { stroke: '#ebcb8b', filter: 'drop-shadow(0 0 3px rgba(235, 203, 139, 0.5))' },
+                'UV': { stroke: '#ebcb8b', filter: 'drop-shadow(0 0 3px rgba(235, 203, 139, 0.5))' },
+                
+                // Security - Red theme
+                'TLS': { stroke: '#bf616a', filter: 'drop-shadow(0 0 3px rgba(191, 97, 106, 0.5))' }, // Nord11 Red
+                'ENV': { stroke: '#bf616a', filter: 'drop-shadow(0 0 3px rgba(191, 97, 106, 0.5))' },
+                'CORS': { stroke: '#bf616a', filter: 'drop-shadow(0 0 3px rgba(191, 97, 106, 0.5))' },
+                'Rate': { stroke: '#bf616a', filter: 'drop-shadow(0 0 3px rgba(191, 97, 106, 0.5))' },
+                
+                // Infrastructure/Monitoring - Purple theme
+                'FileWatcher': { stroke: '#b48ead', filter: 'drop-shadow(0 0 3px rgba(180, 142, 173, 0.5))' }, // Nord15 Purple
+              }
+              
+              let successfulMappings = 0
+              
+              edges.forEach((edge) => {
+                const edgeElement = edge as SVGPathElement
+                const edgeClasses = edgeElement.className.baseVal || ''
+                // console.log(`🎨 Edge ${edgeIndex}: classes="${edgeClasses}"`)
+                
+                // Extract source node from LS-source pattern
+                const sourceMatch = edgeClasses.match(/LS-(\w+)/)
+                if (sourceMatch) {
+                  const sourceNode = sourceMatch[1]
+                  // console.log(`🎨 Found source node: ${sourceNode}`)
+                  
+                  // Apply color based on source node type
+                  const color = nodeTypeColors[sourceNode as keyof typeof nodeTypeColors]
+                  if (color) {
+                    edgeElement.style.setProperty('stroke', color.stroke, 'important')
+                    edgeElement.style.setProperty('filter', color.filter, 'important')
+                    edgeElement.style.setProperty('stroke-width', '1.8', 'important')
+                    // console.log(`✅ Applied ${sourceNode} color (${color.stroke}) to edge`)
+                    successfulMappings++
+                  } else {
+                    // Fallback to golden color for unknown types
+                    edgeElement.style.setProperty('stroke', '#b8986d', 'important')
+                    edgeElement.style.setProperty('filter', 'drop-shadow(0 0 2px rgba(184, 152, 109, 0.3))', 'important')
+                    edgeElement.style.setProperty('stroke-width', '1.8', 'important')
+                    // console.log(`⚠️ Applied fallback color for unknown source: ${sourceNode}`)
+                  }
+                } else {
+                  // No source found, use default golden
+                  edgeElement.style.setProperty('stroke', '#b8986d', 'important')
+                  edgeElement.style.setProperty('filter', 'drop-shadow(0 0 2px rgba(184, 152, 109, 0.3))', 'important')
+                  edgeElement.style.setProperty('stroke-width', '1.8', 'important')
+                  // console.log(`⚠️ No source pattern found in: ${edgeClasses}`)
+                }
+
+                // Add flowing animation and professional styling
+                edgeElement.style.setProperty('stroke-linecap', 'round', 'important')
+                edgeElement.style.setProperty('stroke-linejoin', 'round', 'important')
+                edgeElement.style.setProperty('stroke-dasharray', '4 6', 'important')
+                edgeElement.style.setProperty('animation', 'flowingLight 0.8s linear infinite', 'important')
+              })
+              
+              // console.log(`🎯 Class-based Summary: Successfully mapped ${successfulMappings}/${edges.length} edges`)
+            }
+
+            // Apply styling based on diagram type
+            if (hasSequenceElements && !hasFlowchartElements) {
+              // Add subtle background to the entire sequence diagram
+              const backgroundRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+              backgroundRect.setAttribute('x', '0')
+              backgroundRect.setAttribute('y', '0')
+              backgroundRect.setAttribute('width', '100%')
+              backgroundRect.setAttribute('height', '100%')
+              backgroundRect.style.fill = 'rgba(46, 52, 64, 0.3)' // Nord0 with low opacity
+              backgroundRect.style.pointerEvents = 'none'
+              svgElement.insertBefore(backgroundRect, svgElement.firstChild)
+              
+              // SEQUENCE DIAGRAM: Apply consistent golden styling for message lines only
+              const messageLines = svgElement.querySelectorAll('path.messageLine0, path.messageLine1, line.messageLine0, line.messageLine1')
+              messageLines.forEach((line) => {
+                const lineElement = line as SVGElement
+                lineElement.style.setProperty('stroke', '#b8986d', 'important') // Consistent golden
+                lineElement.style.setProperty('stroke-width', '1.8', 'important')
+                lineElement.style.setProperty('filter', 'drop-shadow(0 0 3px rgba(184, 152, 109, 0.4))', 'important')
+                lineElement.style.setProperty('animation', 'flowingLight 0.8s linear infinite', 'important')
+              })
+              
+              // Style loop lines separately (the actual loop box borders)
+              const loopLines = svgElement.querySelectorAll('line.loopLine')
+              loopLines.forEach((line) => {
+                const lineElement = line as SVGElement
+                lineElement.style.setProperty('stroke', '#81a1c1', 'important') // Nord9 - Lighter blue
+                lineElement.style.setProperty('stroke-width', '2', 'important')
+                lineElement.style.setProperty('stroke-dasharray', '8, 4', 'important') // Dashed line
+                lineElement.style.setProperty('filter', 'drop-shadow(0 0 3px rgba(129, 161, 193, 0.4))', 'important')
+              })
+              
+              // Style loop label boxes
+              const loopLabelBoxes = svgElement.querySelectorAll('polygon.labelBox')
+              loopLabelBoxes.forEach((box) => {
+                const boxElement = box as SVGElement
+                boxElement.style.setProperty('fill', 'rgba(94, 129, 172, 0.15)', 'important') // Nord10 transparent
+                boxElement.style.setProperty('stroke', '#5e81ac', 'important') // Nord10
+                boxElement.style.setProperty('stroke-width', '1.5', 'important')
+              })
+              
+              // Style loop text
+              const loopTexts = svgElement.querySelectorAll('text.labelText, text.loopText')
+              loopTexts.forEach((text) => {
+                const textElement = text as SVGElement
+                textElement.style.setProperty('fill', '#d8dee9', 'important') // Nord4 - Lighter for better contrast
+              })
+              
+              // Style actor boxes to match the overall design
+              const actorBoxes = svgElement.querySelectorAll('.actor')
+              actorBoxes.forEach((actor) => {
+                const actorElement = actor as SVGRectElement
+                actorElement.style.setProperty('fill', 'rgba(94, 129, 172, 0.08)', 'important') // Nord10 - Very light blue background
+                actorElement.style.setProperty('stroke', '#5e81ac', 'important') // Nord10 - Blue accent
+                actorElement.style.setProperty('stroke-width', '2', 'important')
+                actorElement.style.setProperty('rx', '6', 'important') // More rounded corners
+                actorElement.style.setProperty('ry', '6', 'important')
+                actorElement.style.setProperty('filter', 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4))', 'important')
+              })
+              
+              // Style actor text
+              const actorTexts = svgElement.querySelectorAll('.actor + text, text.actor')
+              actorTexts.forEach((text) => {
+                const textElement = text as SVGTextElement
+                textElement.style.setProperty('fill', '#2e3440', 'important') // Nord0 - Dark text for contrast
+                textElement.style.setProperty('font-weight', '600', 'important')
+              })
+              
+              // Style activation boxes with subtle transparency
+              const activationBoxes = svgElement.querySelectorAll('.activation0, .activation1, .activation2')
+              activationBoxes.forEach((box) => {
+                const boxElement = box as SVGElement
+                boxElement.style.setProperty('fill', 'rgba(136, 192, 208, 0.15)', 'important') // Nord8 slightly more visible
+                boxElement.style.setProperty('stroke', '#88c0d0', 'important') // Nord8
+                boxElement.style.setProperty('stroke-width', '1.5', 'important')
+                boxElement.style.setProperty('filter', 'drop-shadow(0 0 2px rgba(136, 192, 208, 0.3))', 'important')
+              })
+              
+              // console.log('Applied sequence diagram styling')
+            } else if (hasFlowchartElements) {
+              // FLOWCHART: Apply class-based edge coloring
+              applyClassBasedEdgeColors()
+              // console.log('Applied flowchart styling')
+            } else {
+              // OTHER DIAGRAMS: Apply default golden styling to edges only
+              const otherEdges = svgElement.querySelectorAll('path[d]:not([class*="actor"]):not([class*="note"]):not([class*="activation"])')
+              otherEdges.forEach((edge) => {
+                const edgeElement = edge as SVGPathElement
+                // Check if it's likely an edge by looking at the path data
+                const pathData = edgeElement.getAttribute('d') || ''
+                if (pathData.includes('M') && (pathData.includes('L') || pathData.includes('C'))) {
+                  edgeElement.style.setProperty('stroke', '#b8986d', 'important')
+                  edgeElement.style.setProperty('stroke-width', '1.8', 'important')
+                  edgeElement.style.setProperty('filter', 'drop-shadow(0 0 2px rgba(184, 152, 109, 0.3))', 'important')
+                  edgeElement.style.setProperty('animation', 'flowingLight 0.8s linear infinite', 'important')
+                }
+              })
+              // console.log('Applied default styling to other diagram type')
+            }
+
+            // Apply dynamic subgraph coloring (only for flowcharts)
+            const applySubgraphColors = () => {
+              // Only apply subgraph coloring to flowcharts
+              if (!hasFlowchartElements || hasSequenceElements) {
+                return
+              }
+              
+              // Try multiple selectors to find subgraph elements
+              const possibleSelectors = [
+                '.cluster rect',
+                'g[id*="cluster"] rect',
+                'g[class*="cluster"] rect',
+                '.subgraph rect',
+                'g[id*="subgraph"] rect',
+                'rect[class*="cluster"]'
+              ]
+              
+              let clusters: NodeList | null = null
+              for (const selector of possibleSelectors) {
+                clusters = svgElement.querySelectorAll(selector)
+                if (clusters.length > 0) {
+                  console.log(`Found ${clusters.length} clusters with selector: ${selector}`)
+                  break
+                }
+              }
+
+              if (!clusters || clusters.length === 0) {
+                console.log('No cluster elements found, checking all rects...')
+                // Debug: log all rect elements to see what's available
+                const allRects = svgElement.querySelectorAll('rect')
+                allRects.forEach((rect, i) => {
+                  const rectElement = rect as SVGRectElement
+                  const parentElement = rectElement.parentElement
+                  const parentClassName = parentElement && 'className' in parentElement && parentElement.className && typeof parentElement.className === 'object' && 'baseVal' in parentElement.className 
+                    ? (parentElement.className as SVGAnimatedString).baseVal 
+                    : ''
+                  console.log(`Rect ${i}:`, rectElement.className.baseVal, rectElement.id, parentClassName)
+                })
+                return
+              }
+
+              const subgraphColors = [
+                { fill: 'rgba(94, 129, 172, 0.06)', stroke: 'rgba(94, 129, 172, 0.25)' }, // Nord10 Blue
+                { fill: 'rgba(136, 192, 208, 0.06)', stroke: 'rgba(136, 192, 208, 0.25)' }, // Nord8 Cyan
+                { fill: 'rgba(143, 188, 187, 0.06)', stroke: 'rgba(143, 188, 187, 0.25)' }, // Nord7 Teal
+                { fill: 'rgba(163, 190, 140, 0.06)', stroke: 'rgba(163, 190, 140, 0.25)' }, // Nord14 Green
+                { fill: 'rgba(235, 203, 139, 0.06)', stroke: 'rgba(235, 203, 139, 0.25)' }, // Nord13 Yellow
+                { fill: 'rgba(208, 135, 112, 0.06)', stroke: 'rgba(208, 135, 112, 0.25)' }, // Nord12 Orange
+                { fill: 'rgba(180, 142, 173, 0.06)', stroke: 'rgba(180, 142, 173, 0.25)' }, // Nord15 Purple
+              ]
+
+              clusters.forEach((cluster, index) => {
+                const colorIndex = index % subgraphColors.length
+                const colors = subgraphColors[colorIndex]
+                const clusterElement = cluster as SVGElement
+                
+                clusterElement.style.setProperty('fill', colors.fill, 'important')
+                clusterElement.style.setProperty('stroke', colors.stroke, 'important')
+                clusterElement.style.setProperty('stroke-width', '1.5', 'important')
+                
+                console.log(`Applied color ${colorIndex} to cluster ${index}`)
+              })
+            }
+
+            // Apply subgraph coloring immediately
+            applySubgraphColors()
+            
+            // Apply padding to subgraph text and labels
+            const applySubgraphTextPadding = () => {
+              if (!hasFlowchartElements || hasSequenceElements) {
+                return
+              }
+              
+              // Find all subgraph/cluster groups
+              const subgraphs = svgElement.querySelectorAll('g[id*="subgraph"], g[id*="cluster"], .cluster, .subgraph')
+              
+              subgraphs.forEach((subgraph) => {
+                // Find the rect element within the subgraph
+                const rect = subgraph.querySelector('rect')
+                if (rect) {
+                  // Get current dimensions
+                  const currentX = parseFloat(rect.getAttribute('x') || '0')
+                  const currentY = parseFloat(rect.getAttribute('y') || '0')
+                  const currentWidth = parseFloat(rect.getAttribute('width') || '0')
+                  const currentHeight = parseFloat(rect.getAttribute('height') || '0')
+                  
+                  // Add padding by adjusting rect position and size
+                  const padding = 15
+                  rect.setAttribute('x', (currentX - padding).toString())
+                  rect.setAttribute('y', (currentY - padding).toString())
+                  rect.setAttribute('width', (currentWidth + padding * 2).toString())
+                  rect.setAttribute('height', (currentHeight + padding * 2).toString())
+                }
+                
+                // Style the subgraph title text
+                const titleText = subgraph.querySelector('text.cluster-label, text[id*="label"], text')
+                if (titleText) {
+                  const textElement = titleText as SVGTextElement
+                  textElement.style.setProperty('font-weight', '600', 'important')
+                  textElement.style.setProperty('font-size', '14px', 'important')
+                  textElement.style.setProperty('fill', '#d8dee9', 'important') // Nord4
+                  
+                  // Move title text up a bit for better spacing
+                  const currentTextY = parseFloat(textElement.getAttribute('y') || '0')
+                  textElement.setAttribute('y', (currentTextY - 5).toString())
+                }
+              })
+            }
+            
+            applySubgraphTextPadding()
+
           }
 
-          // Apply dynamic coloring after a brief delay
-          setTimeout(addDynamicEdgeColoring, 300)
+          // Apply dynamic coloring immediately to prevent color flash
+          addDynamicEdgeColoring()
+          
+          // Show the diagram after styling is complete
+          elementRef.current.style.visibility = 'visible'
         } catch (error) {
           console.error('Mermaid rendering error:', error)
           if (elementRef.current) {
+            elementRef.current.style.visibility = 'visible'
             elementRef.current.innerHTML = `<div class="text-red-500 p-4 border border-red-300 rounded">
               Error rendering Mermaid diagram: ${error instanceof Error ? error.message : 'Unknown error'}
             </div>`

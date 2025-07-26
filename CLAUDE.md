@@ -11,16 +11,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Product Requirements**: See @PRD.md for detailed functional and non-functional requirements
 
 ### Architecture
-- **File Watcher (Node.js)**: Markdown file change monitoring with chokidar
+- **File Watcher (Python)**: Markdown file change monitoring with watchdog
 - **Text Search Engine**: Local full-text search with relevance scoring
 - **Claude Code SDK**: Chat functionality with document context
-- **React UI**: Three-pane layout with DocTree, MarkdownPreview, and ChatPane
+- **React UI**: Three-pane resizable layout with URL-based navigation
+- **History API Integration**: Browser-native navigation with state persistence
 
 ### Tech Stack
 - Backend: Python + FastAPI + AsyncIO
 - Frontend: React + shadcn/ui + Tailwind CSS + react-markdown
 - Search: Hybrid search system (Local text search + Qdrant vector search)
-- Embeddings: Voyage AI for semantic embeddings (subscription required)
+- Embeddings: Claude Code SDK for semantic embeddings (subscription required)
 - Chat: Claude Code SDK Python for streaming responses (subscription required)
 - Vector Database: Qdrant for semantic search
 - Queue: Redis for async processing
@@ -30,18 +31,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Guidelines
 
 ### Synchronization Flow Implementation Principles
-1. Detect Markdown file changes with chokidar
+1. Detect Markdown file changes with watchdog (Python)
 2. SHA-1 based manifest for differential detection
-3. Asynchronous processing with BullMQ (auto-retry: 5 times, exponential backoff)
+3. Asynchronous processing with Redis queue (auto-retry: 5 times, exponential backoff)
 4. Generate embeddings using Claude Code SDK (requires subscription)
 5. Index documents in both text search and Qdrant vector database
 6. Update manifest only on success
 
 ### UI Layout Specifications
-- Left Pane (20%): DocTree (Radix Tree + shadcn/ui) - Resizable (10-40%)
-- Center Pane (55%): MarkdownPane (react-markdown) - Auto-adjusts
+- Left Pane (20%): DocTree (File tree + shadcn/ui) - Resizable (10-40%)
+- Center Pane (55%): MarkdownPane (react-markdown + Enhanced Mermaid) - Auto-adjusts
 - Right Pane (25%): ChatPane (LLM Q&A + SSE) - Resizable (15-50%)
 - Drag handles between panes for user customization
+
+### Enhanced Mermaid Diagram Rendering
+- **Nord Dark Theme**: Complete integration with 140+ color variables
+- **Animated Edges**: Flowing light effects along connection paths
+- **Smart Edge Coloring**: 
+  - Flowcharts: Source node type-based coloring (Frontend=Blue, API=Cyan, Services=Teal, etc.)
+  - Sequence diagrams: Consistent golden edges with distinct actor styling
+  - Automatic fallback for other diagram types
+- **Visual Enhancements**:
+  - Subgraph padding and styling
+  - Professional drop shadows and glow effects
+  - Optimized edge thickness and dash patterns
+  - High-performance animations (0.8s linear infinite)
+- **URL Navigation**: Browser History API integration for file selection state
+- **Chat UI**: Compact design with 12px base font, enlarged 8x8px avatars, 98% message width
 
 ### CSS-Free Development Approach
 - **shadcn/ui**: Copy-paste components with Tailwind CSS - no custom CSS needed
@@ -62,29 +78,69 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Milestone Progress
 
-Current Stage: **🔧 ERROR DETECTION & QUALITY ASSURANCE** - Comprehensive Error Checking System Operational
+Current Stage: **🌐 URL NAVIGATION & UI ENHANCEMENT** - Browser-Native Navigation with Enhanced UX
 
-1. **M1**: ✅ Sync Agent + manifest + queue implementation (BullMQ + Redis + SHA-1)
+1. **M1**: ✅ Sync Agent + manifest + queue implementation (Redis + SHA-1)
 2. **M2**: ✅ Search API + RAG functionality (Hybrid search + Claude Code SDK)
 3. **M3**: ✅ React UI DocTree/Markdown display with resizable panes
 4. **M4**: ✅ ChatPane streaming functionality (SSE + real-time responses)
-5. **M5**: ✅ Backoff and retry monitoring (BullMQ exponential backoff)
+5. **M5**: ✅ Backoff and retry monitoring (Redis exponential backoff)
 6. **M6**: ✅ Comprehensive error detection system with TypeScript strict mode
-7. **M7**: 🔄 TypeScript compilation error fixes (in progress)
+7. **M7**: ✅ TypeScript compilation and lint error resolution
+8. **M8**: ✅ URL-based navigation with History API integration
+9. **M9**: ✅ Chat UI optimization (compact design, improved spacing)
 
 ## Implementation Notes
 
 ### Backend Services Architecture
-- **TextSearchService**: Local full-text search with relevance scoring and snippet extraction
+- **SearchService**: Hybrid search service combining vector and text search with intelligent fallback
+- **ChatService**: Claude Code SDK chat service with streaming responses and RAG context
+- **FileService**: File system operations for markdown files with metadata extraction
 - **EmbeddingService**: Claude Code SDK integration for semantic embeddings (subscription required)
-- **SearchService**: Hybrid search combining text and vector search with intelligent fallback
-- **ChatService**: Claude Code SDK integration for chat with document context (subscription required)
 - **QdrantService**: Vector database operations for semantic search
-- **FileService**: File system operations for markdown files
-- **FileWatcher**: Real-time file monitoring with chokidar
+- **FileWatcherService**: Real-time file monitoring with watchdog (Python)
+- **QueueService**: Redis-based async job processing with retry logic
+- **SchedulerService**: Background task scheduling and management
+- **HealthService**: System health monitoring and status checks
+- **SyncService**: Document synchronization and manifest management
+
+### Frontend Architecture
+
+#### Enhanced Mermaid Diagram Rendering
+- **Nord Dark Theme Integration**: Complete Nord color palette (Nord0-Nord15) with 140+ semantic color variables
+- **Animated Edge Effects**: Flowing light animations on diagram edges with golden accents
+- **Node Type Coloring**: Semantic coloring based on node types (Frontend, Backend, Service, Database, etc.)
+- **Diagram Type Detection**: Conditional styling for flowcharts, sequence diagrams, and other diagram types
+- **CSS-in-JS Implementation**: Runtime style injection without FOUC (Flash of Unstyled Content)
+- **Class-Based Edge Coloring**: Edge colors inherit from source node groups using CSS class patterns (LS-/LE-)
+
+#### React Component Architecture
+- **ChatPane** (`src/client/src/components/ChatPane.tsx`)
+  - SSE-based real-time chat streaming
+  - Markdown rendering with syntax highlighting
+  - Search command integration (`/search`)
+  - Message history management with avatars
+  - Compact UI design (12px base font, 8x8px avatars)
+  
+- **DocTree** (`src/client/src/components/DocTree.tsx`)
+  - Hierarchical file tree visualization
+  - Lazy loading for performance
+  - File metadata display (size, type)
+  - Keyboard navigation support
+  - PATH-based collision prevention
+  
+- **MarkdownPane** (`src/client/src/components/MarkdownPane.tsx`)
+  - Advanced Mermaid diagram support with animations
+  - GitHub Flavored Markdown rendering
+  - Code syntax highlighting
+  - Resizable pane with drag handles
+  - Comprehensive node name mapping for architecture diagrams
+
+#### Custom Hooks
+- **useUrlNavigation**: History API integration for browser-native navigation
 
 ### Search Processing
-- **Real-time monitoring**: chokidar file watcher detects changes instantly
+- **Real-time monitoring**: watchdog file watcher detects changes instantly
 - **Hybrid search system**: 
   - **Primary**: Vector search using Claude Code SDK embeddings (semantic similarity)
   - **Fallback**: Local text search with relevance scoring (keyword matching)
@@ -106,9 +162,16 @@ Current Stage: **🔧 ERROR DETECTION & QUALITY ASSURANCE** - Comprehensive Erro
 - **Real-time Error Monitoring**: TypeScript, Biome lint, and syntax validation
 - **pnpm Workspace Integration**: Multi-package error checking across client and server
 - **Automated Validation Pipeline**: Complete project validation with single commands
-- Exponential backoff retry on BullMQ job failures
+- Exponential backoff retry on Redis queue job failures
 - Auto-recovery functionality during network outages
 - Logging and monitoring for sync failures
+
+### URL Navigation & State Management
+- **History API Integration**: Seamless browser navigation without page reloads
+- **URL State Persistence**: File selection preserved in URL query parameters (`?file=path`)
+- **Browser Navigation**: Back/forward buttons work naturally with file selection
+- **Bookmarkable URLs**: Direct file access via URL sharing
+- **State Synchronization**: Automatic sync between URL state and application state
 
 ### Docker Configuration
 - Design for one-command startup with Docker Compose
@@ -122,8 +185,9 @@ Current Stage: **🔧 ERROR DETECTION & QUALITY ASSURANCE** - Comprehensive Erro
 - Node.js 18.0.0+ (for client)
 - pnpm 8.0.0+ (for client workspace)
 - Docker & Docker Compose
-- **Claude Code SDK Subscription** (required for chat functionality)
-- **Voyage AI API Key** (required for embeddings)
+- **Claude Code SDK Subscription** (required for chat and embedding functionality)
+- Redis (for queue processing)
+- Qdrant (for vector search)
 
 ### Python Environment Setup
 ```bash
@@ -142,8 +206,9 @@ pnpm install
 # Copy environment configuration (REQUIRED)
 cp .env.example .env
 # Edit .env and set:
-# - ANTHROPIC_API_KEY for Claude Code SDK (subscription required)
-# - VOYAGE_API_KEY for Voyage AI embeddings (subscription required)
+# - ANTHROPIC_API_KEY for Claude Code SDK (subscription required for chat and embeddings)
+# - QDRANT_HOST, QDRANT_PORT for vector database connection
+# - REDIS_HOST, REDIS_PORT for queue processing
 
 # Start Docker services (Redis + Qdrant)
 pnpm docker:up
@@ -172,8 +237,10 @@ pnpm typecheck                      # Client type checking
 ```bash
 # Server development
 cd src/server
-uv run python main.py        # Start FastAPI server
-uv run pytest               # Run tests
+uv run python main.py        # Start FastAPI server (http://localhost:3000)
+uv run pytest               # Run all tests (unit/integration/e2e)
+uv run pytest tests/unit/   # Run unit tests only
+uv run pytest tests/integration/  # Run integration tests only
 uv run ruff check           # Lint check
 uv run ruff format          # Format code
 uv run mypy .               # Type checking

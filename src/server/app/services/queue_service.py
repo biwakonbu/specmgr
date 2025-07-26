@@ -100,8 +100,10 @@ class QueueService:
         file_path = job_data["file_path"]
 
         if event_type in ["created", "modified"]:
-            await sync_service.sync_file(file_path)
+            # manifest連携付きの単一ファイル同期
+            await sync_service.sync_single_file(file_path)
         elif event_type == "deleted":
+            # manifestからも削除
             await sync_service.remove_file(file_path)
 
     async def _handle_job_retry(self, job: dict[str, Any], error: str) -> None:

@@ -181,7 +181,9 @@ class TestQdrantService:
         assert exists is False
 
     @pytest.mark.asyncio
-    async def test_get_collection_info(self, qdrant_service, mock_qdrant_client) -> None:
+    async def test_get_collection_info(
+        self, qdrant_service, mock_qdrant_client
+    ) -> None:
         """Test collection info retrieval."""
         # Mock collection info
         mock_info = Mock()

@@ -35,7 +35,9 @@ class TestQdrantIntegration:
         }
 
     @pytest.mark.asyncio
-    async def test_store_and_retrieve_documents(self, qdrant_service, sample_documents) -> None:
+    async def test_store_and_retrieve_documents(
+        self, qdrant_service, sample_documents
+    ) -> None:
         """Test storing and retrieving documents from Qdrant."""
         # Create dummy vectors (since we might not have API key)
         dummy_vector = [0.1] * 1536
