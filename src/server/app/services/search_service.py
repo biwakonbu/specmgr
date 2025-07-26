@@ -51,9 +51,9 @@ class SearchService:
 
         return SearchResponse(
             results=results,
-            totalResults=len(results),
+            total_results=len(results),
             query=query,
-            processingTime=processing_time,
+            processing_time=processing_time,
         )
 
     async def get_stats(self) -> SearchStats:
@@ -83,10 +83,10 @@ class SearchService:
                     continue
 
         return SearchStats(
-            totalFiles=total_files,
-            totalChunks=total_chunks,
-            lastIndexed="2025-01-26T12:00:00Z",  # TODO: Actual last index time
-            indexSize=index_size,
+            total_files=total_files,
+            total_chunks=total_chunks,
+            last_indexed="2025-01-26T12:00:00Z",  # TODO: Actual last index time
+            index_size=index_size,
         )
 
     async def _simple_text_search(

@@ -1,5 +1,5 @@
 import { FileText, AlertCircle } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
@@ -7,6 +7,59 @@ import { apiClient } from '../services/api'
 
 interface MarkdownPaneProps {
   selectedFile: string | null
+}
+
+// Mermaid component for rendering diagrams
+function MermaidDiagram({ chart }: { chart: string }) {
+  const elementRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const renderDiagram = async () => {
+      if (elementRef.current && chart) {
+        try {
+          const mermaid = (await import('mermaid')).default
+
+          // Initialize mermaid with dark theme
+          mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            themeVariables: {
+              primaryColor: '#81a1c1',
+              primaryTextColor: '#d8dee9',
+              primaryBorderColor: '#5e81ac',
+              lineColor: '#4c566a',
+              sectionBkgColor: '#3b4252',
+              altSectionBkgColor: '#2e3440',
+              gridColor: '#4c566a',
+              secondaryColor: '#88c0d0',
+              tertiaryColor: '#8fbcbb',
+            },
+          })
+
+          // Clear previous content
+          elementRef.current.innerHTML = ''
+
+          // Generate unique ID for this diagram
+          const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`
+
+          // Render the diagram
+          const { svg } = await mermaid.render(id, chart)
+          elementRef.current.innerHTML = svg
+        } catch (error) {
+          console.error('Mermaid rendering error:', error)
+          if (elementRef.current) {
+            elementRef.current.innerHTML = `<div class="text-red-500 p-4 border border-red-300 rounded">
+              Error rendering Mermaid diagram: ${error instanceof Error ? error.message : 'Unknown error'}
+            </div>`
+          }
+        }
+      }
+    }
+
+    renderDiagram()
+  }, [chart])
+
+  return <div ref={elementRef} className="mermaid-diagram my-4" />
 }
 
 export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {

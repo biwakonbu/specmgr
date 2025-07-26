@@ -78,10 +78,10 @@ class SyncService:
 
             return BulkSyncResult(
                 success=len(errors) == 0,
-                totalFiles=total_files,
-                processedFiles=processed_files,
-                totalChunks=total_chunks,
-                processingTime=processing_time,
+                total_files=total_files,
+                processed_files=processed_files,
+                total_chunks=total_chunks,
+                processing_time=processing_time,
                 errors=errors,
             )
 
@@ -97,10 +97,10 @@ class SyncService:
             Sync status
         """
         return SyncStatus(
-            isRunning=self._sync_status["is_running"],
+            is_running=self._sync_status["is_running"],
             current=self._sync_status["current"],
             total=self._sync_status["total"],
-            currentFile=self._sync_status["current_file"],
+            current_file=self._sync_status["current_file"],
         )
 
     async def sync_file(self, file_path: str) -> None:

@@ -1,5 +1,6 @@
 """File API endpoint tests."""
 
+from datetime import datetime
 from unittest.mock import Mock, patch
 
 import pytest
@@ -26,16 +27,18 @@ class TestFilesAPI:
                 FileMetadata(
                     name="test.md",
                     path="/docs/test.md",
-                    relativePath="test.md",
+                    relative_path="test.md",
                     directory="/docs",
                     size=1024,
-                    lastModified="2025-01-01T00:00:00Z",
-                    created="2025-01-01T00:00:00Z",
+                    last_modified=datetime.fromisoformat("2025-01-01T00:00:00"),
+                    created=datetime.fromisoformat("2025-01-01T00:00:00"),
                     hash="abc123",
+                    line_count=10,
+                    word_count=50,
                 )
             ],
             directories=[],
-            totalCount=1,
+            total_count=1,
         )
         mock_get_files.return_value = mock_response
 
@@ -56,7 +59,7 @@ class TestFilesAPI:
     ) -> None:
         """Test file list retrieval with parameters."""
         mock_get_files.return_value = FilesResponse(
-            files=[], directories=[], totalCount=0
+            files=[], directories=[], total_count=0
         )
 
         response = client.get(
@@ -86,12 +89,14 @@ class TestFilesAPI:
             metadata=FileMetadata(
                 name="test.md",
                 path="/docs/test.md",
-                relativePath="test.md",
+                relative_path="test.md",
                 directory="/docs",
                 size=15,
-                lastModified="2025-01-01T00:00:00Z",
-                created="2025-01-01T00:00:00Z",
+                last_modified=datetime.fromisoformat("2025-01-01T00:00:00"),
+                created=datetime.fromisoformat("2025-01-01T00:00:00"),
                 hash="abc123",
+                line_count=2,
+                word_count=3,
             ),
         )
         mock_get_content.return_value = mock_content
