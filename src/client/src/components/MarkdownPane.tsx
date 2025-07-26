@@ -55,15 +55,19 @@ function MermaidDiagram({ chart }: { chart: string }) {
               altSectionBkgColor: '#434c5e', // Nord2 (Alt section backgrounds)
               gridColor: '#4c566a', // Nord3 (Grid lines)
 
-              // Node fill colors - Nord palette for variety
-              fillType0: '#5e81ac', // Nord10 (Blue)
-              fillType1: '#88c0d0', // Nord8 (Cyan)
-              fillType2: '#8fbcbb', // Nord7 (Teal)
-              fillType3: '#a3be8c', // Nord14 (Green)
-              fillType4: '#ebcb8b', // Nord13 (Yellow)
-              fillType5: '#d08770', // Nord12 (Orange)
-              fillType6: '#bf616a', // Nord11 (Red)
-              fillType7: '#b48ead', // Nord15 (Purple)
+              // Extended node fill colors - Rich Nord palette variations
+              fillType0: '#5e81ac', // Nord10 (Blue) - Leadership, Technology
+              fillType1: '#88c0d0', // Nord8 (Cyan) - Communication, APIs
+              fillType2: '#8fbcbb', // Nord7 (Teal) - Services, Components
+              fillType3: '#a3be8c', // Nord14 (Green) - Success, Growth
+              fillType4: '#ebcb8b', // Nord13 (Yellow) - Warnings, Highlights
+              fillType5: '#d08770', // Nord12 (Orange) - Processing, Active
+              fillType6: '#bf616a', // Nord11 (Red) - Critical, Errors
+              fillType7: '#b48ead', // Nord15 (Purple) - Special, Advanced
+              fillType8: '#5e81accc', // Nord10 with transparency - Subtle variants
+              fillType9: '#88c0d0cc', // Nord8 with transparency
+              fillType10: '#8fbcbbcc', // Nord7 with transparency
+              fillType11: '#a3be8ccc', // Nord14 with transparency
 
               // Active and highlighted elements
               activeTaskBkgColor: '#5e81ac', // Nord10 (Active task background)
@@ -125,10 +129,36 @@ function MermaidDiagram({ chart }: { chart: string }) {
               titleColor: '#eceff4', // Nord6 (Title text)
               relationColor: '#81a1c1', // Nord9 (Relationship lines)
 
-              // C4 diagram colors
-              c4PersonBorder: '#5e81ac', // Nord10
-              c4SystemBorder: '#88c0d0', // Nord8
-              c4ContainerBorder: '#8fbcbb', // Nord7
+              // C4 diagram colors - Architecture clarity
+              c4PersonBorder: '#5e81ac', // Nord10 (Users)
+              c4SystemBorder: '#88c0d0', // Nord8 (Systems)
+              c4ContainerBorder: '#8fbcbb', // Nord7 (Containers)
+              c4ComponentBorder: '#a3be8c', // Nord14 (Components)
+
+              // Additional enhancements for visual appeal
+              quaternaryColor: '#a3be8c', // Nord14 (Green) - Additional color tier
+            },
+            // Enhanced configuration for better visual experience
+            flowchart: {
+              htmlLabels: true,
+              curve: 'basis', // Smooth curves for elegant flow
+            },
+            sequence: {
+              diagramMarginX: 50,
+              diagramMarginY: 10,
+              actorMargin: 50,
+              width: 150,
+              height: 65,
+              boxMargin: 10,
+              boxTextMargin: 5,
+              noteMargin: 10,
+              messageMargin: 35,
+            },
+            gantt: {
+              gridLineStartPadding: 350,
+              fontSize: 11,
+              sectionFontSize: 24,
+              numberSectionStyles: 4,
             },
           })
 
@@ -141,6 +171,70 @@ function MermaidDiagram({ chart }: { chart: string }) {
           // Render the diagram
           const { svg } = await mermaid.render(id, chart)
           elementRef.current.innerHTML = svg
+
+          // Add elegant animations and interactions
+          const addEnhancedStyling = () => {
+            const svgElement = elementRef.current?.querySelector('svg')
+            if (svgElement) {
+              // Add smooth entrance animation
+              svgElement.style.opacity = '0'
+              svgElement.style.transform = 'scale(0.95)'
+              svgElement.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
+
+              setTimeout(() => {
+                svgElement.style.opacity = '1'
+                svgElement.style.transform = 'scale(1)'
+              }, 100)
+
+              // Add hover animations to nodes and edges
+              const nodes = svgElement.querySelectorAll('.node, .flowchart-node')
+              const edges = svgElement.querySelectorAll('.edgePath, .edge')
+
+              nodes.forEach(node => {
+                const element = node as HTMLElement
+                element.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                element.style.cursor = 'pointer'
+
+                element.addEventListener('mouseenter', () => {
+                  element.style.transform = 'scale(1.05)'
+                  element.style.filter =
+                    'brightness(1.2) drop-shadow(0 4px 12px rgba(94, 129, 172, 0.3))'
+                })
+
+                element.addEventListener('mouseleave', () => {
+                  element.style.transform = 'scale(1)'
+                  element.style.filter =
+                    'brightness(1) drop-shadow(0 2px 8px rgba(94, 129, 172, 0.1))'
+                })
+              })
+
+              edges.forEach(edge => {
+                const element = edge as HTMLElement
+                element.style.transition = 'all 0.3s ease-in-out'
+
+                element.addEventListener('mouseenter', () => {
+                  element.style.filter =
+                    'brightness(1.3) drop-shadow(0 0 8px rgba(129, 161, 193, 0.6))'
+                })
+
+                element.addEventListener('mouseleave', () => {
+                  element.style.filter = 'brightness(1)'
+                })
+              })
+
+              // Add subtle pulse animation to the entire diagram
+              svgElement.addEventListener('mouseenter', () => {
+                svgElement.style.filter = 'drop-shadow(0 8px 32px rgba(94, 129, 172, 0.15))'
+              })
+
+              svgElement.addEventListener('mouseleave', () => {
+                svgElement.style.filter = 'drop-shadow(0 4px 20px rgba(94, 129, 172, 0.1))'
+              })
+            }
+          }
+
+          // Apply styling after a brief delay to ensure SVG is fully rendered
+          setTimeout(addEnhancedStyling, 200)
         } catch (error) {
           console.error('Mermaid rendering error:', error)
           if (elementRef.current) {
@@ -155,7 +249,16 @@ function MermaidDiagram({ chart }: { chart: string }) {
     renderDiagram()
   }, [chart])
 
-  return <div ref={elementRef} className="mermaid-diagram my-4 bg-[#2e3440] rounded-lg p-4" />
+  return (
+    <div
+      ref={elementRef}
+      className="mermaid-diagram my-4 bg-[#2e3440] rounded-lg p-4 transition-all duration-500 hover:bg-[#3b4252] group relative overflow-hidden"
+      style={{
+        boxShadow: '0 4px 20px rgba(94, 129, 172, 0.1), inset 0 1px 0 rgba(236, 239, 244, 0.1)',
+        background: 'linear-gradient(135deg, #2e3440 0%, #343a47 100%)',
+      }}
+    />
+  )
 }
 
 export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
