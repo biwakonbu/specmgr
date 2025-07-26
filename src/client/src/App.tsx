@@ -4,7 +4,6 @@ import { ChatPane } from './components/ChatPane'
 import { DocTree } from './components/DocTree'
 import { MarkdownPane } from './components/MarkdownPane'
 import { Button } from './components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip'
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
@@ -81,117 +80,101 @@ function App() {
   )
 
   return (
-    <TooltipProvider>
-      <div className="flex h-screen bg-background text-foreground">
-        {/* Header */}
-        <div className="absolute top-4 right-4 z-10">
-          <Button variant="outline" size="icon" onClick={toggleTheme}>
-            {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-          </Button>
+    <div className="flex h-screen bg-background text-foreground">
+      {/* Header */}
+      <div className="absolute top-4 right-4 z-10">
+        <Button variant="outline" size="icon" onClick={toggleTheme}>
+          {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+        </Button>
+      </div>
+
+      {/* Resizable three-pane layout */}
+      <div className="flex w-full">
+        {/* Left Pane - DocTree */}
+        <div
+          className="border-r border-border flex-shrink-0 relative group"
+          style={{ width: `${leftWidth}%` }}
+        >
+          <DocTree onFileSelect={setSelectedFile} selectedFile={selectedFile} />
+
+          {/* Resize indicator overlay */}
+          <div className="absolute top-4 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+            <div className="bg-primary/10 border border-primary/20 rounded-md px-2 py-1 text-xs text-primary flex items-center gap-1">
+              <Move3D className="h-3 w-3" />
+              Drag to resize
+            </div>
+          </div>
         </div>
 
-        {/* Resizable three-pane layout */}
-        <div className="flex w-full">
-          {/* Left Pane - DocTree */}
-          <div
-            className="border-r border-border flex-shrink-0 relative group"
-            style={{ width: `${leftWidth}%` }}
-          >
-            <DocTree onFileSelect={setSelectedFile} selectedFile={selectedFile} />
+        {/* Left Resize Handle */}
+        <div
+          role="separator"
+          aria-label="Resize document tree"
+          tabIndex={0}
+          className="w-2 cursor-col-resize flex items-center justify-center group relative"
+          onMouseDown={handleLeftResize}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              // Could add keyboard resize functionality here
+            }
+          }}
+        >
+          {/* Invisible hit area for better UX */}
+          <div className="absolute inset-0 w-2" />
+          {/* Visual separator line */}
+          <div className="h-full w-px bg-border group-hover:bg-primary/40 transition-colors" />
+        </div>
 
-            {/* Resize indicator overlay */}
-            <div className="absolute top-4 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-              <div className="bg-primary/10 border border-primary/20 rounded-md px-2 py-1 text-xs text-primary flex items-center gap-1">
-                <Move3D className="h-3 w-3" />
-                Drag to resize
-              </div>
+        {/* Center Pane - MarkdownPane */}
+        <div
+          className="border-r border-border flex-1 relative group"
+          style={{ width: `${centerWidth}%` }}
+        >
+          <MarkdownPane selectedFile={selectedFile} />
+
+          {/* Center pane size indicator */}
+          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+            <div className="bg-secondary/80 border border-border rounded-md px-2 py-1 text-xs text-muted-foreground">
+              {Math.round(centerWidth)}% width
             </div>
           </div>
+        </div>
 
-          {/* Left Resize Handle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                role="separator"
-                aria-label="Resize document tree"
-                tabIndex={0}
-                className="w-2 cursor-col-resize flex items-center justify-center group relative"
-                onMouseDown={handleLeftResize}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    // Could add keyboard resize functionality here
-                  }
-                }}
-              >
-                {/* Invisible hit area for better UX */}
-                <div className="absolute inset-0 w-2" />
-                {/* Visual separator line */}
-                <div className="h-full w-px bg-border group-hover:bg-primary/40 transition-colors" />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Drag to resize document tree (10-40%)</p>
-            </TooltipContent>
-          </Tooltip>
+        {/* Right Resize Handle */}
+        <div
+          role="separator"
+          aria-label="Resize chat pane"
+          tabIndex={0}
+          className="w-2 cursor-col-resize flex items-center justify-center group relative"
+          onMouseDown={handleRightResize}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              // Could add keyboard resize functionality here
+            }
+          }}
+        >
+          {/* Invisible hit area for better UX */}
+          <div className="absolute inset-0 w-2" />
+          {/* Visual separator line */}
+          <div className="h-full w-px bg-border group-hover:bg-primary/40 transition-colors" />
+        </div>
 
-          {/* Center Pane - MarkdownPane */}
-          <div
-            className="border-r border-border flex-1 relative group"
-            style={{ width: `${centerWidth}%` }}
-          >
-            <MarkdownPane selectedFile={selectedFile} />
+        {/* Right Pane - ChatPane */}
+        <div className="flex-shrink-0 relative group" style={{ width: `${rightWidth}%` }}>
+          <ChatPane />
 
-            {/* Center pane size indicator */}
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-              <div className="bg-secondary/80 border border-border rounded-md px-2 py-1 text-xs text-muted-foreground">
-                {Math.round(centerWidth)}% width
-              </div>
-            </div>
-          </div>
-
-          {/* Right Resize Handle */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                role="separator"
-                aria-label="Resize chat pane"
-                tabIndex={0}
-                className="w-2 cursor-col-resize flex items-center justify-center group relative"
-                onMouseDown={handleRightResize}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    // Could add keyboard resize functionality here
-                  }
-                }}
-              >
-                {/* Invisible hit area for better UX */}
-                <div className="absolute inset-0 w-2" />
-                {/* Visual separator line */}
-                <div className="h-full w-px bg-border group-hover:bg-primary/40 transition-colors" />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <p>Drag to resize AI assistant (15-50%)</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* Right Pane - ChatPane */}
-          <div className="flex-shrink-0 relative group" style={{ width: `${rightWidth}%` }}>
-            <ChatPane />
-
-            {/* Resize indicator overlay */}
-            <div className="absolute top-4 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-              <div className="bg-primary/10 border border-primary/20 rounded-md px-2 py-1 text-xs text-primary flex items-center gap-1">
-                <Move3D className="h-3 w-3" />
-                Drag to resize
-              </div>
+          {/* Resize indicator overlay */}
+          <div className="absolute top-4 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+            <div className="bg-primary/10 border border-primary/20 rounded-md px-2 py-1 text-xs text-primary flex items-center gap-1">
+              <Move3D className="h-3 w-3" />
+              Drag to resize
             </div>
           </div>
         </div>
       </div>
-    </TooltipProvider>
+    </div>
   )
 }
 
