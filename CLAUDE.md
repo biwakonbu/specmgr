@@ -254,6 +254,34 @@ pnpm docker:logs
 ### Language and Documentation Guidelines
 - Write all documentation, commits, comments, docstrings, and system messages in English
 
+## Critical Development Standards
+
+### Warning and Feedback Response Policy
+**Always respond to warnings and feedback with sincere consideration - never force through resistance**
+
+#### Core Principle: Respect System Feedback
+When any system (pre-commit hooks, linters, tests, etc.) raises warnings or errors:
+- **Listen carefully** to what the warning is communicating
+- **Take time** to understand the underlying issue
+- **Address the root cause** rather than bypassing symptoms
+- **Never force through** when systems indicate problems
+
+#### Lesson Learned (2025-01-26)
+**Issue**: After implementing a comprehensive pre-commit warning system that clearly stated "These are NOT minor issues", immediately used `--no-verify` to bypass 127 lint errors without addressing them.
+
+**Root Problem**: Failed to practice what was preached - ignored own implementation of quality standards.
+
+**Key Insight**: Warnings exist for important reasons. When systems push back, it's usually because there's a legitimate concern that needs attention.
+
+**Better Approach**: 
+- When warnings appear, pause and truly listen
+- Understand why the system is raising concerns
+- Address issues systematically rather than bypassing them
+- Recognize that "forcing through" often creates technical debt
+- If bypass is necessary, ensure it's for valid reasons with user agreement
+
+**Mindset**: Warnings are guidance from experienced developers embedded in tools - treat them as valuable input, not obstacles to overcome.
+
 ## Language and Interaction Guidelines
 
 ### Language Interaction Principles
