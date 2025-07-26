@@ -172,64 +172,108 @@ function MermaidDiagram({ chart }: { chart: string }) {
           const { svg } = await mermaid.render(id, chart)
           elementRef.current.innerHTML = svg
 
-          // Add elegant animations and interactions
+          // Add meaningful edge animations and interactions
           const addEnhancedStyling = () => {
             const svgElement = elementRef.current?.querySelector('svg')
             if (svgElement) {
-              // Add smooth entrance animation
-              svgElement.style.opacity = '0'
-              svgElement.style.transform = 'scale(0.95)'
-              svgElement.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
+              // Add CSS for edge glow animations
+              const style = document.createElement('style')
+              style.textContent = `
+                /* Flowing light animation along edges */
+                @keyframes flowingLight {
+                  0% { stroke-dashoffset: 20; opacity: 0.6; }
+                  50% { opacity: 1; }
+                  100% { stroke-dashoffset: 0; opacity: 0.6; }
+                }
+                
+                /* Pulsing glow effect for edges */
+                @keyframes edgeGlow {
+                  0%, 100% { 
+                    filter: drop-shadow(0 0 3px rgba(129, 161, 193, 0.4));
+                  }
+                  50% { 
+                    filter: drop-shadow(0 0 8px rgba(129, 161, 193, 0.8));
+                  }
+                }
+                
+                /* Node subtle breathing animation */
+                @keyframes nodeBreath {
+                  0%, 100% { 
+                    filter: drop-shadow(0 0 2px rgba(94, 129, 172, 0.3));
+                  }
+                  50% { 
+                    filter: drop-shadow(0 0 6px rgba(94, 129, 172, 0.6));
+                  }
+                }
+              `
+              document.head.appendChild(style)
 
+              // Apply edge flowing animations
+              const edges = svgElement.querySelectorAll(
+                'path.edge-path, .edgePath path, .flowchart-link'
+              )
+              edges.forEach(edge => {
+                const pathElement = edge as SVGPathElement
+
+                // Set up flowing light effect
+                pathElement.style.strokeDasharray = '4 2'
+                pathElement.style.animation = 'flowingLight 3s ease-in-out infinite'
+                pathElement.style.stroke = '#81a1c1'
+                pathElement.style.strokeWidth = '2'
+
+                // Add hover glow effect
+                pathElement.addEventListener('mouseenter', () => {
+                  pathElement.style.animation =
+                    'edgeGlow 1.5s ease-in-out infinite, flowingLight 1.5s ease-in-out infinite'
+                  pathElement.style.strokeWidth = '3'
+                  pathElement.style.stroke = '#88c0d0'
+                })
+
+                pathElement.addEventListener('mouseleave', () => {
+                  pathElement.style.animation = 'flowingLight 3s ease-in-out infinite'
+                  pathElement.style.strokeWidth = '2'
+                  pathElement.style.stroke = '#81a1c1'
+                })
+              })
+
+              // Apply subtle breathing to nodes
+              const nodes = svgElement.querySelectorAll(
+                '.node rect, .node circle, .node ellipse, .flowchart-node'
+              )
+              nodes.forEach(node => {
+                const nodeElement = node as SVGElement
+                nodeElement.style.animation = 'nodeBreath 4s ease-in-out infinite'
+
+                // Enhanced hover interaction
+                nodeElement.addEventListener('mouseenter', () => {
+                  nodeElement.style.animation = 'none'
+                  nodeElement.style.filter =
+                    'drop-shadow(0 0 12px rgba(94, 129, 172, 0.8)) brightness(1.1)'
+                  nodeElement.style.transform = 'scale(1.02)'
+                  nodeElement.style.transformOrigin = 'center'
+                  nodeElement.style.transition = 'all 0.2s ease-out'
+                })
+
+                nodeElement.addEventListener('mouseleave', () => {
+                  nodeElement.style.animation = 'nodeBreath 4s ease-in-out infinite'
+                  nodeElement.style.filter = ''
+                  nodeElement.style.transform = 'scale(1)'
+                })
+              })
+
+              // Add arrow head glow animation
+              const arrowHeads = svgElement.querySelectorAll('defs marker path, .arrowhead')
+              arrowHeads.forEach(arrow => {
+                const arrowElement = arrow as SVGElement
+                arrowElement.style.animation = 'edgeGlow 2s ease-in-out infinite'
+              })
+
+              // Smooth entrance with meaningful transition
+              svgElement.style.opacity = '0'
+              svgElement.style.transition = 'opacity 0.8s ease-out'
               setTimeout(() => {
                 svgElement.style.opacity = '1'
-                svgElement.style.transform = 'scale(1)'
               }, 100)
-
-              // Add hover animations to nodes and edges
-              const nodes = svgElement.querySelectorAll('.node, .flowchart-node')
-              const edges = svgElement.querySelectorAll('.edgePath, .edge')
-
-              nodes.forEach(node => {
-                const element = node as HTMLElement
-                element.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-                element.style.cursor = 'pointer'
-
-                element.addEventListener('mouseenter', () => {
-                  element.style.transform = 'scale(1.05)'
-                  element.style.filter =
-                    'brightness(1.2) drop-shadow(0 4px 12px rgba(94, 129, 172, 0.3))'
-                })
-
-                element.addEventListener('mouseleave', () => {
-                  element.style.transform = 'scale(1)'
-                  element.style.filter =
-                    'brightness(1) drop-shadow(0 2px 8px rgba(94, 129, 172, 0.1))'
-                })
-              })
-
-              edges.forEach(edge => {
-                const element = edge as HTMLElement
-                element.style.transition = 'all 0.3s ease-in-out'
-
-                element.addEventListener('mouseenter', () => {
-                  element.style.filter =
-                    'brightness(1.3) drop-shadow(0 0 8px rgba(129, 161, 193, 0.6))'
-                })
-
-                element.addEventListener('mouseleave', () => {
-                  element.style.filter = 'brightness(1)'
-                })
-              })
-
-              // Add subtle pulse animation to the entire diagram
-              svgElement.addEventListener('mouseenter', () => {
-                svgElement.style.filter = 'drop-shadow(0 8px 32px rgba(94, 129, 172, 0.15))'
-              })
-
-              svgElement.addEventListener('mouseleave', () => {
-                svgElement.style.filter = 'drop-shadow(0 4px 20px rgba(94, 129, 172, 0.1))'
-              })
             }
           }
 
