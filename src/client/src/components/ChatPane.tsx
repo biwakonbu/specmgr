@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
+import remarkMermaid from 'remark-mermaidjs'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { ScrollArea } from './ui/scroll-area'
@@ -255,37 +256,41 @@ export function ChatPane(_props: ChatPaneProps) {
                     : 'bg-muted text-foreground'
                 }`}
               >
-                <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
+                <div className="prose prose-sm max-w-none dark:prose-invert text-xs">
                   <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
+                    remarkPlugins={[remarkGfm, remarkMermaid]}
                     rehypePlugins={[rehypeHighlight]}
                     components={{
                       h1: ({ children }) => (
-                        <h1 className="text-lg font-bold tracking-tight mb-2 text-foreground border-b border-border pb-1">
+                        <h1 className="text-sm font-bold tracking-tight mb-1.5 mt-0 text-foreground border-b border-border pb-0.5">
                           {children}
                         </h1>
                       ),
                       h2: ({ children }) => (
-                        <h2 className="text-base font-semibold tracking-tight mb-2 mt-3 text-foreground">
+                        <h2 className="text-xs font-semibold tracking-tight mb-1.5 mt-2 text-foreground">
                           {children}
                         </h2>
                       ),
                       h3: ({ children }) => (
-                        <h3 className="text-sm font-semibold tracking-tight mb-1 mt-2 text-foreground">
+                        <h3 className="text-xs font-medium tracking-tight mb-1 mt-1.5 text-foreground">
                           {children}
                         </h3>
                       ),
                       p: ({ children }) => (
-                        <p className="leading-relaxed mb-2 text-foreground">{children}</p>
+                        <p className="text-xs leading-relaxed mb-1.5 text-foreground">{children}</p>
                       ),
                       ul: ({ children }) => (
-                        <ul className="my-2 ml-4 list-disc [&>li]:mt-1">{children}</ul>
+                        <ul className="my-1.5 ml-3 list-disc text-xs [&>li]:mt-0.5 [&>li]:leading-relaxed">
+                          {children}
+                        </ul>
                       ),
                       ol: ({ children }) => (
-                        <ol className="my-2 ml-4 list-decimal [&>li]:mt-1">{children}</ol>
+                        <ol className="my-1.5 ml-3 list-decimal text-xs [&>li]:mt-0.5 [&>li]:leading-relaxed">
+                          {children}
+                        </ol>
                       ),
                       blockquote: ({ children }) => (
-                        <blockquote className="mt-2 border-l-2 border-border pl-3 italic text-muted-foreground">
+                        <blockquote className="mt-1.5 mb-1.5 border-l-2 border-border pl-2 italic text-muted-foreground text-xs">
                           {children}
                         </blockquote>
                       ),
@@ -293,7 +298,7 @@ export function ChatPane(_props: ChatPaneProps) {
                         const isInline = !className
                         if (isInline) {
                           return (
-                            <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs font-semibold">
+                            <code className="relative rounded bg-muted px-1 py-0.5 font-mono text-[10px] font-medium">
                               {children}
                             </code>
                           )
@@ -301,10 +306,14 @@ export function ChatPane(_props: ChatPaneProps) {
                         return <code className={className}>{children}</code>
                       },
                       pre: ({ children }) => (
-                        <pre className="mb-2 mt-2 overflow-x-auto rounded bg-muted p-2 text-xs">
+                        <pre className="mb-1.5 mt-1.5 overflow-x-auto rounded bg-muted p-2 text-[10px] leading-tight">
                           {children}
                         </pre>
                       ),
+                      strong: ({ children }) => (
+                        <strong className="font-semibold text-foreground">{children}</strong>
+                      ),
+                      em: ({ children }) => <em className="italic text-foreground">{children}</em>,
                     }}
                   >
                     {message.content}
