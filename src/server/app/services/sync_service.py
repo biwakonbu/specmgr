@@ -133,10 +133,11 @@ class SyncService:
                 else:
                     # APIキーがない場合はダミーベクトルを使用
                     import logging
+
                     logger = logging.getLogger(__name__)
                     logger.info(f"Using dummy vector for {relative_path} (no API key)")
                     vector = self.embedding_service._get_zero_vector()
-                
+
                 # Qdrantに保存
                 await self.qdrant_service.store_document(
                     file_path=relative_path,
@@ -146,11 +147,13 @@ class SyncService:
             except Exception as e:
                 # 保存に失敗した場合はログに記録して続行
                 import logging
+
                 logger = logging.getLogger(__name__)
                 logger.warning(f"Failed to store document {relative_path}: {e}")
 
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to sync file {file_path}: {e}")
             raise
@@ -165,12 +168,13 @@ class SyncService:
         try:
             # 相対パスに変換
             relative_path = str(Path(file_path).relative_to(self.docs_path))
-            
+
             # Qdrantから削除
             await self.qdrant_service.delete_document(relative_path)
-            
+
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.error(f"Failed to remove file {file_path}: {e}")
             raise

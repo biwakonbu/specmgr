@@ -1,6 +1,7 @@
 """Qdrant vector database service."""
 
 import logging
+from datetime import UTC
 from typing import Any
 
 from qdrant_client import QdrantClient
@@ -64,7 +65,7 @@ class QdrantService:
             # ファイルパスからUUIDを生成
             import hashlib
             import uuid
-            
+
             # ファイルパスのハッシュからUUIDを生成
             path_hash = hashlib.md5(file_path.encode()).hexdigest()
             point_id = str(uuid.UUID(path_hash))
@@ -146,7 +147,7 @@ class QdrantService:
             # ファイルパスからUUIDを生成（store_documentと同じ方法）
             import hashlib
             import uuid
-            
+
             path_hash = hashlib.md5(file_path.encode()).hexdigest()
             point_id = str(uuid.UUID(path_hash))
 
@@ -176,7 +177,7 @@ class QdrantService:
             # ファイルパスからUUIDを生成（store_documentと同じ方法）
             import hashlib
             import uuid
-            
+
             path_hash = hashlib.md5(file_path.encode()).hexdigest()
             point_id = str(uuid.UUID(path_hash))
 
@@ -217,6 +218,6 @@ class QdrantService:
 
     def _get_current_timestamp(self) -> str:
         """Get current timestamp in ISO format."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.now(UTC).isoformat()

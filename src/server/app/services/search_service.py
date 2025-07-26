@@ -45,7 +45,7 @@ class SearchService:
 
         # ハイブリッド検索: ベクトル検索 + テキスト検索
         results = []
-        
+
         # ベクトル検索を試行（APIキーが設定されている場合）
         if self.embedding_service.is_available():
             try:
@@ -58,8 +58,11 @@ class SearchService:
                 results.extend(vector_results)
             except Exception as e:
                 import logging
+
                 logger = logging.getLogger(__name__)
-                logger.warning(f"Vector search failed, falling back to text search: {e}")
+                logger.warning(
+                    f"Vector search failed, falling back to text search: {e}"
+                )
 
         # テキスト検索でフォールバック/補完
         text_results = await self._simple_text_search(
@@ -68,7 +71,7 @@ class SearchService:
             score_threshold=score_threshold,
             file_path=file_path,
         )
-        
+
         # ベクトル検索結果がない場合はテキスト検索結果を使用
         if not results:
             results = text_results
@@ -211,7 +214,7 @@ class SearchService:
         try:
             # クエリのembeddingを生成
             query_vector = await self.embedding_service.generate_embedding(query)
-            
+
             # Qdrantで検索
             qdrant_results = await self.qdrant_service.search_documents(
                 query_vector=query_vector,
@@ -253,6 +256,7 @@ class SearchService:
 
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.error(f"Vector search failed: {e}")
             return []

@@ -1,7 +1,6 @@
 """Embedding generation service using Claude Code SDK."""
 
 import logging
-from typing import Any
 
 from anthropic import Anthropic
 
@@ -14,7 +13,11 @@ class EmbeddingService:
     """Claude Code SDK embedding generation service."""
 
     def __init__(self) -> None:
-        self.client = Anthropic(api_key=settings.anthropic_api_key) if settings.anthropic_api_key else None
+        self.client = (
+            Anthropic(api_key=settings.anthropic_api_key)
+            if settings.anthropic_api_key
+            else None
+        )
         self.max_tokens = 8191  # Claude Code SDK embedding limit
 
     async def generate_embedding(self, text: str) -> list[float]:
@@ -100,7 +103,7 @@ class EmbeddingService:
         # 適切な境界を見つける
         boundary = max(last_sentence, last_period, last_newline)
         if boundary > max_chars * 0.8:  # 80%以上の位置にある場合
-            return truncated[:boundary + 1]
+            return truncated[: boundary + 1]
 
         return truncated
 

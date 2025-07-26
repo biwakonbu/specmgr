@@ -1,13 +1,11 @@
 """Integration tests for Qdrant vector storage."""
 
-import pytest
-import asyncio
-from pathlib import Path
 import tempfile
-import os
+from pathlib import Path
+
+import pytest
 
 from app.services.qdrant_service import QdrantService
-from app.services.embedding_service import EmbeddingService
 from app.services.sync_service import SyncService
 
 
@@ -37,7 +35,7 @@ class TestQdrantIntegration:
         }
 
     @pytest.mark.asyncio
-    async def test_store_and_retrieve_documents(self, qdrant_service, sample_documents):
+    async def test_store_and_retrieve_documents(self, qdrant_service, sample_documents) -> None:
         """Test storing and retrieving documents from Qdrant."""
         # Create dummy vectors (since we might not have API key)
         dummy_vector = [0.1] * 1536
@@ -56,7 +54,7 @@ class TestQdrantIntegration:
         assert info["points_count"] >= len(sample_documents)
 
     @pytest.mark.asyncio
-    async def test_search_functionality(self, qdrant_service, sample_documents):
+    async def test_search_functionality(self, qdrant_service, sample_documents) -> None:
         """Test vector search functionality."""
         # Create dummy vectors with slight variations
         vectors = {
@@ -72,9 +70,7 @@ class TestQdrantIntegration:
         # Search with a query vector similar to document1
         query_vector = [0.1 + i * 0.001 for i in range(1536)]
         results = await qdrant_service.search_documents(
-            query_vector=query_vector,
-            limit=5,
-            score_threshold=0.0
+            query_vector=query_vector, limit=5, score_threshold=0.0
         )
 
         assert len(results) > 0
@@ -84,7 +80,7 @@ class TestQdrantIntegration:
         assert top_result["body"] == sample_documents["document1.md"]
 
     @pytest.mark.asyncio
-    async def test_delete_documents(self, qdrant_service, sample_documents):
+    async def test_delete_documents(self, qdrant_service, sample_documents) -> None:
         """Test document deletion."""
         dummy_vector = [0.5] * 1536
 
@@ -105,7 +101,7 @@ class TestQdrantIntegration:
         assert not exists
 
     @pytest.mark.asyncio
-    async def test_upsert_functionality(self, qdrant_service):
+    async def test_upsert_functionality(self, qdrant_service) -> None:
         """Test that storing the same document twice updates it."""
         file_path = "upsert_test.md"
         original_content = "# Original Content"
@@ -120,9 +116,7 @@ class TestQdrantIntegration:
 
         # Search to verify content was updated
         results = await qdrant_service.search_documents(
-            query_vector=dummy_vector,
-            limit=10,
-            score_threshold=0.0
+            query_vector=dummy_vector, limit=10, score_threshold=0.0
         )
 
         # Find our document in results
@@ -147,15 +141,15 @@ class TestSyncServiceIntegration:
         with tempfile.TemporaryDirectory() as temp_dir:
             docs_path = Path(temp_dir) / "docs"
             docs_path.mkdir()
-            
+
             # Create sample files
             (docs_path / "README.md").write_text("# README\n\nProject documentation.")
             (docs_path / "api.md").write_text("# API\n\nAPI documentation.")
-            
+
             subdir = docs_path / "guides"
             subdir.mkdir()
             (subdir / "guide1.md").write_text("# Guide 1\n\nFirst guide.")
-            
+
             yield docs_path
 
     @pytest.fixture
@@ -168,37 +162,39 @@ class TestSyncServiceIntegration:
             mock_settings.qdrant_host = "localhost"
             mock_settings.qdrant_port = 6333
             mock_settings.qdrant_collection = "test_documents"
-            
+
             return SyncService()
 
     @pytest.mark.asyncio
-    async def test_bulk_sync_with_real_files(self, sync_service_with_temp_dir):
+    async def test_bulk_sync_with_real_files(self, sync_service_with_temp_dir) -> None:
         """Test bulk sync with real files."""
         try:
             result = await sync_service_with_temp_dir.execute_bulk_sync(force=True)
-            
+
             assert result.success is True
             assert result.total_files == 3  # README, api, guide1
             assert result.processed_files == 3
             assert result.total_chunks > 0
             assert len(result.errors) == 0
-            
+
         except Exception as e:
             # Skip if Qdrant is not available
             pytest.skip(f"Qdrant not available: {e}")
 
     @pytest.mark.asyncio
-    async def test_individual_file_sync(self, sync_service_with_temp_dir, temp_docs_dir):
+    async def test_individual_file_sync(
+        self, sync_service_with_temp_dir, temp_docs_dir
+    ) -> None:
         """Test syncing individual files."""
         try:
             test_file = temp_docs_dir / "test_sync.md"
             test_file.write_text("# Test Sync\n\nThis is a test file for sync.")
-            
+
             await sync_service_with_temp_dir.sync_file(str(test_file))
-            
+
             # If no exception is raised, sync was successful
             assert True
-            
+
         except Exception as e:
             # Skip if Qdrant is not available
             pytest.skip(f"Qdrant not available: {e}")
@@ -208,4 +204,5 @@ class TestSyncServiceIntegration:
 def patch(target):
     """Simple patch decorator for testing."""
     from unittest.mock import patch as mock_patch
+
     return mock_patch(target)

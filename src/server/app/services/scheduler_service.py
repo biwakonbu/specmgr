@@ -61,7 +61,7 @@ class SchedulerService:
                 status = await self.sync_service.get_sync_status()
                 if not status.is_running:
                     logger.info("定期フル同期チェックを実行中...")
-                    
+
                     try:
                         result = await self.sync_service.execute_bulk_sync(force=False)
                         logger.info(
@@ -70,7 +70,9 @@ class SchedulerService:
                     except ValueError as e:
                         # 同期が既に実行中の場合はスキップ
                         if "already running" in str(e):
-                            logger.debug("同期が既に実行中のため、定期フル同期をスキップ")
+                            logger.debug(
+                                "同期が既に実行中のため、定期フル同期をスキップ"
+                            )
                         else:
                             logger.error(f"定期フル同期エラー: {e}")
                     except Exception as e:
