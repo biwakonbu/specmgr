@@ -55,5 +55,33 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: 'liga' 1, 'kern' 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Improve Japanese text rendering */
+  body {
+    font-variant-ligatures: common-ligatures;
+    font-kerning: normal;
+  }
+  
+  /* Better spacing for Japanese text */
+  p, span, div {
+    letter-spacing: 0.02em;
+    line-height: 1.7;
+  }
+  
+  /* Code blocks with monospace font */
+  code, pre {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-feature-settings: 'liga' 1, 'calt' 1;
+  }
+  
+  /* Headings with better spacing */
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: 0.01em;
+    line-height: 1.4;
   }
 }
