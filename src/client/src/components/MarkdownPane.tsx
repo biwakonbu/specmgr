@@ -200,7 +200,7 @@ function MermaidDiagram({ chart }: { chart: string }) {
                 }
               }
 
-              /* Pre-styled mermaid elements */
+              /* Pre-styled mermaid elements - Default golden edges */
               .mermaid-diagram svg path.edge-path,
               .mermaid-diagram svg .edgePath path,
               .mermaid-diagram svg .flowchart-link {
@@ -219,6 +219,83 @@ function MermaidDiagram({ chart }: { chart: string }) {
                 stroke-width: 3 !important;
                 filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.6)) !important;
                 animation: edgeGlow 1.5s ease-in-out infinite, flowingLight 1.5s ease-in-out infinite !important;
+              }
+
+              /* === GROUP-AWARE EDGE STYLING === */
+              
+              /* Frontend to Backend connections - Blue to Cyan gradient */
+              .mermaid-diagram svg path.edge-path[data-edge*="UI"],
+              .mermaid-diagram svg path.edge-path[data-edge*="Frontend"],
+              .mermaid-diagram svg path.edge-path[data-edge*="Client"] {
+                stroke: #6b8db5 !important; /* Blue-Cyan blend */
+                filter: drop-shadow(0 0 3px rgba(107, 141, 181, 0.4)) !important;
+              }
+
+              /* Backend to Service connections - Cyan to Teal gradient */
+              .mermaid-diagram svg path.edge-path[data-edge*="API"],
+              .mermaid-diagram svg path.edge-path[data-edge*="Server"],
+              .mermaid-diagram svg path.edge-path[data-edge*="Backend"] {
+                stroke: #8bc0d2 !important; /* Cyan-Teal blend */
+                filter: drop-shadow(0 0 3px rgba(139, 192, 210, 0.4)) !important;
+              }
+
+              /* Service to Database connections - Teal to Green gradient */
+              .mermaid-diagram svg path.edge-path[data-edge*="Service"],
+              .mermaid-diagram svg path.edge-path[data-edge*="Business"] {
+                stroke: #97bb9e !important; /* Teal-Green blend */
+                filter: drop-shadow(0 0 3px rgba(151, 187, 158, 0.4)) !important;
+              }
+
+              /* Database internal connections - Green theme */
+              .mermaid-diagram svg path.edge-path[data-edge*="DB"],
+              .mermaid-diagram svg path.edge-path[data-edge*="Database"],
+              .mermaid-diagram svg path.edge-path[data-edge*="Storage"] {
+                stroke: #a3be8c !important; /* Nord14 Green */
+                filter: drop-shadow(0 0 3px rgba(163, 190, 140, 0.5)) !important;
+              }
+
+              /* External API connections - Orange theme with emphasis */
+              .mermaid-diagram svg path.edge-path[data-edge*="External"],
+              .mermaid-diagram svg path.edge-path[data-edge*="Claude"],
+              .mermaid-diagram svg path.edge-path[data-edge*="AI"],
+              .mermaid-diagram svg path.edge-path[data-edge*="LLM"] {
+                stroke: #d08770 !important; /* Nord12 Orange */
+                stroke-width: 2.5 !important;
+                filter: drop-shadow(0 0 4px rgba(208, 135, 112, 0.6)) !important;
+                animation: flowingLight 2s ease-in-out infinite !important;
+              }
+
+              /* Critical/Error connections - Red theme with urgency */
+              .mermaid-diagram svg path.edge-path[data-edge*="Error"],
+              .mermaid-diagram svg path.edge-path[data-edge*="Critical"],
+              .mermaid-diagram svg path.edge-path[data-edge*="Alert"] {
+                stroke: #bf616a !important; /* Nord11 Red */
+                stroke-width: 3 !important;
+                filter: drop-shadow(0 0 5px rgba(191, 97, 106, 0.7)) !important;
+                animation: edgeGlow 1s ease-in-out infinite !important;
+              }
+
+              /* Special/Queue connections - Purple theme */
+              .mermaid-diagram svg path.edge-path[data-edge*="Queue"],
+              .mermaid-diagram svg path.edge-path[data-edge*="Worker"],
+              .mermaid-diagram svg path.edge-path[data-edge*="Special"] {
+                stroke: #b48ead !important; /* Nord15 Purple */
+                stroke-dasharray: 6 3 !important;
+                filter: drop-shadow(0 0 3px rgba(180, 142, 173, 0.5)) !important;
+              }
+
+              /* Cross-layer connections with special styling */
+              .mermaid-diagram svg path.edge-path[data-cross-layer="true"] {
+                stroke: url(#crossLayerGradient) !important;
+                stroke-width: 2.5 !important;
+                stroke-dasharray: 8 4 !important;
+                filter: drop-shadow(0 0 4px rgba(129, 161, 193, 0.6)) !important;
+                animation: flowingLight 2.5s ease-in-out infinite !important;
+              }
+
+              /* Gradient definitions for cross-layer connections */
+              .mermaid-diagram svg defs {
+                /* This will be dynamically injected */
               }
 
               /* Group/Cluster background styling with elegant gradients */
@@ -553,6 +630,155 @@ function MermaidDiagram({ chart }: { chart: string }) {
           // Render the diagram with pre-styled CSS
           const { svg } = await mermaid.render(id, chart)
           elementRef.current.innerHTML = svg
+
+          // Add dynamic edge coloring based on node relationships
+          const addDynamicEdgeColoring = () => {
+            const svgElement = elementRef.current?.querySelector('svg')
+            if (!svgElement) return
+
+            // Create gradient definitions for cross-layer connections
+            const defs =
+              svgElement.querySelector('defs') ||
+              svgElement.insertBefore(
+                document.createElementNS('http://www.w3.org/2000/svg', 'defs'),
+                svgElement.firstChild
+              )
+
+            // Add cross-layer gradient
+            const crossLayerGradient = document.createElementNS(
+              'http://www.w3.org/2000/svg',
+              'linearGradient'
+            )
+            crossLayerGradient.id = 'crossLayerGradient'
+            crossLayerGradient.innerHTML = `
+              <stop offset="0%" style="stop-color:#5e81ac;stop-opacity:1" />
+              <stop offset="50%" style="stop-color:#88c0d0;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#8fbcbb;stop-opacity:1" />
+            `
+            defs.appendChild(crossLayerGradient)
+
+            // Get all nodes and edges for relationship analysis
+            const nodes = svgElement.querySelectorAll('.node')
+            const edges = svgElement.querySelectorAll(
+              'path.edge-path, .edgePath path, .flowchart-link'
+            )
+
+            // Create node type mapping
+            const nodeTypes = new Map()
+            nodes.forEach(node => {
+              const nodeId = node.id || node.getAttribute('data-id') || ''
+              let type = 'default'
+
+              if (
+                nodeId.includes('UI') ||
+                nodeId.includes('React') ||
+                nodeId.includes('Frontend') ||
+                nodeId.includes('Client')
+              ) {
+                type = 'frontend'
+              } else if (
+                nodeId.includes('API') ||
+                nodeId.includes('Server') ||
+                nodeId.includes('Backend') ||
+                nodeId.includes('FastAPI')
+              ) {
+                type = 'backend'
+              } else if (
+                nodeId.includes('Service') ||
+                nodeId.includes('Business') ||
+                nodeId.includes('Logic')
+              ) {
+                type = 'service'
+              } else if (
+                nodeId.includes('DB') ||
+                nodeId.includes('Database') ||
+                nodeId.includes('Storage') ||
+                nodeId.includes('Qdrant') ||
+                nodeId.includes('Redis')
+              ) {
+                type = 'database'
+              } else if (
+                nodeId.includes('External') ||
+                nodeId.includes('Claude') ||
+                nodeId.includes('AI') ||
+                nodeId.includes('LLM') ||
+                nodeId.includes('Voyage')
+              ) {
+                type = 'external'
+              } else if (
+                nodeId.includes('Error') ||
+                nodeId.includes('Critical') ||
+                nodeId.includes('Alert')
+              ) {
+                type = 'critical'
+              } else if (
+                nodeId.includes('Queue') ||
+                nodeId.includes('Worker') ||
+                nodeId.includes('Special')
+              ) {
+                type = 'special'
+              }
+
+              nodeTypes.set(nodeId, type)
+            })
+
+            // Apply dynamic edge coloring
+            edges.forEach(edge => {
+              const edgeElement = edge as SVGPathElement
+
+              // Try to determine edge relationship from class names or data attributes
+              const edgeClasses = edgeElement.className.baseVal || ''
+              const edgeId = edgeElement.id || ''
+
+              // Color based on edge context
+              if (
+                edgeClasses.includes('Frontend') ||
+                edgeId.includes('Frontend') ||
+                edgeClasses.includes('UI')
+              ) {
+                edgeElement.style.stroke = '#6b8db5' // Blue-Cyan blend
+                edgeElement.style.filter = 'drop-shadow(0 0 3px rgba(107, 141, 181, 0.4))'
+              } else if (
+                edgeClasses.includes('Backend') ||
+                edgeId.includes('API') ||
+                edgeClasses.includes('Server')
+              ) {
+                edgeElement.style.stroke = '#8bc0d2' // Cyan-Teal blend
+                edgeElement.style.filter = 'drop-shadow(0 0 3px rgba(139, 192, 210, 0.4))'
+              } else if (edgeClasses.includes('Service') || edgeId.includes('Service')) {
+                edgeElement.style.stroke = '#97bb9e' // Teal-Green blend
+                edgeElement.style.filter = 'drop-shadow(0 0 3px rgba(151, 187, 158, 0.4))'
+              } else if (
+                edgeClasses.includes('Database') ||
+                edgeId.includes('DB') ||
+                edgeClasses.includes('Storage')
+              ) {
+                edgeElement.style.stroke = '#a3be8c' // Nord14 Green
+                edgeElement.style.filter = 'drop-shadow(0 0 3px rgba(163, 190, 140, 0.5))'
+              } else if (
+                edgeClasses.includes('External') ||
+                edgeId.includes('Claude') ||
+                edgeClasses.includes('AI')
+              ) {
+                edgeElement.style.stroke = '#d08770' // Nord12 Orange
+                edgeElement.style.strokeWidth = '2.5'
+                edgeElement.style.filter = 'drop-shadow(0 0 4px rgba(208, 135, 112, 0.6))'
+                edgeElement.style.animation = 'flowingLight 2s ease-in-out infinite'
+              } else if (edgeClasses.includes('Critical') || edgeId.includes('Error')) {
+                edgeElement.style.stroke = '#bf616a' // Nord11 Red
+                edgeElement.style.strokeWidth = '3'
+                edgeElement.style.filter = 'drop-shadow(0 0 5px rgba(191, 97, 106, 0.7))'
+                edgeElement.style.animation = 'edgeGlow 1s ease-in-out infinite'
+              } else if (edgeClasses.includes('Queue') || edgeId.includes('Worker')) {
+                edgeElement.style.stroke = '#b48ead' // Nord15 Purple
+                edgeElement.style.strokeDasharray = '6 3'
+                edgeElement.style.filter = 'drop-shadow(0 0 3px rgba(180, 142, 173, 0.5))'
+              }
+            })
+          }
+
+          // Apply dynamic coloring after a brief delay
+          setTimeout(addDynamicEdgeColoring, 300)
         } catch (error) {
           console.error('Mermaid rendering error:', error)
           if (elementRef.current) {
