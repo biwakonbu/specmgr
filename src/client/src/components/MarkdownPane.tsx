@@ -168,104 +168,77 @@ function MermaidDiagram({ chart }: { chart: string }) {
           // Generate unique ID for this diagram
           const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`
 
-          // Render the diagram
-          const { svg } = await mermaid.render(id, chart)
-          elementRef.current.innerHTML = svg
-
-          // Add meaningful edge animations and interactions
-          const addEnhancedStyling = () => {
-            const svgElement = elementRef.current?.querySelector('svg')
-            if (svgElement) {
-              // Add CSS for edge glow animations
-              const style = document.createElement('style')
-              style.textContent = `
-                /* Flowing light animation along edges */
-                @keyframes flowingLight {
-                  0% { stroke-dashoffset: 20; opacity: 0.6; }
-                  50% { opacity: 1; }
-                  100% { stroke-dashoffset: 0; opacity: 0.6; }
+          // Pre-inject CSS animations before rendering
+          if (!document.getElementById('mermaid-animations')) {
+            const style = document.createElement('style')
+            style.id = 'mermaid-animations'
+            style.textContent = `
+              /* Flowing light animation along edges */
+              @keyframes flowingLight {
+                0% { stroke-dashoffset: 20; opacity: 0.6; }
+                50% { opacity: 1; }
+                100% { stroke-dashoffset: 0; opacity: 0.6; }
+              }
+              
+              /* Pulsing glow effect for edges */
+              @keyframes edgeGlow {
+                0%, 100% { 
+                  filter: drop-shadow(0 0 3px rgba(129, 161, 193, 0.4));
                 }
-                
-                /* Pulsing glow effect for edges */
-                @keyframes edgeGlow {
-                  0%, 100% { 
-                    filter: drop-shadow(0 0 3px rgba(129, 161, 193, 0.4));
-                  }
-                  50% { 
-                    filter: drop-shadow(0 0 8px rgba(129, 161, 193, 0.8));
-                  }
+                50% { 
+                  filter: drop-shadow(0 0 8px rgba(129, 161, 193, 0.8));
                 }
-                
-                /* Node subtle breathing animation */
-                @keyframes nodeBreath {
-                  0%, 100% { 
-                    filter: drop-shadow(0 0 2px rgba(94, 129, 172, 0.3));
-                  }
-                  50% { 
-                    filter: drop-shadow(0 0 6px rgba(94, 129, 172, 0.6));
-                  }
+              }
+              
+              /* Node subtle breathing animation */
+              @keyframes nodeBreath {
+                0%, 100% { 
+                  filter: drop-shadow(0 0 2px rgba(94, 129, 172, 0.3));
                 }
-              `
-              document.head.appendChild(style)
+                50% { 
+                  filter: drop-shadow(0 0 6px rgba(94, 129, 172, 0.6));
+                }
+              }
 
-              // Apply edge flowing animations
-              const edges = svgElement.querySelectorAll(
-                'path.edge-path, .edgePath path, .flowchart-link'
-              )
-              edges.forEach(edge => {
-                const pathElement = edge as SVGPathElement
+              /* Pre-styled mermaid elements */
+              .mermaid-diagram svg path.edge-path,
+              .mermaid-diagram svg .edgePath path,
+              .mermaid-diagram svg .flowchart-link {
+                stroke: #b8986d !important;
+                stroke-width: 2 !important;
+                stroke-dasharray: 4 2 !important;
+                filter: drop-shadow(0 0 2px rgba(184, 152, 109, 0.3)) !important;
+                animation: flowingLight 3s ease-in-out infinite !important;
+                transition: all 0.3s ease-in-out !important;
+              }
 
-                // Set up flowing light effect with golden tint
-                pathElement.style.strokeDasharray = '4 2'
-                pathElement.style.animation = 'flowingLight 3s ease-in-out infinite'
-                pathElement.style.stroke = '#b8986d' // Golden-tinted blue
-                pathElement.style.strokeWidth = '2'
-                pathElement.style.filter = 'drop-shadow(0 0 2px rgba(184, 152, 109, 0.3))'
+              .mermaid-diagram svg path.edge-path:hover,
+              .mermaid-diagram svg .edgePath path:hover,
+              .mermaid-diagram svg .flowchart-link:hover {
+                stroke: #d4af37 !important;
+                stroke-width: 3 !important;
+                filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.6)) !important;
+                animation: edgeGlow 1.5s ease-in-out infinite, flowingLight 1.5s ease-in-out infinite !important;
+              }
 
-                // Add hover glow effect with stronger golden glow
-                pathElement.addEventListener('mouseenter', () => {
-                  pathElement.style.animation =
-                    'edgeGlow 1.5s ease-in-out infinite, flowingLight 1.5s ease-in-out infinite'
-                  pathElement.style.strokeWidth = '3'
-                  pathElement.style.stroke = '#d4af37' // More golden on hover
-                  pathElement.style.filter = 'drop-shadow(0 0 6px rgba(212, 175, 55, 0.6))'
-                })
+              .mermaid-diagram svg .node rect,
+              .mermaid-diagram svg .node circle,
+              .mermaid-diagram svg .node ellipse,
+              .mermaid-diagram svg .flowchart-node {
+                animation: nodeBreath 4s ease-in-out infinite !important;
+              }
 
-                pathElement.addEventListener('mouseleave', () => {
-                  pathElement.style.animation = 'flowingLight 3s ease-in-out infinite'
-                  pathElement.style.strokeWidth = '2'
-                  pathElement.style.stroke = '#b8986d'
-                  pathElement.style.filter = 'drop-shadow(0 0 2px rgba(184, 152, 109, 0.3))'
-                })
-              })
-
-              // Apply subtle breathing to nodes only (no hover effects)
-              const nodes = svgElement.querySelectorAll(
-                '.node rect, .node circle, .node ellipse, .flowchart-node'
-              )
-              nodes.forEach(node => {
-                const nodeElement = node as SVGElement
-                nodeElement.style.animation = 'nodeBreath 4s ease-in-out infinite'
-              })
-
-              // Add arrow head glow animation
-              const arrowHeads = svgElement.querySelectorAll('defs marker path, .arrowhead')
-              arrowHeads.forEach(arrow => {
-                const arrowElement = arrow as SVGElement
-                arrowElement.style.animation = 'edgeGlow 2s ease-in-out infinite'
-              })
-
-              // Smooth entrance with meaningful transition
-              svgElement.style.opacity = '0'
-              svgElement.style.transition = 'opacity 0.8s ease-out'
-              setTimeout(() => {
-                svgElement.style.opacity = '1'
-              }, 100)
-            }
+              .mermaid-diagram svg defs marker path,
+              .mermaid-diagram svg .arrowhead {
+                animation: edgeGlow 2s ease-in-out infinite !important;
+              }
+            `
+            document.head.appendChild(style)
           }
 
-          // Apply styling after a brief delay to ensure SVG is fully rendered
-          setTimeout(addEnhancedStyling, 200)
+          // Render the diagram with pre-styled CSS
+          const { svg } = await mermaid.render(id, chart)
+          elementRef.current.innerHTML = svg
         } catch (error) {
           console.error('Mermaid rendering error:', error)
           if (elementRef.current) {

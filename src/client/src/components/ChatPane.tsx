@@ -226,18 +226,18 @@ export function ChatPane(_props: ChatPaneProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-border">
-        <h2 className="text-[14px] font-semibold flex items-center gap-2">
-          <Bot className="h-5 w-5" />
+      <div className="p-3 border-b border-border">
+        <h2 className="text-[12px] font-semibold flex items-center gap-2">
+          <Bot className="h-4 w-4" />
           AI Assistant
         </h2>
-        <p className="text-[12px] text-muted-foreground mt-1">
+        <p className="text-[11px] text-muted-foreground mt-0.5">
           Ask questions about your documentation
         </p>
       </div>
 
       {/* Messages */}
-      <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+      <ScrollArea ref={scrollAreaRef} className="flex-1 p-2">
         <div className="space-y-4">
           {messages.map(message => (
             <div
@@ -250,16 +250,16 @@ export function ChatPane(_props: ChatPaneProps) {
               >
                 <div className="flex-shrink-0">
                   <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
                       message.role === 'user'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-primary/10 text-primary'
                     }`}
                   >
                     {message.role === 'user' ? (
-                      <User className="h-3 w-3" />
+                      <User className="h-4 w-4" />
                     ) : (
-                      <Bot className="h-3 w-3" />
+                      <Bot className="h-4 w-4" />
                     )}
                   </div>
                 </div>
@@ -277,7 +277,7 @@ export function ChatPane(_props: ChatPaneProps) {
 
               {/* Message Content */}
               <div
-                className={`w-full max-w-[95%] rounded-xl px-4 py-3 ${
+                className={`w-full max-w-[98%] rounded-xl px-3 py-3 ${
                   message.role === 'user'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted/50 text-foreground border border-border/50'
@@ -357,15 +357,15 @@ export function ChatPane(_props: ChatPaneProps) {
               {/* Loading Header */}
               <div className="flex items-center gap-2 mb-1">
                 <div className="flex-shrink-0">
-                  <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                    <Bot className="h-3 w-3" />
+                  <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                    <Bot className="h-4 w-4" />
                   </div>
                 </div>
                 <span className="text-[11px] font-medium text-foreground/80">AI Assistant</span>
               </div>
 
               {/* Loading Content */}
-              <div className="w-full max-w-[95%] rounded-xl px-4 py-3 bg-muted/50 text-foreground border border-border/50">
+              <div className="w-full max-w-[98%] rounded-xl px-3 py-3 bg-muted/50 text-foreground border border-border/50">
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1">
                     <div className="w-2 h-2 bg-current rounded-full animate-pulse" />
@@ -381,7 +381,7 @@ export function ChatPane(_props: ChatPaneProps) {
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 border-t border-border">
+      <div className="p-3 border-t border-border">
         <div className="flex gap-2">
           <Input
             ref={inputRef}
@@ -390,17 +390,17 @@ export function ChatPane(_props: ChatPaneProps) {
             onKeyPress={handleKeyPress}
             placeholder="/search で検索、または質問を入力..."
             disabled={isLoading}
-            className="flex-1"
+            className="flex-1 h-8 text-[12px] px-2 py-1 placeholder:text-[11px]"
           />
           <Button
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isLoading}
-            size="icon"
+            className="h-8 w-8 p-0"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-3 w-3" />
           </Button>
         </div>
-        <p className="text-[11px] text-muted-foreground mt-2">
+        <p className="text-[10px] text-muted-foreground mt-1.5">
           Press Enter to send, Shift+Enter for new line
         </p>
       </div>

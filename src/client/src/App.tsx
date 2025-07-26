@@ -2,9 +2,10 @@ import { useCallback, useState } from 'react'
 import { ChatPane } from './components/ChatPane'
 import { DocTree } from './components/DocTree'
 import { MarkdownPane } from './components/MarkdownPane'
+import { useUrlNavigation } from './hooks/useUrlNavigation'
 
 function App() {
-  const [selectedFile, setSelectedFile] = useState<string | null>(null)
+  const { selectedFile, setSelectedFile } = useUrlNavigation()
 
   // Pane sizes (as percentages)
   const [leftWidth, setLeftWidth] = useState(20)
