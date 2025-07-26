@@ -340,6 +340,212 @@ function MermaidDiagram({ chart }: { chart: string }) {
               .mermaid-diagram svg .arrowhead {
                 animation: edgeGlow 2s ease-in-out infinite !important;
               }
+
+              /* === SEQUENCE DIAGRAM STYLING === */
+              
+              /* Actor styling with elegant appearance */
+              .mermaid-diagram svg .actor {
+                filter: drop-shadow(0 2px 8px rgba(46, 52, 64, 0.3)) !important;
+              }
+              
+              .mermaid-diagram svg .actor rect {
+                fill: rgba(94, 129, 172, 0.12) !important; /* Nord10 - Blue */
+                stroke: #5e81ac !important;
+                stroke-width: 2 !important;
+                rx: 8 !important;
+                ry: 8 !important;
+                animation: nodeBreath 5s ease-in-out infinite !important;
+              }
+
+              /* Lifeline styling with pulsing effect */
+              .mermaid-diagram svg .actor-line {
+                stroke: #81a1c1 !important;
+                stroke-width: 2 !important;
+                stroke-dasharray: 2 4 !important;
+                animation: flowingLight 4s ease-in-out infinite !important;
+                opacity: 0.7 !important;
+              }
+
+              /* Message lines with directional flow */
+              .mermaid-diagram svg .messageLine0,
+              .mermaid-diagram svg .messageLine1 {
+                stroke: #b8986d !important;
+                stroke-width: 2.5 !important;
+                animation: flowingLight 2.5s ease-in-out infinite !important;
+                filter: drop-shadow(0 0 3px rgba(184, 152, 109, 0.4)) !important;
+              }
+
+              /* Activation boxes with subtle glow */
+              .mermaid-diagram svg .activation0,
+              .mermaid-diagram svg .activation1,
+              .mermaid-diagram svg .activation2 {
+                fill: rgba(136, 192, 208, 0.15) !important; /* Nord8 */
+                stroke: #88c0d0 !important;
+                stroke-width: 1.5 !important;
+                rx: 4 !important;
+                filter: drop-shadow(0 1px 6px rgba(136, 192, 208, 0.3)) !important;
+                animation: nodeBreath 3s ease-in-out infinite !important;
+              }
+
+              /* Note styling for sequence diagrams */
+              .mermaid-diagram svg .note {
+                fill: rgba(235, 203, 139, 0.12) !important; /* Nord13 - Yellow */
+                stroke: #ebcb8b !important;
+                stroke-width: 1.5 !important;
+                rx: 6 !important;
+                ry: 6 !important;
+                filter: drop-shadow(0 2px 6px rgba(235, 203, 139, 0.3)) !important;
+              }
+
+              /* === GANTT CHART STYLING === */
+              
+              /* Task bars with progress indication */
+              .mermaid-diagram svg .task {
+                rx: 4 !important;
+                ry: 4 !important;
+                filter: drop-shadow(0 1px 4px rgba(46, 52, 64, 0.2)) !important;
+              }
+
+              .mermaid-diagram svg .task.task0 {
+                fill: rgba(94, 129, 172, 0.8) !important; /* Nord10 */
+                stroke: #5e81ac !important;
+              }
+
+              .mermaid-diagram svg .task.task1 {
+                fill: rgba(136, 192, 208, 0.8) !important; /* Nord8 */
+                stroke: #88c0d0 !important;
+              }
+
+              .mermaid-diagram svg .task.task2 {
+                fill: rgba(143, 188, 187, 0.8) !important; /* Nord7 */
+                stroke: #8fbcbb !important;
+              }
+
+              .mermaid-diagram svg .task.task3 {
+                fill: rgba(163, 190, 140, 0.8) !important; /* Nord14 */
+                stroke: #a3be8c !important;
+              }
+
+              /* Grid lines for Gantt charts */
+              .mermaid-diagram svg .grid .tick line {
+                stroke: rgba(76, 86, 106, 0.3) !important; /* Nord3 */
+                stroke-width: 0.5 !important;
+              }
+
+              /* Today line in Gantt charts */
+              .mermaid-diagram svg .today {
+                stroke: #bf616a !important; /* Nord11 - Red */
+                stroke-width: 3 !important;
+                filter: drop-shadow(0 0 6px rgba(191, 97, 106, 0.6)) !important;
+                animation: edgeGlow 2s ease-in-out infinite !important;
+              }
+
+              /* === STATE DIAGRAM STYLING === */
+              
+              /* State nodes with different shapes */
+              .mermaid-diagram svg .stateGroup .state-title {
+                fill: #eceff4 !important; /* Nord6 */
+                font-weight: 600 !important;
+              }
+
+              .mermaid-diagram svg .state rect {
+                fill: rgba(143, 188, 187, 0.12) !important; /* Nord7 */
+                stroke: #8fbcbb !important;
+                stroke-width: 2 !important;
+                rx: 8 !important;
+                ry: 8 !important;
+                filter: drop-shadow(0 2px 6px rgba(143, 188, 187, 0.3)) !important;
+                animation: nodeBreath 4.5s ease-in-out infinite !important;
+              }
+
+              /* Start/End states with special styling */
+              .mermaid-diagram svg .start-state circle,
+              .mermaid-diagram svg .end-state circle {
+                fill: rgba(163, 190, 140, 0.8) !important; /* Nord14 */
+                stroke: #a3be8c !important;
+                stroke-width: 3 !important;
+                filter: drop-shadow(0 0 8px rgba(163, 190, 140, 0.6)) !important;
+                animation: edgeGlow 3s ease-in-out infinite !important;
+              }
+
+              /* Transition arrows for state diagrams */
+              .mermaid-diagram svg .transition {
+                stroke: #b8986d !important;
+                stroke-width: 2 !important;
+                animation: flowingLight 3.5s ease-in-out infinite !important;
+                filter: drop-shadow(0 0 3px rgba(184, 152, 109, 0.4)) !important;
+              }
+
+              /* === CLASS DIAGRAM STYLING === */
+              
+              /* Class boxes with professional appearance */
+              .mermaid-diagram svg .classGroup rect {
+                fill: rgba(94, 129, 172, 0.1) !important; /* Nord10 */
+                stroke: #5e81ac !important;
+                stroke-width: 2 !important;
+                rx: 6 !important;
+                ry: 6 !important;
+                filter: drop-shadow(0 2px 8px rgba(94, 129, 172, 0.2)) !important;
+                animation: nodeBreath 5s ease-in-out infinite !important;
+              }
+
+              /* Interface classes with different styling */
+              .mermaid-diagram svg .classGroup.interface rect {
+                fill: rgba(180, 142, 173, 0.1) !important; /* Nord15 */
+                stroke: #b48ead !important;
+                stroke-dasharray: 3 2 !important;
+              }
+
+              /* Abstract classes */
+              .mermaid-diagram svg .classGroup.abstract rect {
+                fill: rgba(208, 135, 112, 0.1) !important; /* Nord12 */
+                stroke: #d08770 !important;
+                stroke-dasharray: 5 3 !important;
+              }
+
+              /* Relationship lines in class diagrams */
+              .mermaid-diagram svg .relation {
+                stroke: #81a1c1 !important;
+                stroke-width: 1.5 !important;
+                animation: flowingLight 4s ease-in-out infinite !important;
+              }
+
+              /* === PIE CHART STYLING === */
+              
+              .mermaid-diagram svg .pie-slice {
+                filter: drop-shadow(0 2px 4px rgba(46, 52, 64, 0.2)) !important;
+                transition: all 0.3s ease-out !important;
+              }
+
+              .mermaid-diagram svg .pie-slice:hover {
+                filter: drop-shadow(0 4px 12px rgba(46, 52, 64, 0.4)) brightness(1.1) !important;
+                transform: scale(1.02) !important;
+                transform-origin: center !important;
+              }
+
+              /* === GITGRAPH STYLING === */
+              
+              .mermaid-diagram svg .commit-dot {
+                r: 6 !important;
+                stroke-width: 3 !important;
+                filter: drop-shadow(0 1px 4px rgba(46, 52, 64, 0.3)) !important;
+                animation: nodeBreath 4s ease-in-out infinite !important;
+              }
+
+              .mermaid-diagram svg .branch0 {
+                stroke: #5e81ac !important; /* Nord10 */
+                stroke-width: 4 !important;
+              }
+
+              .mermaid-diagram svg .branch1 {
+                stroke: #88c0d0 !important; /* Nord8 */
+                stroke-width: 4 !important;
+              }
+
+              .mermaid-diagram svg .branch2 {
+                stroke: #8fbcbb !important; /* Nord7 */
+                stroke-width: 4 !important;
+              }
             `
             document.head.appendChild(style)
           }
