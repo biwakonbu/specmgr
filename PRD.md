@@ -1,57 +1,57 @@
-# プロダクト要求仕様書 (PRD)
+# Product Requirements Document (PRD)
 
-## 1. 製品名
+## 1. Product Name
 
 **Local DocSearch & Chat Assistant**
 
-## 2. 背景と目的
+## 2. Background and Objectives
 
-- *背景*: エンジニアがローカルで管理する Markdown ドキュメントを、即座に全文検索・要約取得・チャット形式で Q&A できる環境が乏しい。
-- *目的*: Git で管理された Markdown を **唯一の真実 (SSOT)** とし、変更差分だけをベクトル DB (Qdrant) と同期。React UI 上で閲覧・チャット可能にする。
+- *Background*: There is a lack of environments where engineers can instantly perform full-text search, summarization, and Q&A in chat format for locally managed Markdown documents.
+- *Objective*: Use Git-managed Markdown as the **single source of truth (SSOT)** and sync only change differentials with vector DB (Qdrant). Enable browsing and chatting on React UI.
 
-## 3. スコープ
+## 3. Scope
 
-| 含む                        | 含まない               |
+| Included                        | Excluded               |
 | ------------------------- | ------------------ |
-| ローカル PC での動作              | クラウド / SaaS へのデプロイ |
-| Markdown (`.md`) ファイル     | PDF, Word など他形式    |
-| Qdrant / Redis / Node サーバ | 外部 LLM 呼び出しコスト管理   |
+| Local PC operation              | Cloud / SaaS deployment |
+| Markdown (`.md`) files     | PDF, Word and other formats    |
+| Qdrant / Redis / Node server | External LLM API cost management   |
 
-## 4. ターゲットユーザ / ペルソナ
+## 4. Target Users / Personas
 
-- **ソフトウェアエンジニア** (個人 or 小規模チーム)
-  - Git 上の設計資料を頻繁に参照
-  - LLM による高速検索・要約を求める
+- **Software Engineers** (individual or small teams)
+  - Frequently reference design documents on Git
+  - Seek high-speed search and summarization by LLM
 
-## 5. ユースケース (代表例)
+## 5. Use Cases (Examples)
 
-1. エンジニアが新しい API 仕様を確認したい → ファイルを開かずチャットに質問し要約を得る。
-2. Markdown を編集・保存 → 即座に検索結果へ反映。
-3. 同期失敗 (ネットワーク遮断) → 自動リトライで回復を確認。
+1. Engineer wants to check new API specifications → Ask chat for summary without opening files.
+2. Edit and save Markdown → Immediately reflect in search results.
+3. Sync failure (network disconnection) → Confirm recovery through automatic retry.
 
-## 6. 主要機能要件
+## 6. Core Functional Requirements
 
-| ID | 要件                               | 優先度    |
+| ID | Requirement                               | Priority    |
 | -- | -------------------------------- | ------ |
-| F1 | Markdown 変更検知 (chokidar)         | High   |
-| F2 | SHA‑1 マニフェスト差分比較                 | High   |
-| F3 | Embedding 生成 (OpenAI or OSS)     | High   |
-| F4 | Qdrant への Upsert/Delete          | High   |
-| F5 | BullMQ による Job & 再試行             | Medium |
+| F1 | Markdown change detection (chokidar)         | High   |
+| F2 | SHA-1 manifest differential comparison                 | High   |
+| F3 | Embedding generation (Claude Code SDK)     | High   |
+| F4 | Upsert/Delete to Qdrant          | High   |
+| F5 | Job & retry with BullMQ             | Medium |
 | F6 | React UI: DocTree / MarkdownPane | High   |
 | F7 | React UI: ChatPane + SSE         | High   |
-| F8 | ソース行ハイライト (任意)                   | Low    |
+| F8 | Source line highlighting (optional)                   | Low    |
 
-## 7. 非機能要件
+## 7. Non-Functional Requirements
 
-| 区分      | 指標                               |
+| Category      | Metrics                               |
 | ------- | -------------------------------- |
-| パフォーマンス | 検索レスポンス < 1.5s (95 パーセンタイル)      |
-| 信頼性     | 同期 Job 成功率 99%+ (自動リトライ込)        |
-| セキュリティ  | ローカル環境のみ。外部通信は LLM API のみ TLS 利用 |
-| 可搬性     | Docker Compose 一発起動              |
+| Performance | Vector search < 1.5s, Text search < 0.5s (95th percentile) |
+| Reliability     | Sync job success rate 99%+ (including automatic retry)        |
+| Security  | Local environment only. External communication only via Claude Code SDK with TLS |
+| Portability     | One-command startup with Docker Compose              |
 
-## 8. アーキテクチャ図 (テキスト)
+## 8. Architecture Diagram (Text)
 
 ```
 Markdown (.md) ─▶ Sync Agent (Node) ─▶ Redis/BullMQ ─▶ Qdrant
@@ -60,64 +60,64 @@ Markdown (.md) ─▶ Sync Agent (Node) ─▶ Redis/BullMQ ─▶ Qdrant
 React UI (DocTree / Chat) ◀──── SSE/REST ────────────────────┘
 ```
 
-## 9. 同期フロー詳細
+## 9. Synchronization Flow Details
 
-1. chokidar が `add/change/unlink` を検知
-2. SHA‑1 計算 → manifest 比較
-3. 差分のみ BullMQ キュー投入 (attempts=5, exponential back‑off)
-4. Worker が Embedding → Qdrant Upsert/Delete
-5. 成功時 manifest 更新
+1. chokidar detects `add/change/unlink`
+2. SHA-1 calculation → manifest comparison
+3. Queue only differentials to BullMQ (attempts=5, exponential back-off)
+4. Worker generates embeddings with Claude Code SDK → Qdrant Upsert/Delete
+5. Update manifest on success
 
-## 10. UI 要件
+## 10. UI Requirements
 
-### 10.1 レイアウト
+### 10.1 Layout
 
-| 領域   | 幅   | 内容                            |
+| Area   | Width   | Content                            |
 | ---- | --- | ----------------------------- |
-| 左ペイン | 20% | DocTree (MUI TreeView)        |
-| 中央   | 45% | MarkdownPane (react‑markdown) |
-| 右ペイン | 35% | ChatPane (LLM Q&A)            |
+| Left Pane | 20% | DocTree (MUI TreeView)        |
+| Center   | 45% | MarkdownPane (react-markdown) |
+| Right Pane | 35% | ChatPane (LLM Q&A)            |
 
-### 10.2 チャット仕様
+### 10.2 Chat Specifications
 
-- SSE でトークンストリーム表示 (0.1s バッファ)
-- ユーザ入力 → `/chat` POST (JSON)
-- Claude Code SDK が RAG 生成
+- Token stream display with SSE (0.1s buffer)
+- User input → `/chat` POST (JSON)
+- Claude Code SDK generates RAG
 
-## 11. KPI / 指標
+## 11. KPIs / Metrics
 
-| KPI          | 目標値           |
+| KPI          | Target Value           |
 | ------------ | ------------- |
-| 初回フル同期時間     | < 60s (10k 行) |
-| 1 ファイル変更時反映  | < 2s          |
-| RAG 正答率 (@5) | > 80%         |
+| Initial full sync time     | < 60s (10k lines) |
+| Single file change reflection  | < 5s (including embedding generation) |
+| RAG accuracy rate (@5) | > 80%         |
 
-## 12. マイルストーン
+## 12. Milestones
 
-| フェーズ | 内容                        | 完了条件            |
+| Phase | Content                        | Completion Criteria            |
 | ---- | ------------------------- | --------------- |
-| M1   | Sync Agent + manifest     | 差分 upsert 動作確認  |
-| M2   | Search API + RAG          | CLI で回答取得       |
-| M3   | React UI DocTree/Markdown | ドキュメント閲覧可       |
-| M4   | ChatPane ストリーム            | 連携チャット完動        |
-| M5   | バックオフ & リトライ監視            | 30 分間エラー注入テスト通過 |
+| M1   | Sync Agent + manifest     | Confirm differential upsert operation  |
+| M2   | Search API + RAG          | Get answers via CLI       |
+| M3   | React UI DocTree/Markdown | Document browsing available       |
+| M4   | ChatPane streaming            | Integrated chat fully operational        |
+| M5   | Backoff & retry monitoring            | Pass 30-minute error injection test |
 
-## 13. リスク & 想定対策
+## 13. Risks & Countermeasures
 
-| リスク            | 対策                                  |
+| Risk            | Countermeasure                                  |
 | -------------- | ----------------------------------- |
-| LLM API レート制限  | Embedding キューにトークン制限を実装             |
-| 大容量 Markdown   | max‑token 以上で再分割／OSS Embeddings へ切替 |
-| chokidar 監視数上限 | `atomic: true` / `cwd` 絞り込み         |
+| Claude Code SDK rate limiting | Implement token limits in embedding queue, fallback to text search |
+| Large Markdown files   | Re-split for max-token and above / operate with text search only |
+| chokidar monitoring limit | `atomic: true` / `cwd` filtering         |
 
-## 14. 今後の拡張 (Out‑of‑Scope)
+## 14. Future Extensions (Out-of-Scope)
 
-- MCP Tool 化により外部 LLM クライアントと連携
-- PDF 生成, Docusaurus サイト自動ビルド
-- Docker Desktop 用 GUI (Electron)
+- Integration with external LLM clients through MCP tooling
+- PDF generation, Docusaurus site auto-build
+- GUI for Docker Desktop (Electron)
 
 ---
 
-*更新履歴*
+*Update History*
 
-- 2025‑07‑26  初版作成
+- 2025-07-26  Initial version created

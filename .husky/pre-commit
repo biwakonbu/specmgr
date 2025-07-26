@@ -2,4 +2,25 @@
 . "$(dirname -- "$0")/_/husky.sh"
 
 # Run lint-staged to check and format only staged files
-pnpm exec lint-staged
+if ! pnpm exec lint-staged; then
+  echo ""
+  echo "⚠️  WARNING: Pre-commit quality checks failed"
+  echo ""
+  echo "These are NOT minor issues - they require attention because:"
+  echo "• Code quality: Line length limits and type annotations affect readability and maintainability"
+  echo "• CI/CD: Production deployments may fail due to these errors"
+  echo "• Team development: Code reviews will flag these issues"
+  echo ""
+  echo "📋 RECOMMENDED ACTIONS:"
+  echo "1. IMMEDIATE: Run 'pnpm python:format && pnpm python:lint' to auto-fix"
+  echo "2. SHORT-TERM: Review and fix remaining type annotations and long lines"
+  echo "3. LONG-TERM: Consider adjusting project lint configuration if appropriate"
+  echo ""
+  echo "🚨 TO FORCE COMMIT (NOT RECOMMENDED):"
+  echo "   git commit --no-verify -m \"your message\""
+  echo ""
+  echo "This bypasses quality standards and should only be used in exceptional circumstances."
+  echo "Please consult with your team lead before using --no-verify."
+  echo ""
+  exit 1
+fi

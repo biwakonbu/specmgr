@@ -11,7 +11,12 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
-    "clean": "rm -rf dist node_modules/.vite"
+    "clean": "rm -rf dist node_modules/.vite",
+    "check:errors": "echo 'No server-side error checking for client'",
+    "check:imports": "echo 'Client import checking not implemented'",
+    "check:syntax": "tsc --noEmit",
+    "check:all": "pnpm typecheck && pnpm lint",
+    "validate": "pnpm check:all"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.0.5",

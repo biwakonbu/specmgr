@@ -1,62 +1,13 @@
-import { ChevronDown, ChevronRight, File, Folder } from 'lucide-react'
-import { useState } from 'react'
+import { ChevronDown, ChevronRight, File, Folder, RefreshCw, AlertCircle } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
-
-interface FileNode {
-  name: string
-  type: 'file' | 'folder'
-  path: string
-  children?: FileNode[]
-}
+import { apiClient } from '../services/api'
+import { buildFileTree, type FileNode } from '../utils/fileTree'
 
 interface DocTreeProps {
   onFileSelect: (filePath: string | null) => void
   selectedFile: string | null
 }
-
-// Mock data for demonstration
-const mockFileTree: FileNode[] = [
-  {
-    name: 'docs',
-    type: 'folder',
-    path: 'docs',
-    children: [
-      {
-        name: 'architecture',
-        type: 'folder',
-        path: 'docs/architecture',
-        children: [
-          { name: 'system-design.md', type: 'file', path: 'docs/architecture/system-design.md' },
-          {
-            name: 'database-schema.md',
-            type: 'file',
-            path: 'docs/architecture/database-schema.md',
-          },
-        ],
-      },
-      {
-        name: 'api',
-        type: 'folder',
-        path: 'docs/api',
-        children: [
-          { name: 'endpoints.md', type: 'file', path: 'docs/api/endpoints.md' },
-          { name: 'authentication.md', type: 'file', path: 'docs/api/authentication.md' },
-        ],
-      },
-      { name: 'README.md', type: 'file', path: 'docs/README.md' },
-      { name: 'getting-started.md', type: 'file', path: 'docs/getting-started.md' },
-    ],
-  },
-  {
-    name: 'specs',
-    type: 'folder',
-    path: 'specs',
-    children: [
-      { name: 'requirements.md', type: 'file', path: 'specs/requirements.md' },
-      { name: 'user-stories.md', type: 'file', path: 'specs/user-stories.md' },
-    ],
-  },
-]
 
 interface TreeNodeProps {
   node: FileNode
@@ -81,7 +32,7 @@ function TreeNode({ node, level, onFileSelect, selectedFile }: TreeNodeProps) {
   return (
     <div>
       <div
-        role={node.type === 'folder' ? 'treeitem' : 'treeitem'}
+        role="treeitem"
         aria-expanded={node.type === 'folder' ? isExpanded : undefined}
         aria-selected={isSelected}
         tabIndex={0}
@@ -109,13 +60,13 @@ function TreeNode({ node, level, onFileSelect, selectedFile }: TreeNodeProps) {
             <Folder className="h-4 w-4 text-blue-500" />
           </>
         )}
-        {node.type === 'file' && (
-          <>
-            <div className="w-4" /> {/* Spacer for alignment */}
-            <File className="h-4 w-4 text-gray-500" />
-          </>
+        {node.type === 'file' && <File className="h-4 w-4 text-green-600" />}
+        <span className="flex-1 truncate">{node.name}</span>
+        {node.metadata && node.type === 'file' && (
+          <span className="text-xs text-muted-foreground">
+            {(node.metadata.size / 1024).toFixed(1)}KB
+          </span>
         )}
-        <span className="truncate">{node.name}</span>
       </div>
 
       {node.type === 'folder' && isExpanded && node.children && (
@@ -136,21 +87,104 @@ function TreeNode({ node, level, onFileSelect, selectedFile }: TreeNodeProps) {
 }
 
 export function DocTree({ onFileSelect, selectedFile }: DocTreeProps) {
+  const [fileTree, setFileTree] = useState<FileNode[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadFiles = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const data = await apiClient.getFiles({
+        recursive: true,
+        sortBy: 'name',
+        order: 'asc',
+      })
+      
+      const tree = buildFileTree(data.files, data.directories)
+      setFileTree(tree)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load files'
+      setError(errorMessage)
+      console.error('Failed to load file tree:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadFiles()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="p-4 border-b border-border">
+          <h3 className="text-sm font-medium">Documents</h3>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <RefreshCw className="h-4 w-4 animate-spin" />
+            <span className="text-sm">Loading documents...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="p-4 border-b border-border">
+          <h3 className="text-sm font-medium">Documents</h3>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
+          <p className="text-sm text-center text-muted-foreground mb-3">{error}</p>
+          <button
+            onClick={loadFiles}
+            className="px-3 py-1 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b border-border">
-        <h2 className="text-lg font-semibold">Documents</h2>
+      <div className="p-4 border-b border-border flex items-center justify-between">
+        <h3 className="text-sm font-medium">Documents</h3>
+        <button
+          onClick={loadFiles}
+          className="p-1 hover:bg-accent rounded transition-colors"
+          title="Refresh file tree"
+        >
+          <RefreshCw className="h-3 w-3" />
+        </button>
       </div>
-      <div className="flex-1 overflow-auto p-2">
-        {mockFileTree.map(node => (
-          <TreeNode
-            key={node.path}
-            node={node}
-            level={0}
-            onFileSelect={onFileSelect}
-            selectedFile={selectedFile}
-          />
-        ))}
+      
+      <div className="flex-1 overflow-auto">
+        {fileTree.length > 0 ? (
+          <div className="p-2">
+            {fileTree.map(node => (
+              <TreeNode
+                key={node.path}
+                node={node}
+                level={0}
+                onFileSelect={onFileSelect}
+                selectedFile={selectedFile}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="p-4 text-center text-muted-foreground">
+            <File className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No documents found</p>
+          </div>
+        )}
       </div>
     </div>
   )

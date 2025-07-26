@@ -1,0 +1,55 @@
+# Local DocSearch & Chat Assistant Configuration
+
+# Document processing settings
+documents:
+  path: "docs"  # Relative to git repository root
+  extensions:
+    - ".md"
+    - ".markdown"
+  exclude:
+    - "node_modules"
+    - ".git"
+    - ".specmgr-*"
+  watch:
+    enabled: true
+    debounce_ms: 500
+
+# Server configuration
+server:
+  host: "0.0.0.0"
+  port: 3000
+  cors:
+    enabled: true
+    origins: ["http://localhost:5173"]
+
+# Search and embedding settings
+search:
+  max_results: 50
+  score_threshold: 0.1
+  chunk_size: 2000
+  overlap_size: 100
+
+# Vector database configuration
+vector_db:
+  collection: "documents"
+  vector_size: 1536  # Claude Code SDK compatible
+  distance: "Cosine"
+
+# Queue processing settings
+queue:
+  concurrency: 5
+  max_retries: 5
+  backoff_strategy: "exponential"
+  initial_delay_ms: 2000
+
+# Logging configuration
+logging:
+  level: "info"  # debug, info, warning, error
+  format: "json"  # json, text
+  file: null  # Optional log file path
+
+# Claude Code SDK settings
+claude:
+  model: "claude-3-5-sonnet-20241022"
+  max_tokens: 4096
+  timeout_seconds: 30

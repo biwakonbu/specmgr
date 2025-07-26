@@ -76,18 +76,20 @@ This document outlines the technology stack selection for the **Local DocSearch 
 
 ### 5. Embedding Generation
 
-#### **OpenAI Embeddings API**
-- **Model**: `text-embedding-ada-002`
-- **Purpose**: Convert text to vector embeddings
+#### **Claude Code SDK**
+- **Purpose**: Convert text to vector embeddings using Claude AI
 - **Rationale**:
-  - High-quality embeddings for semantic search
-  - Stable API with good documentation
-  - Cost-effective for moderate usage
-- **Fallback**: OSS alternatives (sentence-transformers)
+  - Integrated with Claude AI for consistent semantic understanding
+  - No separate API subscription needed (included with Claude Code SDK)
+  - High-quality embeddings optimized for document search
+  - Seamless integration with chat functionality
+- **Requirements**: Claude Code SDK subscription
+- **Fallback**: Local text search when API is unavailable
 - **Configuration**: 
   - Max tokens: 8191
   - Chunking strategy for large documents
-- **Alternatives Considered**: Cohere, Hugging Face transformers, local models
+  - Semantic summary-based embedding generation
+- **Alternatives Considered**: OpenAI, Cohere, Hugging Face transformers, local models
 
 ### 6. Frontend Stack
 
@@ -180,7 +182,7 @@ This document outlines the technology stack selection for the **Local DocSearch 
 ### 1. Embedding Generation
 - **Batch Processing**: Multiple files per API call
 - **Caching**: Avoid re-generating unchanged content
-- **Rate Limiting**: Respect OpenAI API limits
+- **Rate Limiting**: Respect Claude Code SDK API limits
 
 ### 2. Vector Search
 - **Index Optimization**: Proper HNSW configuration
@@ -224,8 +226,8 @@ This document outlines the technology stack selection for the **Local DocSearch 
 ## Future Considerations
 
 ### Potential Upgrades
-- **Local LLM**: Replace OpenAI with local models
-- **Advanced Search**: Hybrid search (vector + text)
+- **Local LLM**: Add local models as additional fallback
+- **Advanced Search**: Enhanced hybrid search algorithms
 - **Monitoring**: Prometheus/Grafana integration
 - **MCP Integration**: Tool integration for external LLMs
 
@@ -243,6 +245,7 @@ This document outlines the technology stack selection for the **Local DocSearch 
 | BullMQ over native queues | 2025-07-26 | Robust retry mechanisms | Agenda.js, AWS SQS |
 | shadcn/ui over Mantine/MUI | 2025-07-26 | CSS-free development, component ownership, Tailwind integration | Mantine, Chakra UI, NextUI |
 | Vite over Webpack | 2025-07-26 | Faster development builds | Create React App |
+| Claude Code SDK over OpenAI | 2025-07-26 | Unified AI platform, subscription model, better integration | OpenAI API, local models |
 
 ---
 

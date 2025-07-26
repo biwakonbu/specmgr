@@ -1,8 +1,9 @@
-import { FileText } from 'lucide-react'
+import { FileText, AlertCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import remarkGfm from 'remark-gfm'
+import { apiClient } from '../services/api'
 
 interface MarkdownPaneProps {
   selectedFile: string | null
@@ -92,7 +93,9 @@ Create a \`.env\` file based on \`.env.example\`:
 PORT=3000
 REDIS_URL=redis://localhost:6379
 QDRANT_URL=http://localhost:6333
-OPENAI_API_KEY=your_api_key_here
+# For subscription users: Session-based authentication (preferred)
+# For API key users: Uncomment and set ANTHROPIC_API_KEY  
+# ANTHROPIC_API_KEY=your_api_key_here
 \`\`\`
 
 ## Usage
@@ -138,7 +141,7 @@ The system follows a three-tier architecture:
 Responsible for monitoring file system changes and maintaining synchronization.
 
 ### Search Engine
-Vector-based semantic search using OpenAI embeddings and Qdrant.
+Vector-based semantic search using Claude Code SDK embeddings and Qdrant.
 
 ### Chat Interface
 LLM-powered chat with RAG (Retrieval Augmented Generation) capabilities.
@@ -227,19 +230,30 @@ data: {"type": "done"}
 export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
   const [content, setContent] = useState<string>('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (selectedFile) {
-      setLoading(true)
-      // Simulate API call delay
-      setTimeout(() => {
-        const mockContent =
-          mockMarkdownContent[selectedFile] || `# ${selectedFile}\n\nContent not found.`
-        setContent(mockContent)
-        setLoading(false)
-      }, 300)
+      const loadFile = async () => {
+        try {
+          setLoading(true)
+          setError(null)
+          
+          const fileData = await apiClient.getFileContent(selectedFile)
+          setContent(fileData.content)
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : 'Failed to load file'
+          setError(errorMessage)
+          console.error('Failed to load file content:', err)
+        } finally {
+          setLoading(false)
+        }
+      }
+      
+      loadFile()
     } else {
       setContent('')
+      setError(null)
     }
   }, [selectedFile])
 
@@ -259,6 +273,18 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center text-muted-foreground">
+          <AlertCircle className="h-8 w-8 mx-auto mb-2 text-red-500" />
+          <p className="text-sm">Failed to load document</p>
+          <p className="text-xs mt-1">{error}</p>
+        </div>
       </div>
     )
   }
