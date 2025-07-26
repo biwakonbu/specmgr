@@ -24,35 +24,38 @@ function MermaidDiagram({ chart }: { chart: string }) {
             startOnLoad: false,
             theme: 'dark',
             themeVariables: {
-              // Nord Color Palette
-              primaryColor: '#5e81ac', // Nord10 (Blue)
-              primaryTextColor: '#eceff4', // Nord6 (Light)
-              primaryBorderColor: '#81a1c1', // Nord9 (Light Blue)
-              lineColor: '#4c566a', // Nord3 (Dark Gray)
+              // Main background and container colors - Nord Dark theme
+              background: '#2e3440', // Nord0 (Primary background)
+              mainBkg: '#2e3440', // Nord0 (Main diagram background)
+              secondBkg: '#3b4252', // Nord1 (Secondary elements)
+              tertiaryBkg: '#434c5e', // Nord2 (Tertiary elements)
+
+              // Primary colors for nodes and elements
+              primaryColor: '#5e81ac', // Nord10 (Blue) - Main accent
+              primaryTextColor: '#eceff4', // Nord6 (Light text)
+              primaryBorderColor: '#81a1c1', // Nord9 (Light blue borders)
+
+              // Secondary and tertiary colors
               secondaryColor: '#88c0d0', // Nord8 (Cyan)
               tertiaryColor: '#8fbcbb', // Nord7 (Teal)
 
-              // Background colors
-              background: '#2e3440', // Nord0 (Darkest)
-              mainBkg: '#3b4252', // Nord1 (Dark)
-              secondBkg: '#434c5e', // Nord2 (Medium Dark)
-              tertiaryBkg: '#4c566a', // Nord3 (Gray)
+              // Line and edge colors
+              lineColor: '#81a1c1', // Nord9 (Lighter for better visibility)
+              edgeLabelBackground: '#2e3440', // Nord0 (Match main background)
 
-              // Section backgrounds
-              sectionBkgColor: '#3b4252', // Nord1
-              altSectionBkgColor: '#434c5e', // Nord2
+              // Text colors throughout
+              textColor: '#eceff4', // Nord6 (Primary text)
+              taskTextColor: '#eceff4', // Nord6 (Task text)
+              taskTextOutsideColor: '#eceff4', // Nord6 (Outside task text)
+              taskTextLightColor: '#eceff4', // Nord6 (Light task text)
+              taskTextDarkColor: '#2e3440', // Nord0 (Dark text on light backgrounds)
 
-              // Grid and borders
-              gridColor: '#4c566a', // Nord3
-              edgeLabelBackground: '#3b4252', // Nord1
+              // Section and grid styling
+              sectionBkgColor: '#3b4252', // Nord1 (Section backgrounds)
+              altSectionBkgColor: '#434c5e', // Nord2 (Alt section backgrounds)
+              gridColor: '#4c566a', // Nord3 (Grid lines)
 
-              // Text colors
-              textColor: '#eceff4', // Nord6 (Light)
-              taskTextColor: '#eceff4', // Nord6
-              activeTaskBkgColor: '#5e81ac', // Nord10
-              activeTaskBorderColor: '#81a1c1', // Nord9
-
-              // Node colors
+              // Node fill colors - Nord palette for variety
               fillType0: '#5e81ac', // Nord10 (Blue)
               fillType1: '#88c0d0', // Nord8 (Cyan)
               fillType2: '#8fbcbb', // Nord7 (Teal)
@@ -62,55 +65,70 @@ function MermaidDiagram({ chart }: { chart: string }) {
               fillType6: '#bf616a', // Nord11 (Red)
               fillType7: '#b48ead', // Nord15 (Purple)
 
-              // Additional colors for different diagram types
-              errorBkgColor: '#bf616a', // Nord11 (Red)
-              errorTextColor: '#eceff4', // Nord6
-              taskBkgColor: '#434c5e', // Nord2
-              taskTextOutsideColor: '#eceff4', // Nord6
-              taskTextLightColor: '#2e3440', // Nord0
-              taskTextDarkColor: '#eceff4', // Nord6
+              // Active and highlighted elements
+              activeTaskBkgColor: '#5e81ac', // Nord10 (Active task background)
+              activeTaskBorderColor: '#81a1c1', // Nord9 (Active task border)
 
-              // Gantt chart colors
-              todayLineColor: '#bf616a', // Nord11 (Red)
+              // Error and special states
+              errorBkgColor: '#bf616a', // Nord11 (Red for errors)
+              errorTextColor: '#eceff4', // Nord6 (Error text)
 
-              // Git graph colors
-              git0: '#5e81ac', // Nord10
-              git1: '#88c0d0', // Nord8
-              git2: '#8fbcbb', // Nord7
-              git3: '#a3be8c', // Nord14
-              git4: '#ebcb8b', // Nord13
-              git5: '#d08770', // Nord12
-              git6: '#bf616a', // Nord11
-              git7: '#b48ead', // Nord15
+              // Task and workflow colors
+              taskBkgColor: '#3b4252', // Nord1 (Task background)
+              taskBorder: '#4c566a', // Nord3 (Task borders)
 
-              // Journey diagram colors
-              personBorder: '#5e81ac', // Nord10
-              taskBorder: '#4c566a', // Nord3
+              // Timeline and progress indicators
+              todayLineColor: '#bf616a', // Nord11 (Today line in Gantt)
 
-              // State diagram colors
-              stateLabelColor: '#eceff4', // Nord6
-              stateBkg: '#3b4252', // Nord1
-              labelBackgroundColor: '#3b4252', // Nord1
-              compositeBackground: '#434c5e', // Nord2
-              compositeTitleBackground: '#2e3440', // Nord0
+              // Git graph branch colors
+              git0: '#5e81ac', // Nord10 (Branch 0)
+              git1: '#88c0d0', // Nord8 (Branch 1)
+              git2: '#8fbcbb', // Nord7 (Branch 2)
+              git3: '#a3be8c', // Nord14 (Branch 3)
+              git4: '#ebcb8b', // Nord13 (Branch 4)
+              git5: '#d08770', // Nord12 (Branch 5)
+              git6: '#bf616a', // Nord11 (Branch 6)
+              git7: '#b48ead', // Nord15 (Branch 7)
 
-              // Sequence diagram colors
-              actorBorder: '#5e81ac', // Nord10
-              actorBkg: '#3b4252', // Nord1
-              actorTextColor: '#eceff4', // Nord6
-              actorLineColor: '#4c566a', // Nord3
-              signalColor: '#eceff4', // Nord6
-              signalTextColor: '#eceff4', // Nord6
-              labelBoxBkgColor: '#3b4252', // Nord1
-              labelBoxBorderColor: '#5e81ac', // Nord10
-              labelTextColor: '#eceff4', // Nord6
-              loopTextColor: '#eceff4', // Nord6
-              noteBorderColor: '#81a1c1', // Nord9
-              noteBkgColor: '#434c5e', // Nord2
-              noteTextColor: '#eceff4', // Nord6
+              // Journey diagram elements
+              personBorder: '#5e81ac', // Nord10 (Person borders)
 
-              // Class diagram colors
-              classText: '#eceff4', // Nord6
+              // State diagram styling
+              stateLabelColor: '#eceff4', // Nord6 (State labels)
+              stateBkg: '#3b4252', // Nord1 (State backgrounds)
+              labelBackgroundColor: '#2e3440', // Nord0 (Label backgrounds)
+              compositeBackground: '#434c5e', // Nord2 (Composite state background)
+              compositeTitleBackground: '#2e3440', // Nord0 (Composite title background)
+
+              // Sequence diagram elements
+              actorBorder: '#5e81ac', // Nord10 (Actor borders)
+              actorBkg: '#3b4252', // Nord1 (Actor backgrounds)
+              actorTextColor: '#eceff4', // Nord6 (Actor text)
+              actorLineColor: '#81a1c1', // Nord9 (Actor lifelines - brighter for visibility)
+              signalColor: '#eceff4', // Nord6 (Signal lines)
+              signalTextColor: '#eceff4', // Nord6 (Signal text)
+              labelBoxBkgColor: '#2e3440', // Nord0 (Label box background)
+              labelBoxBorderColor: '#5e81ac', // Nord10 (Label box border)
+              labelTextColor: '#eceff4', // Nord6 (Label text)
+              loopTextColor: '#eceff4', // Nord6 (Loop text)
+              noteBorderColor: '#81a1c1', // Nord9 (Note borders)
+              noteBkgColor: '#3b4252', // Nord1 (Note backgrounds)
+              noteTextColor: '#eceff4', // Nord6 (Note text)
+
+              // Class diagram styling
+              classText: '#eceff4', // Nord6 (Class text)
+
+              // Additional flowchart and general styling
+              nodeBorder: '#81a1c1', // Nord9 (Node borders)
+              clusterBkg: '#3b4252', // Nord1 (Cluster backgrounds)
+              defaultLinkColor: '#81a1c1', // Nord9 (Default link color)
+              titleColor: '#eceff4', // Nord6 (Title text)
+              relationColor: '#81a1c1', // Nord9 (Relationship lines)
+
+              // C4 diagram colors
+              c4PersonBorder: '#5e81ac', // Nord10
+              c4SystemBorder: '#88c0d0', // Nord8
+              c4ContainerBorder: '#8fbcbb', // Nord7
             },
           })
 
