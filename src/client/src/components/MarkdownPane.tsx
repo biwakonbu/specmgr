@@ -221,11 +221,119 @@ function MermaidDiagram({ chart }: { chart: string }) {
                 animation: edgeGlow 1.5s ease-in-out infinite, flowingLight 1.5s ease-in-out infinite !important;
               }
 
-              .mermaid-diagram svg .node rect,
-              .mermaid-diagram svg .node circle,
-              .mermaid-diagram svg .node ellipse,
-              .mermaid-diagram svg .flowchart-node {
+              /* Group/Cluster background styling with elegant gradients */
+              .mermaid-diagram svg .cluster rect {
+                fill: linear-gradient(135deg, rgba(59, 66, 82, 0.15), rgba(67, 76, 94, 0.25)) !important;
+                stroke: rgba(129, 161, 193, 0.3) !important;
+                stroke-width: 1.5 !important;
+                rx: 8 !important;
+                ry: 8 !important;
+                filter: drop-shadow(0 2px 8px rgba(46, 52, 64, 0.3)) !important;
+              }
+
+              /* Different group background colors */
+              .mermaid-diagram svg .cluster:nth-child(1) rect {
+                fill: rgba(94, 129, 172, 0.08) !important; /* Nord10 - Blue tint */
+                stroke: rgba(94, 129, 172, 0.3) !important;
+              }
+              
+              .mermaid-diagram svg .cluster:nth-child(2) rect {
+                fill: rgba(136, 192, 208, 0.08) !important; /* Nord8 - Cyan tint */
+                stroke: rgba(136, 192, 208, 0.3) !important;
+              }
+              
+              .mermaid-diagram svg .cluster:nth-child(3) rect {
+                fill: rgba(143, 188, 187, 0.08) !important; /* Nord7 - Teal tint */
+                stroke: rgba(143, 188, 187, 0.3) !important;
+              }
+              
+              .mermaid-diagram svg .cluster:nth-child(4) rect {
+                fill: rgba(163, 190, 140, 0.08) !important; /* Nord14 - Green tint */
+                stroke: rgba(163, 190, 140, 0.3) !important;
+              }
+
+              .mermaid-diagram svg .cluster:nth-child(5) rect {
+                fill: rgba(235, 203, 139, 0.08) !important; /* Nord13 - Yellow tint */
+                stroke: rgba(235, 203, 139, 0.3) !important;
+              }
+
+              /* Node type-based styling with semantic colors */
+              .mermaid-diagram svg .node rect {
                 animation: nodeBreath 4s ease-in-out infinite !important;
+                stroke-width: 2 !important;
+                rx: 6 !important;
+                ry: 6 !important;
+                filter: drop-shadow(0 1px 4px rgba(46, 52, 64, 0.2)) !important;
+              }
+
+              .mermaid-diagram svg .node circle,
+              .mermaid-diagram svg .node ellipse {
+                animation: nodeBreath 4s ease-in-out infinite !important;
+                stroke-width: 2 !important;
+                filter: drop-shadow(0 1px 4px rgba(46, 52, 64, 0.2)) !important;
+              }
+
+              /* Frontend/UI nodes - Blue theme */
+              .mermaid-diagram svg .node[id*="UI"] rect,
+              .mermaid-diagram svg .node[id*="React"] rect,
+              .mermaid-diagram svg .node[id*="Frontend"] rect,
+              .mermaid-diagram svg .node[id*="Client"] rect {
+                fill: rgba(94, 129, 172, 0.15) !important; /* Nord10 */
+                stroke: #5e81ac !important;
+              }
+
+              /* Backend/API nodes - Cyan theme */
+              .mermaid-diagram svg .node[id*="API"] rect,
+              .mermaid-diagram svg .node[id*="Server"] rect,
+              .mermaid-diagram svg .node[id*="Backend"] rect,
+              .mermaid-diagram svg .node[id*="FastAPI"] rect {
+                fill: rgba(136, 192, 208, 0.15) !important; /* Nord8 */
+                stroke: #88c0d0 !important;
+              }
+
+              /* Service/Business logic nodes - Teal theme */
+              .mermaid-diagram svg .node[id*="Service"] rect,
+              .mermaid-diagram svg .node[id*="Business"] rect,
+              .mermaid-diagram svg .node[id*="Logic"] rect {
+                fill: rgba(143, 188, 187, 0.15) !important; /* Nord7 */
+                stroke: #8fbcbb !important;
+              }
+
+              /* Database/Storage nodes - Green theme */
+              .mermaid-diagram svg .node[id*="DB"] rect,
+              .mermaid-diagram svg .node[id*="Database"] rect,
+              .mermaid-diagram svg .node[id*="Storage"] rect,
+              .mermaid-diagram svg .node[id*="Qdrant"] rect,
+              .mermaid-diagram svg .node[id*="Redis"] rect {
+                fill: rgba(163, 190, 140, 0.15) !important; /* Nord14 */
+                stroke: #a3be8c !important;
+              }
+
+              /* External/Integration nodes - Orange theme */
+              .mermaid-diagram svg .node[id*="External"] rect,
+              .mermaid-diagram svg .node[id*="Claude"] rect,
+              .mermaid-diagram svg .node[id*="AI"] rect,
+              .mermaid-diagram svg .node[id*="LLM"] rect,
+              .mermaid-diagram svg .node[id*="Voyage"] rect {
+                fill: rgba(208, 135, 112, 0.15) !important; /* Nord12 */
+                stroke: #d08770 !important;
+              }
+
+              /* Critical/Error nodes - Red theme */
+              .mermaid-diagram svg .node[id*="Error"] rect,
+              .mermaid-diagram svg .node[id*="Critical"] rect,
+              .mermaid-diagram svg .node[id*="Alert"] rect {
+                fill: rgba(191, 97, 106, 0.15) !important; /* Nord11 */
+                stroke: #bf616a !important;
+              }
+
+              /* Special/Advanced nodes - Purple theme */
+              .mermaid-diagram svg .node[id*="Special"] rect,
+              .mermaid-diagram svg .node[id*="Advanced"] rect,
+              .mermaid-diagram svg .node[id*="Queue"] rect,
+              .mermaid-diagram svg .node[id*="Worker"] rect {
+                fill: rgba(180, 142, 173, 0.15) !important; /* Nord15 */
+                stroke: #b48ead !important;
               }
 
               .mermaid-diagram svg defs marker path,
