@@ -173,6 +173,10 @@ class ApiClient {
     return this.request<SearchStats>('/search/stats')
   }
 
+  async getHealth(): Promise<HealthStatus> {
+    return this.request<HealthStatus>('/health')
+  }
+
   async getHealthStatus(): Promise<HealthStatus> {
     return this.request<HealthStatus>('/health/detailed')
   }
