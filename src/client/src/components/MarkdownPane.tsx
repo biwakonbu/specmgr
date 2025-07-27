@@ -167,7 +167,9 @@ function MermaidDiagram({ chart }: { chart: string }) {
           })
 
           // Clear previous content
-          elementRef.current.innerHTML = ''
+          if (elementRef.current) {
+            elementRef.current.innerHTML = ''
+          }
 
           // Generate unique ID for this diagram
           const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`
@@ -722,6 +724,21 @@ function MermaidDiagram({ chart }: { chart: string }) {
                 font-weight: 600 !important;
               }
               
+              /* Fix width calculation for basic.label-container with <br/> tags */
+              .mermaid-diagram svg .basic.label-container {
+                display: inline-block !important;
+              }
+              
+              /* Ensure labels with line breaks are properly sized */
+              .mermaid-diagram svg foreignObject {
+                overflow: visible !important;
+              }
+              
+              .mermaid-diagram svg foreignObject > div {
+                white-space: pre-line !important;
+                width: max-content !important;
+              }
+              
               
               /* Text directly under rects (not in .node groups) */
               .mermaid-diagram svg g > text {
@@ -795,6 +812,11 @@ function MermaidDiagram({ chart }: { chart: string }) {
 
           // Render the diagram with pre-styled CSS
           const { svg } = await mermaid.render(id, chart)
+
+          // Check if element still exists (component might have unmounted)
+          if (!elementRef.current) {
+            return
+          }
 
           // Temporarily hide to prevent color flash during styling
           elementRef.current.style.visibility = 'hidden'
@@ -1312,7 +1334,15 @@ function MermaidDiagram({ chart }: { chart: string }) {
               const lifelines = svgElement.querySelectorAll('.actor-line')
 
               // Create a map of actor positions
-              const actorBounds = new Map()
+              type ActorBounds = {
+                x: number
+                y: number
+                width: number
+                height: number
+                cx: number
+                bottom: number
+              }
+              const actorBounds = new Map<Element, ActorBounds>()
               actors.forEach(actor => {
                 const rect = actor as SVGRectElement
                 const x = parseFloat(rect.getAttribute('x') || '0')
@@ -1337,10 +1367,18 @@ function MermaidDiagram({ chart }: { chart: string }) {
                 const x1 = parseFloat(lineElement.getAttribute('x1') || '0')
 
                 // Find the corresponding actor box
-                let matchingActor: { x: number; y: number; width: number; height: number; cx: number; bottom: number } | null = null
+                type ActorBounds = {
+                  x: number
+                  y: number
+                  width: number
+                  height: number
+                  cx: number
+                  bottom: number
+                }
+                let matchingActor: ActorBounds | null = null
                 let minDistance = Infinity
 
-                actorBounds.forEach((bounds) => {
+                actorBounds.forEach(bounds => {
                   const distance = Math.abs(bounds.cx - x1)
                   if (distance < minDistance && distance < 10) {
                     // 10px tolerance
@@ -1351,7 +1389,10 @@ function MermaidDiagram({ chart }: { chart: string }) {
 
                 if (matchingActor) {
                   // Move the line start point to below the actor box
-                  lineElement.setAttribute('y1', (matchingActor.bottom + 5).toString())
+                  lineElement.setAttribute(
+                    'y1',
+                    ((matchingActor as ActorBounds).bottom + 5).toString()
+                  )
                 }
               })
 
@@ -1424,33 +1465,13 @@ function MermaidDiagram({ chart }: { chart: string }) {
               for (const selector of possibleSelectors) {
                 clusters = svgElement.querySelectorAll(selector)
                 if (clusters.length > 0) {
-                  console.log(`Found ${clusters.length} clusters with selector: ${selector}`)
+                  // Remove console log to reduce spam
                   break
                 }
               }
 
               if (!clusters || clusters.length === 0) {
-                console.log('No cluster elements found, checking all rects...')
-                // Debug: log all rect elements to see what's available
-                const allRects = svgElement.querySelectorAll('rect')
-                allRects.forEach((rect, i) => {
-                  const rectElement = rect as SVGRectElement
-                  const parentElement = rectElement.parentElement
-                  const parentClassName =
-                    parentElement &&
-                    'className' in parentElement &&
-                    parentElement.className &&
-                    typeof parentElement.className === 'object' &&
-                    'baseVal' in parentElement.className
-                      ? (parentElement.className as SVGAnimatedString).baseVal
-                      : ''
-                  console.log(
-                    `Rect ${i}:`,
-                    rectElement.className.baseVal,
-                    rectElement.id,
-                    parentClassName
-                  )
-                })
+                // No clusters found, skip coloring
                 return
               }
 
@@ -1472,8 +1493,6 @@ function MermaidDiagram({ chart }: { chart: string }) {
                 clusterElement.style.setProperty('fill', colors.fill, 'important')
                 clusterElement.style.setProperty('stroke', colors.stroke, 'important')
                 clusterElement.style.setProperty('stroke-width', '1.5', 'important')
-
-                console.log(`Applied color ${colorIndex} to cluster ${index}`)
               })
             }
 
@@ -1541,7 +1560,7 @@ function MermaidDiagram({ chart }: { chart: string }) {
                   // Find all nodes and also check for standalone rects with text
                   const nodes = svgElement.querySelectorAll('.node')
                   const standaloneRects = svgElement.querySelectorAll('rect:not(.node rect)')
-                  
+
                   // Process regular nodes
                   nodes.forEach(node => {
                     const nodeGroup = node as SVGGElement
@@ -1550,35 +1569,47 @@ function MermaidDiagram({ chart }: { chart: string }) {
 
                     if (!rect || textElements.length === 0) return
 
-                    adjustRectForText(rect as SVGRectElement, Array.from(textElements) as SVGTextElement[])
+                    adjustRectForText(
+                      rect as SVGRectElement,
+                      Array.from(textElements) as SVGTextElement[]
+                    )
                   })
-                  
+
                   // Process standalone rects that might have text siblings
                   standaloneRects.forEach(rect => {
                     const rectElement = rect as SVGRectElement
                     const parent = rectElement.parentElement
                     if (!parent) return
-                    
+
                     // Find text elements that are siblings or nearby
                     const textElements = parent.querySelectorAll('text, .nodeLabel')
-                    
+
                     // Also check for text elements that might be positioned near this rect
                     const rectX = parseFloat(rectElement.getAttribute('x') || '0')
                     const rectY = parseFloat(rectElement.getAttribute('y') || '0')
                     const rectWidth = parseFloat(rectElement.getAttribute('width') || '0')
                     const rectHeight = parseFloat(rectElement.getAttribute('height') || '0')
-                    
-                    const nearbyTexts = Array.from(svgElement.querySelectorAll('text')).filter(text => {
-                      const textX = parseFloat(text.getAttribute('x') || '0')
-                      const textY = parseFloat(text.getAttribute('y') || '0')
-                      
-                      // Check if text is within or near the rect bounds
-                      return textX >= rectX - 20 && textX <= rectX + rectWidth + 20 &&
-                             textY >= rectY - 20 && textY <= rectY + rectHeight + 20
-                    })
-                    
-                    const allTexts = [...Array.from(textElements), ...nearbyTexts] as SVGTextElement[]
-                    
+
+                    const nearbyTexts = Array.from(svgElement.querySelectorAll('text')).filter(
+                      text => {
+                        const textX = parseFloat(text.getAttribute('x') || '0')
+                        const textY = parseFloat(text.getAttribute('y') || '0')
+
+                        // Check if text is within or near the rect bounds
+                        return (
+                          textX >= rectX - 20 &&
+                          textX <= rectX + rectWidth + 20 &&
+                          textY >= rectY - 20 &&
+                          textY <= rectY + rectHeight + 20
+                        )
+                      }
+                    )
+
+                    const allTexts = [
+                      ...Array.from(textElements),
+                      ...nearbyTexts,
+                    ] as SVGTextElement[]
+
                     if (allTexts.length > 0) {
                       adjustRectForText(rectElement, allTexts)
                     }
@@ -1589,15 +1620,16 @@ function MermaidDiagram({ chart }: { chart: string }) {
                 console.debug('Node size adjustment skipped:', error)
               }
             }
-            
+
             // Helper function to adjust rect size for text content
-            const adjustRectForText = (rectElement: SVGRectElement, textElements: SVGTextElement[]) => {
+            const adjustRectForText = (
+              rectElement: SVGRectElement,
+              textElements: SVGTextElement[]
+            ) => {
               try {
                 // Get current rect dimensions
                 const currentWidth = parseFloat(rectElement.getAttribute('width') || '100')
                 const currentHeight = parseFloat(rectElement.getAttribute('height') || '40')
-                const currentX = parseFloat(rectElement.getAttribute('x') || '0')
-                const currentY = parseFloat(rectElement.getAttribute('y') || '0')
 
                 // Find the maximum text width and total height
                 let maxTextWidth = 0
@@ -1607,34 +1639,95 @@ function MermaidDiagram({ chart }: { chart: string }) {
                 textElements.forEach(text => {
                   try {
                     const textElement = text as SVGTextElement
-                    
+
                     // Skip if text is empty or invisible
                     if (!textElement.textContent || textElement.textContent.trim() === '') {
                       return
                     }
-                    
-                    const bbox = textElement.getBBox()
-                    if (bbox.width > maxTextWidth) {
-                      maxTextWidth = bbox.width
+
+                    // Check if text contains <br/> tags (in innerHTML)
+                    const innerHTML = textElement.innerHTML || textElement.textContent
+                    if (
+                      innerHTML.includes('<br>') ||
+                      innerHTML.includes('<br/>') ||
+                      innerHTML.includes('<br />')
+                    ) {
+                      // Split text by <br> tags and measure each line
+                      const lines = innerHTML.split(/<br\s*\/?>/i)
+                      let maxLineWidth = 0
+
+                      lines.forEach(line => {
+                        // Create temporary text element to measure line width
+                        const tempText = document.createElementNS(
+                          'http://www.w3.org/2000/svg',
+                          'text'
+                        )
+                        tempText.style.cssText = textElement.style.cssText
+                        tempText.textContent = line.replace(/<[^>]*>/g, '') // Strip HTML tags
+                        svgElement.appendChild(tempText)
+
+                        try {
+                          const bbox = tempText.getBBox()
+                          if (bbox.width > maxLineWidth) {
+                            maxLineWidth = bbox.width
+                          }
+                          totalTextHeight += bbox.height
+                        } catch (e) {
+                          // Fallback: estimate based on character count
+                          const estimatedWidth = line.length * 8
+                          if (estimatedWidth > maxLineWidth) {
+                            maxLineWidth = estimatedWidth
+                          }
+                          totalTextHeight += 16
+                        }
+
+                        svgElement.removeChild(tempText)
+                      })
+
+                      if (maxLineWidth > maxTextWidth) {
+                        maxTextWidth = maxLineWidth
+                      }
+                      textCount++
+                    } else {
+                      // Regular text without <br> tags
+                      const bbox = textElement.getBBox()
+                      if (bbox.width > maxTextWidth) {
+                        maxTextWidth = bbox.width
+                      }
+                      totalTextHeight += bbox.height
+                      textCount++
                     }
-                    totalTextHeight += bbox.height
-                    textCount++
-                    
+
                     // Ensure text is visible by setting proper fill and positioning
                     textElement.style.setProperty('fill', '#eceff4', 'important') // Nord6
                     textElement.style.setProperty('font-weight', '600', 'important')
                     textElement.style.setProperty('pointer-events', 'none', 'important')
-                    
                   } catch (e) {
                     // Ignore getBBox errors but try alternative methods
                     const textElement = text as SVGTextElement
                     if (textElement.textContent) {
-                      // Estimate text width based on character count (rough approximation)
-                      const estimatedWidth = textElement.textContent.length * 8
-                      if (estimatedWidth > maxTextWidth) {
-                        maxTextWidth = estimatedWidth
+                      // Check for <br> in content and split if found
+                      const content = textElement.innerHTML || textElement.textContent
+                      if (
+                        content.includes('<br>') ||
+                        content.includes('<br/>') ||
+                        content.includes('<br />')
+                      ) {
+                        const lines = content.split(/<br\s*\/?>/i)
+                        const maxLineLength = Math.max(...lines.map(line => line.length))
+                        const estimatedWidth = maxLineLength * 8
+                        if (estimatedWidth > maxTextWidth) {
+                          maxTextWidth = estimatedWidth
+                        }
+                        totalTextHeight += lines.length * 16
+                      } else {
+                        // Estimate text width based on character count (rough approximation)
+                        const estimatedWidth = textElement.textContent.length * 8
+                        if (estimatedWidth > maxTextWidth) {
+                          maxTextWidth = estimatedWidth
+                        }
+                        totalTextHeight += 16 // Estimated line height
                       }
-                      totalTextHeight += 16 // Estimated line height
                       textCount++
                     }
                   }
@@ -1645,9 +1738,9 @@ function MermaidDiagram({ chart }: { chart: string }) {
                   return
                 }
 
-                // Add generous padding to ensure text is fully visible
-                const paddingX = 32 // Fixed padding for consistency
-                const paddingY = 16 // Fixed padding for consistency
+                // Add minimal padding to ensure text is visible
+                const paddingX = 4 // Very minimal padding
+                const paddingY = 8 // Standard padding
 
                 // Calculate required dimensions with safety margins
                 const requiredWidth = Math.max(maxTextWidth + paddingX * 2, 80) // Minimum 80px width
@@ -1663,7 +1756,6 @@ function MermaidDiagram({ chart }: { chart: string }) {
                   rectElement.setAttribute('height', requiredHeight.toString())
                   // Don't adjust Y position to avoid shifting
                 }
-                
               } catch (error) {
                 console.debug('Rect adjustment failed:', error)
               }
@@ -1673,47 +1765,98 @@ function MermaidDiagram({ chart }: { chart: string }) {
             setTimeout(adjustNodeSizesForLongText, 100)
             setTimeout(adjustNodeSizesForLongText, 300)
             setTimeout(adjustNodeSizesForLongText, 500) // Final pass to catch any late-rendered text
+
+            // Sync basic.label-container rect with actual content dimensions
+            const syncBasicLabelContainerRects = () => {
+              try {
+                // Find all basic.label-container elements
+                const labelContainers = svgElement.querySelectorAll('.basic.label-container')
+
+                labelContainers.forEach(container => {
+                  const gElement = container.parentElement as SVGGElement // Get the parent g element
+                  const rect = container as SVGRectElement
+                  const label = gElement.querySelector('.label')
+
+                  if (!rect || !label) return
+
+                  // Check if there's a foreignObject with content
+                  const foreignObject = label.querySelector('foreignObject')
+                  const divContent = foreignObject?.querySelector('div')
+
+                  if (foreignObject && divContent) {
+                    // Get the actual rendered size of the div content
+                    const divWidth = (divContent as HTMLDivElement).scrollWidth
+                    const divHeight = (divContent as HTMLDivElement).scrollHeight
+
+                    // Get the transform from the label element
+                    const labelTransform = label.getAttribute('transform')
+                    let translateX = 0,
+                      translateY = 0
+
+                    if (labelTransform) {
+                      const match = labelTransform.match(/translate\(([-\d.]+),\s*([-\d.]+)\)/)
+                      if (match) {
+                        translateX = parseFloat(match[1])
+                        translateY = parseFloat(match[2])
+                      }
+                    }
+
+                    // Add padding to the dimensions
+                    const paddingX = 15 // 左右各7.5pxのパディング
+                    const paddingY = 15 // 上下各7.5pxのパディング
+
+                    // Calculate new dimensions based on actual content
+                    const newWidth = divWidth + paddingX
+                    const newHeight = divHeight + paddingY
+
+                    // Center the rect around the content
+                    const newX = translateX - paddingX / 2
+                    const newY = translateY - paddingY / 2
+
+                    // Apply the new dimensions to the rect
+                    rect.setAttribute('x', newX.toString())
+                    rect.setAttribute('y', newY.toString())
+                    rect.setAttribute('width', newWidth.toString())
+                    rect.setAttribute('height', newHeight.toString())
+                  } else {
+                    // Fallback to original method if no foreignObject
+                    try {
+                      const labelBBox = (label as SVGGraphicsElement).getBBox()
+
+                      const paddingX = 10
+                      const paddingY = 4
+
+                      rect.setAttribute('x', (labelBBox.x - paddingX / 2).toString())
+                      rect.setAttribute('y', (labelBBox.y - paddingY / 2).toString())
+                      rect.setAttribute('width', (labelBBox.width + paddingX).toString())
+                      rect.setAttribute('height', (labelBBox.height + paddingY).toString())
+                    } catch (e) {
+                      // Ignore errors
+                    }
+                  }
+                })
+              } catch (error) {
+                console.debug('Failed to sync basic.label-container rects:', error)
+              }
+            }
+
+            // Run rect syncing after Mermaid rendering completes
+            setTimeout(syncBasicLabelContainerRects, 150)
+            setTimeout(syncBasicLabelContainerRects, 350)
+            setTimeout(syncBasicLabelContainerRects, 550)
+
+            // Fix excessively wide note nodes
+            const fixWideNoteNodes = () => {
+              // Don't try to fix note nodes - Mermaid's layout is too complex
+              // and modifying it causes text to overflow
+              return
+            }
+
+            setTimeout(fixWideNoteNodes, 50)
           }
 
           // Apply dynamic coloring immediately to prevent color flash
           addDynamicEdgeColoring()
-
-          // Fix excessively wide note nodes
-          const fixWideNoteNodes = () => {
-            const noteNodes = svgElement.querySelectorAll('[data-id*="note"], .node[id*="note"]')
-            noteNodes.forEach(noteNode => {
-              const rect = noteNode.querySelector('rect')
-              if (rect) {
-                const currentWidth = parseFloat(rect.getAttribute('width') || '0')
-                // Limit note width to a reasonable maximum (400px)
-                if (currentWidth > 400) {
-                  const newWidth = 400
-                  const currentX = parseFloat(rect.getAttribute('x') || '0')
-                  const widthDiff = currentWidth - newWidth
-                  
-                  rect.setAttribute('width', newWidth.toString())
-                  rect.setAttribute('x', (currentX + widthDiff / 2).toString())
-                  
-                  // Also adjust the foreignObject if present
-                  const foreignObject = noteNode.querySelector('foreignObject')
-                  if (foreignObject) {
-                    foreignObject.setAttribute('width', (newWidth - 20).toString())
-                  }
-                  
-                  // Update text wrapping
-                  const labelDiv = noteNode.querySelector('.label')
-                  if (labelDiv) {
-                    const labelElement = labelDiv as HTMLElement
-                    labelElement.style.maxWidth = (newWidth - 20) + 'px'
-                    labelElement.style.whiteSpace = 'normal'
-                    labelElement.style.wordWrap = 'break-word'
-                  }
-                }
-              }
-            })
-          }
-          
-          setTimeout(fixWideNoteNodes, 50)
 
           // Show the diagram after styling is complete
           elementRef.current.style.visibility = 'visible'
@@ -1729,7 +1872,18 @@ function MermaidDiagram({ chart }: { chart: string }) {
       }
     }
 
-    renderDiagram()
+    // Store cleanup flag to prevent updates after unmount
+    let isCleanedUp = false
+
+    renderDiagram().catch(error => {
+      if (!isCleanedUp) {
+        console.error('Failed to render diagram:', error)
+      }
+    })
+
+    return () => {
+      isCleanedUp = true
+    }
   }, [chart])
 
   return (
