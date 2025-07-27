@@ -64,9 +64,11 @@ class SchedulerService:
 
                     try:
                         result = await self.sync_service.execute_bulk_sync(force=False)
-                        logger.info(
-                            f"定期フル同期完了: {result.processed_files}/{result.total_files}ファイル処理済み"
+                        msg = (
+                            f"定期フル同期完了: {result.processed_files}/"
+                            f"{result.total_files}ファイル処理済み"
                         )
+                        logger.info(msg)
                     except ValueError as e:
                         # 同期が既に実行中の場合はスキップ
                         if "already running" in str(e):

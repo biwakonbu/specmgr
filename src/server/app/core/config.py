@@ -156,7 +156,7 @@ class Settings(BaseSettings):
     documents_path: str = ""
     watch_directory: str = "docs"
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(self, **kwargs: str | int | None) -> None:
         # Store original environment values before processing
         import os
 
@@ -184,7 +184,7 @@ class Settings(BaseSettings):
             app_config=app_config,
             documents_path=documents_path,
             watch_directory=watch_directory,
-            **kwargs,
+            **kwargs,  # type: ignore[arg-type]
         )
 
         # Apply configuration file overrides (environment variables take priority)

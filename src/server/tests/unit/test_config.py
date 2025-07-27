@@ -10,14 +10,14 @@ import yaml
 
 from app.core.config import (
     AppConfig,
-    DocumentsConfig,
-    ServerConfig,
-    SearchConfig,
-    VectorDbConfig,
-    QueueConfig,
-    LoggingConfig,
     ClaudeConfig,
+    DocumentsConfig,
+    LoggingConfig,
+    QueueConfig,
+    SearchConfig,
+    ServerConfig,
     Settings,
+    VectorDbConfig,
     find_git_root,
     load_config_file,
 )
@@ -135,7 +135,7 @@ class TestAppConfig:
         app_config = AppConfig(
             documents=DocumentsConfig(
                 path=config_data["documents"]["path"],
-                extensions=config_data["documents"]["extensions"]
+                extensions=config_data["documents"]["extensions"],
             ),
             server=ServerConfig(**config_data["server"]),
             search=SearchConfig(),
@@ -160,9 +160,7 @@ class TestAppConfig:
         }
 
         app_config = AppConfig(
-            documents=DocumentsConfig(
-                path=config_data["documents"]["path"]
-            ),
+            documents=DocumentsConfig(path=config_data["documents"]["path"]),
             server=ServerConfig(),
             search=SearchConfig(),
             vector_db=VectorDbConfig(),

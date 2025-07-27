@@ -2,9 +2,9 @@
 
 import asyncio
 import tempfile
-from collections.abc import Generator, AsyncGenerator
-from typing import Any
+from collections.abc import AsyncGenerator, Generator
 from pathlib import Path
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -263,7 +263,7 @@ pytest_plugins: list[str] = []
 
 
 # Custom markers
-def pytest_configure(config: Any) -> None:
+def pytest_configure(config: Any) -> None:  # type: ignore[no-untyped-def]
     """Configure custom pytest markers."""
     config.addinivalue_line("markers", "unit: Unit tests")
     config.addinivalue_line("markers", "integration: Integration tests")

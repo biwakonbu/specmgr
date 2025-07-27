@@ -66,8 +66,8 @@ class QdrantService:
             import hashlib
             import uuid
 
-            # ファイルパスのハッシュからUUIDを生成
-            path_hash = hashlib.md5(file_path.encode()).hexdigest()
+            # ファイルパスのハッシュからUUIDを生成（SHA-256使用）
+            path_hash = hashlib.sha256(file_path.encode()).hexdigest()[:32]
             point_id = str(uuid.UUID(path_hash))
 
             # ポイントを作成
@@ -148,7 +148,7 @@ class QdrantService:
             import hashlib
             import uuid
 
-            path_hash = hashlib.md5(file_path.encode()).hexdigest()
+            path_hash = hashlib.sha256(file_path.encode()).hexdigest()[:32]
             point_id = str(uuid.UUID(path_hash))
 
             # Qdrantから削除
@@ -178,7 +178,7 @@ class QdrantService:
             import hashlib
             import uuid
 
-            path_hash = hashlib.md5(file_path.encode()).hexdigest()
+            path_hash = hashlib.sha256(file_path.encode()).hexdigest()[:32]
             point_id = str(uuid.UUID(path_hash))
 
             # ポイント取得を試行

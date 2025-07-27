@@ -1,6 +1,7 @@
 """Integration tests for manifest and sync services."""
 
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -11,7 +12,7 @@ from app.services.sync_service import SyncService
 
 
 @pytest.fixture
-def temp_sync_service():
+def temp_sync_service() -> Generator[SyncService, None, None]:
     """Create temporary sync service for testing."""
     with tempfile.TemporaryDirectory() as temp_dir:
         service = SyncService()

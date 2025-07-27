@@ -79,9 +79,11 @@ class SyncService:
                 import logging
 
                 logger = logging.getLogger(__name__)
-                logger.info(
-                    f"Differential sync: {len(added_files)} added, {len(modified_files)} modified, {len(deleted_files)} deleted"
+                msg = (
+                    f"Differential sync: {len(added_files)} added, "
+                    f"{len(modified_files)} modified, {len(deleted_files)} deleted"
                 )
+                logger.info(msg)
 
             total_operations = len(files_to_sync) + len(files_to_delete)
             self._sync_status["total"] = total_operations
@@ -133,9 +135,11 @@ class SyncService:
             import logging
 
             logger = logging.getLogger(__name__)
-            logger.info(
-                f"Sync completed: {processed_files}/{total_operations} operations, {len(errors)} errors"
+            msg = (
+                f"Sync completed: {processed_files}/{total_operations} operations, "
+                f"{len(errors)} errors"
             )
+            logger.info(msg)
 
             return BulkSyncResult(
                 success=len(errors) == 0,

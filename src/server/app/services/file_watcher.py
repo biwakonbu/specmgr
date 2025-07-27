@@ -5,7 +5,6 @@ from pathlib import Path
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
-from typing import Optional
 
 from app.core.config import settings
 from app.services.queue_service import QueueService
@@ -23,7 +22,9 @@ class MarkdownFileHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
-        file_path = str(event.src_path) if isinstance(event.src_path, bytes) else event.src_path
+        file_path = (
+            str(event.src_path) if isinstance(event.src_path, bytes) else event.src_path
+        )
         if self._is_markdown_file(file_path):
             asyncio.create_task(self._handle_file_change("created", file_path))
 
@@ -32,7 +33,9 @@ class MarkdownFileHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
-        file_path = str(event.src_path) if isinstance(event.src_path, bytes) else event.src_path
+        file_path = (
+            str(event.src_path) if isinstance(event.src_path, bytes) else event.src_path
+        )
         if self._is_markdown_file(file_path):
             asyncio.create_task(self._handle_file_change("modified", file_path))
 
@@ -41,7 +44,9 @@ class MarkdownFileHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
-        file_path = str(event.src_path) if isinstance(event.src_path, bytes) else event.src_path
+        file_path = (
+            str(event.src_path) if isinstance(event.src_path, bytes) else event.src_path
+        )
         if self._is_markdown_file(file_path):
             asyncio.create_task(self._handle_file_change("deleted", file_path))
 
@@ -52,13 +57,21 @@ class MarkdownFileHandler(FileSystemEventHandler):
 
         # 移動元ファイルを削除として処理
         if hasattr(event, "src_path"):
-            src_path = str(event.src_path) if isinstance(event.src_path, bytes) else event.src_path
+            src_path = (
+                str(event.src_path)
+                if isinstance(event.src_path, bytes)
+                else event.src_path
+            )
             if self._is_markdown_file(src_path):
                 asyncio.create_task(self._handle_file_change("deleted", src_path))
 
         # 移動先ファイルを作成として処理
         if hasattr(event, "dest_path"):
-            dest_path = str(event.dest_path) if isinstance(event.dest_path, bytes) else event.dest_path
+            dest_path = (
+                str(event.dest_path)
+                if isinstance(event.dest_path, bytes)
+                else event.dest_path
+            )
             if self._is_markdown_file(dest_path):
                 asyncio.create_task(self._handle_file_change("created", dest_path))
 
@@ -98,7 +111,7 @@ class FileWatcherService:
     """ファイル監視サービス."""
 
     def __init__(self) -> None:
-        self.observer: Optional[Observer] = None
+        self.observer: Observer | None = None
         self.queue_service = QueueService()
         self.handler = MarkdownFileHandler(self.queue_service)
 

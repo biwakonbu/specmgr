@@ -47,6 +47,7 @@ async def chat_stream(request: ChatRequest) -> StreamingResponse:
             except Exception as e:
                 # エラーシグナル
                 from app.models.api_models import ErrorDetail
+
                 error_data = ChatStreamChunk(
                     type="error", error=ErrorDetail(code="CHAT_ERROR", message=str(e))
                 )
