@@ -97,6 +97,10 @@ strict_equality = true
 strict_concatenate = true
 
 [[tool.mypy.overrides]]
+module = "app.services.file_watcher"
+warn_unreachable = false
+
+[[tool.mypy.overrides]]
 module = [
     "qdrant_client.*",
     "watchdog.*",
