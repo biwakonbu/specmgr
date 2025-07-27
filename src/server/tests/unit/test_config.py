@@ -127,7 +127,7 @@ class TestAppConfig:
 
     def test_app_config_from_dict(self) -> None:
         """Test AppConfig creation from dictionary."""
-        config_data = {
+        config_data: dict[str, dict[str, object]] = {
             "documents": {"path": "custom-docs", "extensions": [".md"]},
             "server": {"port": 8080, "host": "127.0.0.1"},
         }
@@ -136,10 +136,10 @@ class TestAppConfig:
         server_data = config_data["server"]
         app_config = AppConfig(
             documents=DocumentsConfig(
-                path=documents_data["path"],
-                extensions=documents_data["extensions"],
+                path=str(documents_data["path"]),
+                extensions=documents_data["extensions"],  # type: ignore[arg-type]
             ),
-            server=ServerConfig(**server_data),
+            server=ServerConfig(**server_data),  # type: ignore[arg-type]
             search=SearchConfig(),
             vector_db=VectorDbConfig(),
             queue=QueueConfig(),

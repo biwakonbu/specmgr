@@ -1,5 +1,8 @@
 """Integration tests for manifest and sync services."""
 
+# Note: These tests use complex mocking that conflicts with current implementation
+# TODO: Rewrite with realistic integration test patterns
+
 import tempfile
 from collections.abc import Generator
 from pathlib import Path

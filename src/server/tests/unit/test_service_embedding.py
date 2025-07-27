@@ -103,9 +103,11 @@ class TestEmbeddingService:
                 raise Exception("Simulated error")
             return await original_method(text)
 
-        embedding_service.generate_embedding = mock_generate_embedding
-
-        results = await embedding_service.generate_embeddings_batch(texts)
+        # Patch the method using unittest.mock
+        with patch.object(
+            embedding_service, "generate_embedding", side_effect=mock_generate_embedding
+        ):
+            results = await embedding_service.generate_embeddings_batch(texts)
 
         assert len(results) == 2
         # First should succeed with valid embedding

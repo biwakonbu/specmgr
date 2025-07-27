@@ -32,7 +32,9 @@ class TestSyncService:
         return mock_service
 
     @pytest.fixture
-    def sync_service(self, mock_embedding_service, mock_qdrant_service) -> SyncService:
+    def sync_service(
+        self, mock_embedding_service: AsyncMock, mock_qdrant_service: AsyncMock
+    ) -> SyncService:
         """Create sync service instance with mocked dependencies."""
         with (
             patch(
@@ -78,7 +80,10 @@ class TestSyncService:
 
     @pytest.mark.asyncio
     async def test_execute_bulk_sync_success(
-        self, sync_service: SyncService, temp_docs_dir: Path, mock_qdrant_service
+        self,
+        sync_service: SyncService,
+        temp_docs_dir: Path,
+        mock_qdrant_service: AsyncMock,
     ) -> None:
         """Test successful bulk sync execution."""
         # Mock the docs_path to use temp directory
@@ -258,7 +263,10 @@ class TestSyncService:
 
     @pytest.mark.asyncio
     async def test_remove_file(
-        self, sync_service: SyncService, temp_docs_dir: Path, mock_qdrant_service
+        self,
+        sync_service: SyncService,
+        temp_docs_dir: Path,
+        mock_qdrant_service: AsyncMock,
     ) -> None:
         """Test file removal."""
         # Create test file path

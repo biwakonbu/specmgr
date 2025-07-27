@@ -194,7 +194,7 @@ class TestSyncServiceIntegration:
 
     @pytest.mark.asyncio
     async def test_individual_file_sync(
-        self, sync_service_with_temp_dir, temp_docs_dir
+        self, sync_service_with_temp_dir: SyncService, temp_docs_dir: Path
     ) -> None:
         """Test syncing individual files."""
         try:
