@@ -41,18 +41,22 @@ class TestEmbeddingService:
     ) -> None:
         """Test successful embedding generation."""
         text = "This is a test document."
-        expected_embedding = [0.1, 0.2, 0.3] * 512  # 1536 dimensions
-
-        # Mock API response
-        mock_response = Mock()
-        mock_response.data = [Mock()]
-        mock_response.data[0].embedding = expected_embedding
-        mock_anthropic_client.embeddings.create.return_value = mock_response
 
         result = await embedding_service.generate_embedding(text)
 
-        assert result == expected_embedding
-        mock_anthropic_client.embeddings.create.assert_called_once()
+        # Hash-based implementation should return deterministic vectors
+        assert len(result) == 1536  # Vector size
+        assert all(isinstance(val, float) for val in result)
+
+        # Test that same text produces same embedding (deterministic)
+        result2 = await embedding_service.generate_embedding(text)
+        assert result == result2
+
+        # Test that vector is normalized (L2 norm should be approximately 1)
+        import numpy as np
+
+        norm = np.linalg.norm(result)
+        assert abs(norm - 1.0) < 1e-6
 
     @pytest.mark.asyncio
     async def test_generate_embedding_no_api_key(
@@ -70,19 +74,18 @@ class TestEmbeddingService:
     ) -> None:
         """Test batch embedding generation."""
         texts = ["Document 1", "Document 2", "Document 3"]
-        expected_embedding = [0.1, 0.2, 0.3] * 512  # 1536 dimensions
-
-        # Mock API response
-        mock_response = Mock()
-        mock_response.data = [Mock()]
-        mock_response.data[0].embedding = expected_embedding
-        mock_anthropic_client.embeddings.create.return_value = mock_response
 
         results = await embedding_service.generate_embeddings_batch(texts)
 
         assert len(results) == 3
-        assert all(result == expected_embedding for result in results)
-        assert mock_anthropic_client.embeddings.create.call_count == 3
+        # Each result should be a valid embedding vector
+        for result in results:
+            assert len(result) == 1536
+            assert all(isinstance(val, float) for val in result)
+
+        # Different texts should produce different embeddings
+        assert results[0] != results[1]
+        assert results[1] != results[2]
 
     @pytest.mark.asyncio
     async def test_generate_embeddings_batch_with_error(
@@ -90,24 +93,26 @@ class TestEmbeddingService:
     ) -> None:
         """Test batch embedding generation with some failures."""
         texts = ["Document 1", "Document 2"]
-        expected_embedding = [0.1, 0.2, 0.3] * 512  # 1536 dimensions
         zero_vector = [0.0] * 1536
 
-        # Mock API response: first succeeds, second fails
-        mock_response = Mock()
-        mock_response.data = [Mock()]
-        mock_response.data[0].embedding = expected_embedding
+        # Patch the generate_embedding method to simulate error on second call
+        original_method = embedding_service.generate_embedding
 
-        mock_anthropic_client.embeddings.create.side_effect = [
-            mock_response,  # First call succeeds
-            Exception("API error"),  # Second call fails
-        ]
+        async def mock_generate_embedding(text: str) -> list[float]:
+            if text == "Document 2":
+                raise Exception("Simulated error")
+            return await original_method(text)
+
+        embedding_service.generate_embedding = mock_generate_embedding
 
         results = await embedding_service.generate_embeddings_batch(texts)
 
         assert len(results) == 2
-        assert results[0] == expected_embedding  # First succeeded
-        assert results[1] == zero_vector  # Second failed, got zero vector
+        # First should succeed with valid embedding
+        assert len(results[0]) == 1536
+        assert all(isinstance(val, float) for val in results[0])
+        # Second should fail and get zero vector
+        assert results[1] == zero_vector
 
     def test_truncate_text_short_text(
         self, embedding_service: EmbeddingService
@@ -165,16 +170,15 @@ class TestEmbeddingService:
     async def test_generate_embedding_api_error(
         self, embedding_service: EmbeddingService, mock_anthropic_client: Mock
     ) -> None:
-        """Test embedding generation with API error."""
+        """Test embedding generation with internal error."""
         text = "This is a test document."
 
-        # Mock API error
-        mock_anthropic_client.embeddings.create.side_effect = Exception(
-            "API rate limit"
-        )
+        # Patch numpy to raise an error
+        with patch("numpy.array") as mock_array:
+            mock_array.side_effect = Exception("Numpy error")
 
-        with pytest.raises(Exception, match="API rate limit"):
-            await embedding_service.generate_embedding(text)
+            with pytest.raises(Exception, match="Numpy error"):
+                await embedding_service.generate_embedding(text)
 
     def test_token_estimation(self, embedding_service: EmbeddingService) -> None:
         """Test token estimation logic in text truncation."""

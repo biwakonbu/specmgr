@@ -3,8 +3,10 @@
 import tempfile
 from collections.abc import AsyncGenerator
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
+import pytest_asyncio
 
 from app.services.qdrant_service import QdrantService
 from app.services.sync_service import SyncService
@@ -15,7 +17,7 @@ from app.services.sync_service import SyncService
 class TestQdrantIntegration:
     """Integration tests for Qdrant functionality."""
 
-    @pytest.fixture(scope="class")
+    @pytest_asyncio.fixture(scope="class")
     async def qdrant_service(self) -> AsyncGenerator[QdrantService, None]:
         """Create real QdrantService for integration testing."""
         # Skip if Qdrant is not available
@@ -142,7 +144,7 @@ class TestQdrantIntegration:
 class TestSyncServiceIntegration:
     """Integration tests for SyncService with real file system."""
 
-    @pytest.fixture
+    @pytest_asyncio.fixture
     async def temp_docs_dir(self) -> AsyncGenerator[Path, None]:
         """Create temporary documents directory."""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -207,11 +209,3 @@ class TestSyncServiceIntegration:
         except Exception as e:
             # Skip if Qdrant is not available
             pytest.skip(f"Qdrant not available: {e}")
-
-
-# Helper to patch config in integration tests
-def patch(target: str) -> None:
-    """Simple patch decorator for testing."""
-    from unittest.mock import patch as mock_patch
-
-    return mock_patch(target)
