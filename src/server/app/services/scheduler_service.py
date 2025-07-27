@@ -54,7 +54,7 @@ class SchedulerService:
                 await asyncio.sleep(30)  # 30秒待機
 
                 if not self.running:
-                    return
+                    break  # type: ignore[unreachable]
 
                 # 現在同期が実行されていない場合のみフル同期を実行
                 status = await self.sync_service.get_sync_status()

@@ -8,21 +8,10 @@ from typing import Any
 import redis.asyncio as redis
 
 from app.core.config import settings
+from app.models.error_types import QueueConnectionError, QueueError
 
 # モジュールレベルでloggerを初期化
 logger = logging.getLogger(__name__)
-
-
-class QueueError(Exception):
-    """Queue operation specific error."""
-
-    pass
-
-
-class QueueConnectionError(QueueError):
-    """Queue connection error."""
-
-    pass
 
 
 class JobProcessingError(QueueError):
