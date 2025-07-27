@@ -137,7 +137,7 @@ def log_performance(
                 raise
 
         @wraps(func)
-        async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> Any:  # noqa: ANN401
             start_time = time.time()
             log_context = {
                 "operation": operation,
@@ -148,7 +148,7 @@ def log_performance(
             try:
                 logger.debug(f"Starting {operation}", log_context)
                 if asyncio.iscoroutinefunction(func):
-                    result = await func(*args, **kwargs)  # type: ignore
+                    result = await func(*args, **kwargs)
                 else:
                     result = func(*args, **kwargs)
                 execution_time = time.time() - start_time
