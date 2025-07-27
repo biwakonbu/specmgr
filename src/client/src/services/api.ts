@@ -42,18 +42,20 @@ interface FileContent {
   frontmatter?: Record<string, unknown>
 }
 
+interface SearchResultMetadata {
+  filePath: string
+  fileName: string
+  chunkIndex: number
+  totalChunks: number
+  modified: string
+  size: number
+}
+
 interface SearchResult {
   id: string
   content: string
   score: number
-  metadata: {
-    filePath: string
-    fileName: string
-    chunkIndex: number
-    totalChunks: number
-    modified: string
-    size: number
-  }
+  metadata: SearchResultMetadata
 }
 
 interface SearchResponse {
@@ -97,7 +99,7 @@ const API_BASE_URL = 'http://localhost:3000/api'
 class ApiClient {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`
-    
+
     try {
       const response = await fetch(url, {
         headers: {
@@ -112,7 +114,7 @@ class ApiClient {
       }
 
       const data: ApiResponse<T> = await response.json()
-      
+
       if (!data.success) {
         throw new Error(data.error?.message || 'API request failed')
       }
@@ -124,14 +126,16 @@ class ApiClient {
     }
   }
 
-  async getFiles(options: {
-    path?: string
-    recursive?: boolean
-    sortBy?: 'name' | 'modified' | 'size'
-    order?: 'asc' | 'desc'
-  } = {}): Promise<FilesResponse> {
+  async getFiles(
+    options: {
+      path?: string
+      recursive?: boolean
+      sortBy?: 'name' | 'modified' | 'size'
+      order?: 'asc' | 'desc'
+    } = {}
+  ): Promise<FilesResponse> {
     const params = new URLSearchParams()
-    
+
     if (options.path) params.append('path', options.path)
     if (options.recursive !== undefined) params.append('recursive', options.recursive.toString())
     if (options.sortBy) params.append('sortBy', options.sortBy)
@@ -139,7 +143,7 @@ class ApiClient {
 
     const queryString = params.toString()
     const endpoint = `/files${queryString ? `?${queryString}` : ''}`
-    
+
     return this.request<FilesResponse>(endpoint)
   }
 
@@ -148,11 +152,14 @@ class ApiClient {
     return this.request<FileContent>(`/files/${encodedPath}`)
   }
 
-  async searchDocuments(query: string, options: {
-    limit?: number
-    scoreThreshold?: number
-    filePath?: string
-  } = {}): Promise<SearchResponse> {
+  async searchDocuments(
+    query: string,
+    options: {
+      limit?: number
+      scoreThreshold?: number
+      filePath?: string
+    } = {}
+  ): Promise<SearchResponse> {
     return this.request<SearchResponse>('/search', {
       method: 'POST',
       body: JSON.stringify({
@@ -183,15 +190,16 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient()
-export type { 
-  FileMetadata, 
-  DirectoryInfo, 
-  FileContent, 
+export type {
+  FileMetadata,
+  DirectoryInfo,
+  FileContent,
   FilesResponse,
   SearchResult,
+  SearchResultMetadata,
   SearchResponse,
   SearchStats,
   HealthStatus,
   BulkSyncResult,
-  SyncStatus
+  SyncStatus,
 }

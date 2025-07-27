@@ -8,6 +8,10 @@ import { Input } from './ui/input'
 import { ScrollArea } from './ui/scroll-area'
 import { apiClient, type SearchResponse } from '../services/api'
 
+// React Markdown component props type - using any to avoid complex type definitions
+// biome-ignore lint/suspicious/noExplicitAny: React Markdown component types are complex
+type MarkdownComponentProps = any
+
 interface Message {
   id: string
   role: 'user' | 'assistant'
@@ -16,9 +20,7 @@ interface Message {
   searchResults?: SearchResponse
 }
 
-interface ChatPaneProps {
-  // No props needed currently
-}
+type ChatPaneProps = Record<string, never>
 
 export function ChatPane(_props: ChatPaneProps) {
   const [messages, setMessages] = useState<Message[]>([
@@ -43,7 +45,7 @@ export function ChatPane(_props: ChatPaneProps) {
         scrollAreaRef.current
       scrollElement.scrollTop = scrollElement.scrollHeight
     }
-  }, [messages])
+  }, [])
 
   const createUserMessage = (content: string): Message => ({
     id: Date.now().toString(),
@@ -81,52 +83,174 @@ export function ChatPane(_props: ChatPaneProps) {
     return response
   }
 
+  // ストリームデータの種別に応じた処理を実行
+  const processChunkData = (content: string, assistantMessageId: string): void => {
+    setMessages(prev =>
+      prev.map(msg =>
+        msg.id === assistantMessageId ? { ...msg, content: msg.content + content } : msg
+      )
+    )
+  }
+
+  // ストリーム完了時の処理
+  const processCompleteData = (): void => {
+    console.log('Chat streaming completed')
+  }
+
+  // エラーデータの処理
+  const processErrorData = (error?: { message: string }): never => {
+    throw new Error(error?.message || 'Unknown error')
+  }
+
+  // ストリームデータの処理を種別ごとに振り分け
   const processStreamData = (
     data: { type: string; content?: string; error?: { message: string } },
     assistantMessageId: string
-  ) => {
-    if (data.type === 'chunk') {
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === assistantMessageId ? { ...msg, content: msg.content + data.content } : msg
-        )
-      )
-    } else if (data.type === 'complete') {
-      console.log('Chat streaming completed')
-    } else if (data.type === 'error') {
-      throw new Error(data.error?.message || 'Unknown error')
+  ): boolean => {
+    switch (data.type) {
+      case 'chunk':
+        if (data.content) {
+          processChunkData(data.content, assistantMessageId)
+        }
+        return false
+      case 'complete':
+        processCompleteData()
+        return false
+      case 'error':
+        processErrorData(data.error)
+        return false
+      case 'done':
+        return true
+      default:
+        console.warn(`Unknown stream data type: ${data.type}`)
+        return false
     }
-    return data.type === 'done'
   }
 
-  const handleStreamResponse = async (response: Response, assistantMessageId: string) => {
+  // SSE行の解析と処理
+  const processSSELine = (line: string, assistantMessageId: string): boolean => {
+    if (!line.startsWith('data: ')) {
+      return false
+    }
+
+    try {
+      const data = JSON.parse(line.slice(6))
+      return processStreamData(data, assistantMessageId)
+    } catch (parseError) {
+      console.error('Failed to parse SSE data:', parseError)
+      return false
+    }
+  }
+
+  // ストリームバッファの処理
+  const processStreamBuffer = (
+    buffer: string,
+    assistantMessageId: string
+  ): { remainingBuffer: string; shouldStop: boolean } => {
+    const lines = buffer.split('\n')
+    const remainingBuffer = lines.pop() || ''
+
+    for (const line of lines) {
+      const shouldStop = processSSELine(line, assistantMessageId)
+      if (shouldStop) {
+        return { remainingBuffer, shouldStop: true }
+      }
+    }
+
+    return { remainingBuffer, shouldStop: false }
+  }
+
+  // ストリームリーダーの初期化
+  const initializeStreamReader = (response: Response): ReadableStreamDefaultReader<Uint8Array> => {
     const reader = response.body?.getReader()
     if (!reader) {
       throw new Error('No response body reader available')
     }
+    return reader
+  }
 
+  // ストリームデータの読み取りとバッファ処理
+  const processStreamChunk = async (
+    reader: ReadableStreamDefaultReader<Uint8Array>,
+    decoder: TextDecoder,
+    buffer: string,
+    assistantMessageId: string
+  ): Promise<{ buffer: string; shouldStop: boolean }> => {
+    const { done, value } = await reader.read()
+    if (done) {
+      return { buffer, shouldStop: true }
+    }
+
+    const newBuffer = buffer + decoder.decode(value, { stream: true })
+    const { remainingBuffer, shouldStop } = processStreamBuffer(newBuffer, assistantMessageId)
+
+    return { buffer: remainingBuffer, shouldStop }
+  }
+
+  // ストリームレスポンスの読み取りとメッセージ更新を処理
+  const handleStreamResponse = async (
+    response: Response,
+    assistantMessageId: string
+  ): Promise<void> => {
+    const reader = initializeStreamReader(response)
     const decoder = new TextDecoder()
     let buffer = ''
 
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
+    try {
+      while (true) {
+        const { buffer: newBuffer, shouldStop } = await processStreamChunk(
+          reader,
+          decoder,
+          buffer,
+          assistantMessageId
+        )
+        buffer = newBuffer
 
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const data = JSON.parse(line.slice(6))
-            const isDone = processStreamData(data, assistantMessageId)
-            if (isDone) return
-          } catch (parseError) {
-            console.error('Failed to parse SSE data:', parseError)
-          }
+        if (shouldStop) {
+          break
         }
       }
+    } finally {
+      reader.releaseLock()
+    }
+  }
+
+  // 検索結果を表示用の文字列に変換
+  const formatSearchResults = (searchResponse: SearchResponse, _query: string): string => {
+    if (searchResponse.results.length === 0) {
+      return '関連するドキュメントが見つかりませんでした。別のキーワードで検索してみてください。'
+    }
+
+    return searchResponse.results
+      .map((result, index) => {
+        const snippet =
+          result.content.length > 200 ? `${result.content.substring(0, 200)}...` : result.content
+        return `**${index + 1}. ${result.metadata.fileName}** (スコア: ${result.score.toFixed(3)})\n${snippet}`
+      })
+      .join('\n\n')
+  }
+
+  // 検索成功時のメッセージを作成
+  const createSearchSuccessMessage = (searchResponse: SearchResponse, query: string): Message => {
+    const resultsText = formatSearchResults(searchResponse, query)
+    const headerText = `**検索結果**: "${query}"\n\n見つかった結果: ${searchResponse.totalResults}件 (処理時間: ${searchResponse.processingTime.toFixed(3)}秒)\n\n`
+
+    return {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: headerText + resultsText,
+      timestamp: new Date(),
+      searchResults: searchResponse,
+    }
+  }
+
+  // 検索エラー時のメッセージを作成
+  const createSearchErrorMessage = (error: unknown): Message => {
+    return {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: `検索エラー: ${error instanceof Error ? error.message : '検索に失敗しました。'}`,
+      timestamp: new Date(),
     }
   }
 
@@ -137,76 +261,91 @@ export function ChatPane(_props: ChatPaneProps) {
         scoreThreshold: 0.3,
       })
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `**検索結果**: "${query}"\n\n見つかった結果: ${searchResponse.totalResults}件 (処理時間: ${searchResponse.processingTime.toFixed(3)}秒)\n\n${
-          searchResponse.results.length === 0
-            ? '関連するドキュメントが見つかりませんでした。別のキーワードで検索してみてください。'
-            : searchResponse.results
-                .map(
-                  (result, index) =>
-                    `**${index + 1}. ${result.metadata.fileName}** (スコア: ${result.score.toFixed(3)})\n${result.content.substring(0, 200)}${result.content.length > 200 ? '...' : ''}`
-                )
-                .join('\n\n')
-        }`,
-        timestamp: new Date(),
-        searchResults: searchResponse,
-      }
-
+      const assistantMessage = createSearchSuccessMessage(searchResponse, query)
       setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
       console.error('Search failed:', error)
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: `検索エラー: ${error instanceof Error ? error.message : '検索に失敗しました。'}`,
-        timestamp: new Date(),
-      }
+      const errorMessage = createSearchErrorMessage(error)
       setMessages(prev => [...prev, errorMessage])
     }
   }
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return
+  // 検索コマンドかどうかを判定
+  const isSearchCommand = (input: string): boolean => {
+    return input.trim().startsWith('/search ')
+  }
 
-    const userMessage = createUserMessage(inputValue)
+  // 検索クエリを抽出
+  const extractSearchQuery = (input: string): string => {
+    return input.trim().substring(8).trim()
+  }
+
+  // 検索コマンドの実行
+  const executeSearchCommand = async (query: string): Promise<void> => {
+    if (query) {
+      await handleSearchRequest(query)
+    } else {
+      const errorMessage = createAssistantMessage()
+      errorMessage.content = '検索クエリを入力してください。例: /search API仕様'
+      setMessages(prev => [...prev, errorMessage])
+    }
+  }
+
+  // 通常のチャット処理
+  const executeChatRequest = async (userMessage: Message): Promise<void> => {
+    const assistantMessage = createAssistantMessage()
+    setMessages(prev => [...prev, assistantMessage])
+
+    const response = await sendChatRequest(userMessage)
+    await handleStreamResponse(response, assistantMessage.id)
+  }
+
+  // エラー処理でメッセージを更新
+  const handleMessageError = (error: unknown): void => {
+    console.error('Request failed:', error)
+    const errorContent = `エラー: ${error instanceof Error ? error.message : 'リクエストに失敗しました。'}`
+
+    setMessages(prev =>
+      prev.map(msg =>
+        msg.id === prev[prev.length - 1]?.id ? { ...msg, content: errorContent } : msg
+      )
+    )
+  }
+
+  // UIの状態を更新してメッセージを追加
+  const updateUIForNewMessage = (userMessage: Message): void => {
     setMessages(prev => [...prev, userMessage])
     setInputValue('')
     setIsLoading(true)
+  }
+
+  // メッセージの種類に応じた処理を実行
+  const processMessageByType = async (
+    currentInput: string,
+    userMessage: Message
+  ): Promise<void> => {
+    if (isSearchCommand(currentInput)) {
+      const query = extractSearchQuery(currentInput)
+      await executeSearchCommand(query)
+    } else {
+      await executeChatRequest(userMessage)
+    }
+  }
+
+  // メッセージ送信のメイン処理
+  const handleSendMessage = async (): Promise<void> => {
+    if (!inputValue.trim() || isLoading) return
+
+    const userMessage = createUserMessage(inputValue)
+    const currentInput = inputValue
+
+    // UIの即座更新
+    updateUIForNewMessage(userMessage)
 
     try {
-      // Check if it's a search command
-      if (inputValue.trim().startsWith('/search ')) {
-        const query = inputValue.trim().substring(8).trim()
-        if (query) {
-          await handleSearchRequest(query)
-        } else {
-          const errorMessage = createAssistantMessage()
-          errorMessage.content = '検索クエリを入力してください。例: /search API仕様'
-          setMessages(prev => [...prev, errorMessage])
-        }
-        return
-      }
-
-      // Regular chat
-      const assistantMessage = createAssistantMessage()
-      setMessages(prev => [...prev, assistantMessage])
-
-      const response = await sendChatRequest(userMessage)
-      await handleStreamResponse(response, assistantMessage.id)
+      await processMessageByType(currentInput, userMessage)
     } catch (error) {
-      console.error('Request failed:', error)
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === prev[prev.length - 1]?.id
-            ? {
-                ...msg,
-                content: `エラー: ${error instanceof Error ? error.message : 'リクエストに失敗しました。'}`,
-              }
-            : msg
-        )
-      )
+      handleMessageError(error)
     } finally {
       setIsLoading(false)
     }
@@ -288,61 +427,98 @@ export function ChatPane(_props: ChatPaneProps) {
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeHighlight]}
                     components={{
-                      h1: ({ children }) => (
-                        <h1 className="text-[14px] font-bold tracking-tight mb-1.5 mt-0 text-foreground border-b border-border/30 pb-0.5">
+                      h1: ({ children, ...props }: MarkdownComponentProps) => (
+                        <h1
+                          className="text-[14px] font-bold tracking-tight mb-1.5 mt-0 text-foreground border-b border-border/30 pb-0.5"
+                          {...props}
+                        >
                           {children}
                         </h1>
                       ),
-                      h2: ({ children }) => (
-                        <h2 className="text-[13px] font-semibold tracking-tight mb-1.5 mt-2 text-foreground">
+                      h2: ({ children, ...props }: MarkdownComponentProps) => (
+                        <h2
+                          className="text-[13px] font-semibold tracking-tight mb-1.5 mt-2 text-foreground"
+                          {...props}
+                        >
                           {children}
                         </h2>
                       ),
-                      h3: ({ children }) => (
-                        <h3 className="text-[12px] font-medium tracking-tight mb-1 mt-1.5 text-foreground">
+                      h3: ({ children, ...props }: MarkdownComponentProps) => (
+                        <h3
+                          className="text-[12px] font-medium tracking-tight mb-1 mt-1.5 text-foreground"
+                          {...props}
+                        >
                           {children}
                         </h3>
                       ),
-                      p: ({ children }) => (
-                        <p className="text-[12px] leading-relaxed mb-1.5 text-foreground">
+                      p: ({ children, ...props }: MarkdownComponentProps) => (
+                        <p
+                          className="text-[12px] leading-relaxed mb-1.5 text-foreground"
+                          {...props}
+                        >
                           {children}
                         </p>
                       ),
-                      ul: ({ children }) => (
-                        <ul className="my-1.5 ml-3 list-disc text-[12px] [&>li]:mt-0.5 [&>li]:leading-relaxed">
+                      ul: ({ children, ...props }: MarkdownComponentProps) => (
+                        <ul
+                          className="my-1.5 ml-3 list-disc text-[12px] [&>li]:mt-0.5 [&>li]:leading-relaxed"
+                          {...props}
+                        >
                           {children}
                         </ul>
                       ),
-                      ol: ({ children }) => (
-                        <ol className="my-1.5 ml-3 list-decimal text-[12px] [&>li]:mt-0.5 [&>li]:leading-relaxed">
+                      ol: ({ children, ...props }: MarkdownComponentProps) => (
+                        <ol
+                          className="my-1.5 ml-3 list-decimal text-[12px] [&>li]:mt-0.5 [&>li]:leading-relaxed"
+                          {...props}
+                        >
                           {children}
                         </ol>
                       ),
-                      blockquote: ({ children }) => (
-                        <blockquote className="mt-1.5 mb-1.5 border-l-2 border-border/50 pl-2 italic text-muted-foreground text-[12px]">
+                      blockquote: ({ children, ...props }: MarkdownComponentProps) => (
+                        <blockquote
+                          className="mt-1.5 mb-1.5 border-l-2 border-border/50 pl-2 italic text-muted-foreground text-[12px]"
+                          {...props}
+                        >
                           {children}
                         </blockquote>
                       ),
-                      code: ({ children, className }) => {
+                      code: ({ children, className, ...props }: MarkdownComponentProps) => {
                         const isInline = !className
                         if (isInline) {
                           return (
-                            <code className="relative rounded bg-muted/70 px-1 py-0.5 font-mono text-[12px] font-medium">
+                            <code
+                              className="relative rounded bg-muted/70 px-1 py-0.5 font-mono text-[12px] font-medium"
+                              {...props}
+                            >
                               {children}
                             </code>
                           )
                         }
-                        return <code className={className}>{children}</code>
+                        return (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        )
                       },
-                      pre: ({ children }) => (
-                        <pre className="mb-1.5 mt-1.5 overflow-x-auto rounded bg-muted/70 p-1.5 text-[12px] leading-tight">
+                      pre: ({ children, ...props }: MarkdownComponentProps) => (
+                        <pre
+                          className="mb-1.5 mt-1.5 overflow-x-auto rounded bg-muted/70 p-1.5 text-[12px] leading-tight"
+                          {...props}
+                        >
                           {children}
                         </pre>
                       ),
-                      strong: ({ children }) => (
-                        <strong className="font-semibold text-foreground">{children}</strong>
+                      strong: ({ children, ...props }: MarkdownComponentProps) => (
+                        <strong className="font-semibold text-foreground" {...props}>
+                          {children}
+                        </strong>
                       ),
-                      em: ({ children }) => <em className="italic text-foreground">{children}</em>,
+                      em: ({ children, ...props }: MarkdownComponentProps) => (
+                        <em className="italic text-foreground" {...props}>
+                          {children}
+                        </em>
+                      ),
                     }}
                   >
                     {message.content}

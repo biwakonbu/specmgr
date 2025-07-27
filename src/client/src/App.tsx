@@ -84,9 +84,13 @@ function App() {
         </div>
 
         {/* Left Resize Handle */}
+        {/* biome-ignore lint/a11y/useSemanticElements: Resize handle needs complex interaction behavior not supported by hr */}
         <div
           role="separator"
           aria-label="Resize document tree"
+          aria-valuenow={leftWidth}
+          aria-valuemin={10}
+          aria-valuemax={40}
           tabIndex={0}
           className="w-4 cursor-col-resize flex items-center justify-center group relative"
           onMouseDown={handleLeftResize}
@@ -110,9 +114,13 @@ function App() {
         </div>
 
         {/* Right Resize Handle */}
+        {/* biome-ignore lint/a11y/useSemanticElements: Resize handle needs complex interaction behavior not supported by hr */}
         <div
           role="separator"
           aria-label="Resize chat pane"
+          aria-valuenow={rightWidth}
+          aria-valuemin={15}
+          aria-valuemax={50}
           tabIndex={0}
           className="w-4 cursor-col-resize flex items-center justify-center group relative"
           onMouseDown={handleRightResize}

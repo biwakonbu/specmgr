@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, File, Folder, RefreshCw, AlertCircle } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { apiClient } from '../services/api'
 import { buildFileTree, type FileNode } from '../utils/fileTree'
@@ -91,7 +91,7 @@ export function DocTree({ onFileSelect, selectedFile }: DocTreeProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const loadFiles = async () => {
+  const loadFiles = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -111,11 +111,11 @@ export function DocTree({ onFileSelect, selectedFile }: DocTreeProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     loadFiles()
-  }, [])
+  }, [loadFiles])
 
   if (loading) {
     return (
