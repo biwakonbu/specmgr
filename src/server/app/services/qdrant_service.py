@@ -119,13 +119,15 @@ class QdrantService:
 
             results = []
             for scored_point in search_result:
+                # payloadがNoneの場合を安全に処理
+                payload = scored_point.payload or {}
                 result = {
                     "id": scored_point.id,
                     "score": scored_point.score,
-                    "path": scored_point.payload.get("path"),
-                    "body": scored_point.payload.get("body"),
-                    "file_name": scored_point.payload.get("file_name"),
-                    "indexed_at": scored_point.payload.get("indexed_at"),
+                    "path": payload.get("path"),
+                    "body": payload.get("body"),
+                    "file_name": payload.get("file_name"),
+                    "indexed_at": payload.get("indexed_at"),
                 }
                 results.append(result)
 
@@ -202,13 +204,31 @@ class QdrantService:
         """
         try:
             info = self.client.get_collection(self.collection_name)
+
+            # config.params.vectorsの型安全性を確保
+            vectors_config = info.config.params.vectors
+
+            # VectorParamsの場合とdict[str, VectorParams]の場合を処理
+            if isinstance(vectors_config, dict):
+                # 最初のベクトル設定を取得
+                first_vector_name = next(iter(vectors_config.keys()))
+                vector_params = vectors_config[first_vector_name]
+                vector_size = vector_params.size
+                distance = vector_params.distance.value
+            else:
+                # VectorParamsの場合
+                vector_size = vectors_config.size if vectors_config else 0
+                distance = (
+                    vectors_config.distance.value if vectors_config else "unknown"
+                )
+
             return {
                 "vectors_count": info.vectors_count,
                 "indexed_vectors_count": info.indexed_vectors_count,
                 "points_count": info.points_count,
                 "config": {
-                    "vector_size": info.config.params.vectors.size,
-                    "distance": info.config.params.vectors.distance.value,
+                    "vector_size": vector_size,
+                    "distance": distance,
                 },
             }
 

@@ -1,5 +1,6 @@
 """Tests for QdrantService."""
 
+from collections.abc import Generator
 from unittest.mock import Mock, patch
 
 import pytest
@@ -12,7 +13,7 @@ class TestQdrantService:
     """Test QdrantService functionality."""
 
     @pytest.fixture
-    def mock_qdrant_client(self):
+    def mock_qdrant_client(self) -> Generator[Mock, None, None]:
         """Mock QdrantClient."""
         with patch("app.services.qdrant_service.QdrantClient") as mock_client_class:
             mock_client = Mock()
@@ -20,13 +21,13 @@ class TestQdrantService:
             yield mock_client
 
     @pytest.fixture
-    def qdrant_service(self, mock_qdrant_client):
+    def qdrant_service(self, mock_qdrant_client: Mock) -> QdrantService:
         """Create QdrantService instance with mocked client."""
         return QdrantService()
 
     @pytest.mark.asyncio
     async def test_initialize_collection_creates_new_collection(
-        self, qdrant_service, mock_qdrant_client
+        self, qdrant_service: QdrantService, mock_qdrant_client: Mock
     ) -> None:
         """Test collection creation when it doesn't exist."""
         # Mock collection doesn't exist
@@ -44,7 +45,7 @@ class TestQdrantService:
 
     @pytest.mark.asyncio
     async def test_initialize_collection_skips_existing_collection(
-        self, qdrant_service, mock_qdrant_client
+        self, qdrant_service: QdrantService, mock_qdrant_client: Mock
     ) -> None:
         """Test collection initialization when it already exists."""
         # Mock collection exists
@@ -60,7 +61,9 @@ class TestQdrantService:
         mock_qdrant_client.create_collection.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_store_document(self, qdrant_service, mock_qdrant_client) -> None:
+    async def test_store_document(
+        self, qdrant_service: QdrantService, mock_qdrant_client: Mock
+    ) -> None:
         """Test document storage."""
         file_path = "test/document.md"
         content = "# Test Document\n\nThis is a test."
@@ -79,13 +82,16 @@ class TestQdrantService:
         point = points[0]
         assert isinstance(point, PointStruct)
         assert point.vector == vector
+        assert point.payload is not None
         assert point.payload["path"] == file_path
         assert point.payload["body"] == content
         assert point.payload["file_name"] == "document.md"
         assert "indexed_at" in point.payload
 
     @pytest.mark.asyncio
-    async def test_search_documents(self, qdrant_service, mock_qdrant_client) -> None:
+    async def test_search_documents(
+        self, qdrant_service: QdrantService, mock_qdrant_client: Mock
+    ) -> None:
         """Test document search."""
         query_vector = [0.1, 0.2, 0.3] * 512  # 1536 dimensions
 
@@ -126,7 +132,9 @@ class TestQdrantService:
         assert result["file_name"] == "document.md"
 
     @pytest.mark.asyncio
-    async def test_delete_document(self, qdrant_service, mock_qdrant_client) -> None:
+    async def test_delete_document(
+        self, qdrant_service: QdrantService, mock_qdrant_client: Mock
+    ) -> None:
         """Test document deletion."""
         file_path = "test/document.md"
 
@@ -139,7 +147,7 @@ class TestQdrantService:
 
     @pytest.mark.asyncio
     async def test_document_exists_returns_true(
-        self, qdrant_service, mock_qdrant_client
+        self, qdrant_service: QdrantService, mock_qdrant_client: Mock
     ) -> None:
         """Test document existence check when document exists."""
         file_path = "test/document.md"
@@ -154,7 +162,7 @@ class TestQdrantService:
 
     @pytest.mark.asyncio
     async def test_document_exists_returns_false(
-        self, qdrant_service, mock_qdrant_client
+        self, qdrant_service: QdrantService, mock_qdrant_client: Mock
     ) -> None:
         """Test document existence check when document doesn't exist."""
         file_path = "test/document.md"
@@ -168,7 +176,7 @@ class TestQdrantService:
 
     @pytest.mark.asyncio
     async def test_document_exists_handles_exception(
-        self, qdrant_service, mock_qdrant_client
+        self, qdrant_service: QdrantService, mock_qdrant_client: Mock
     ) -> None:
         """Test document existence check handles exceptions."""
         file_path = "test/document.md"
@@ -182,7 +190,7 @@ class TestQdrantService:
 
     @pytest.mark.asyncio
     async def test_get_collection_info(
-        self, qdrant_service, mock_qdrant_client
+        self, qdrant_service: QdrantService, mock_qdrant_client: Mock
     ) -> None:
         """Test collection info retrieval."""
         # Mock collection info
@@ -202,7 +210,7 @@ class TestQdrantService:
         assert info["config"]["vector_size"] == 1536
         assert info["config"]["distance"] == "Cosine"
 
-    def test_uuid_generation_consistency(self, qdrant_service) -> None:
+    def test_uuid_generation_consistency(self, qdrant_service: QdrantService) -> None:
         """Test that the same file path generates the same UUID."""
         import hashlib
         import uuid

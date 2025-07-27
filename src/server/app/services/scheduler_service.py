@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-from typing import Any
 
 from app.services.sync_service import SyncService
 
@@ -15,7 +14,7 @@ class SchedulerService:
     def __init__(self) -> None:
         self.sync_service = SyncService()
         self.running = False
-        self.tasks: list[asyncio.Task[Any]] = []
+        self.tasks: list[asyncio.Task[None]] = []
 
     async def start(self) -> None:
         """スケジューラーを開始."""
@@ -55,7 +54,7 @@ class SchedulerService:
                 await asyncio.sleep(30)  # 30秒待機
 
                 if not self.running:
-                    break
+                    return
 
                 # 現在同期が実行されていない場合のみフル同期を実行
                 status = await self.sync_service.get_sync_status()

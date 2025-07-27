@@ -1,6 +1,7 @@
 """Sync service tests."""
 
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock, patch
@@ -17,7 +18,7 @@ class TestSyncService:
     """Sync service test class."""
 
     @pytest.fixture
-    def mock_embedding_service(self):
+    def mock_embedding_service(self) -> Generator[Mock, None, None]:
         """Mock embedding service."""
         mock_service = Mock()
         mock_service.is_available.return_value = False
@@ -25,7 +26,7 @@ class TestSyncService:
         return mock_service
 
     @pytest.fixture
-    def mock_qdrant_service(self):
+    def mock_qdrant_service(self) -> Generator[AsyncMock, None, None]:
         """Mock Qdrant service."""
         mock_service = AsyncMock()
         return mock_service
@@ -46,7 +47,7 @@ class TestSyncService:
             return SyncService()
 
     @pytest.fixture
-    def temp_docs_dir(self) -> Path:
+    def temp_docs_dir(self) -> Generator[Path, None, None]:
         """Create temporary docs directory for tests."""
         with tempfile.TemporaryDirectory() as tmpdir:
             temp_path = Path(tmpdir)
@@ -138,8 +139,8 @@ class TestSyncService:
         self,
         sync_service: SyncService,
         temp_docs_dir: Path,
-        mock_embedding_service,
-        mock_qdrant_service,
+        mock_embedding_service: Mock,
+        mock_qdrant_service: AsyncMock,
     ) -> None:
         """Test syncing individual file with embedding generation."""
         # Setup embedding service to be available
@@ -170,8 +171,8 @@ class TestSyncService:
         self,
         sync_service: SyncService,
         temp_docs_dir: Path,
-        mock_embedding_service,
-        mock_qdrant_service,
+        mock_embedding_service: Mock,
+        mock_qdrant_service: AsyncMock,
     ) -> None:
         """Test syncing individual file without embedding (API key not available)."""
         # Setup embedding service to not be available

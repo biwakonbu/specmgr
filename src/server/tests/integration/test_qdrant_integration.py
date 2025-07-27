@@ -1,6 +1,7 @@
 """Integration tests for Qdrant vector storage."""
 
 import tempfile
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
 import pytest
@@ -15,7 +16,7 @@ class TestQdrantIntegration:
     """Integration tests for Qdrant functionality."""
 
     @pytest.fixture(scope="class")
-    async def qdrant_service(self):
+    async def qdrant_service(self) -> AsyncGenerator[QdrantService, None]:
         """Create real QdrantService for integration testing."""
         # Skip if Qdrant is not available
         try:
@@ -26,7 +27,7 @@ class TestQdrantIntegration:
             pytest.skip(f"Qdrant not available: {e}")
 
     @pytest.fixture
-    def sample_documents(self):
+    def sample_documents(self) -> dict[str, str]:
         """Sample documents for testing."""
         return {
             "document1.md": "# Document 1\n\nThis is the first test document with some content.",
@@ -36,7 +37,7 @@ class TestQdrantIntegration:
 
     @pytest.mark.asyncio
     async def test_store_and_retrieve_documents(
-        self, qdrant_service, sample_documents
+        self, qdrant_service: QdrantService, sample_documents: dict[str, str]
     ) -> None:
         """Test storing and retrieving documents from Qdrant."""
         # Create dummy vectors (since we might not have API key)
@@ -56,7 +57,9 @@ class TestQdrantIntegration:
         assert info["points_count"] >= len(sample_documents)
 
     @pytest.mark.asyncio
-    async def test_search_functionality(self, qdrant_service, sample_documents) -> None:
+    async def test_search_functionality(
+        self, qdrant_service: QdrantService, sample_documents: dict[str, str]
+    ) -> None:
         """Test vector search functionality."""
         # Create dummy vectors with slight variations
         vectors = {
@@ -82,7 +85,9 @@ class TestQdrantIntegration:
         assert top_result["body"] == sample_documents["document1.md"]
 
     @pytest.mark.asyncio
-    async def test_delete_documents(self, qdrant_service, sample_documents) -> None:
+    async def test_delete_documents(
+        self, qdrant_service: QdrantService, sample_documents: dict[str, str]
+    ) -> None:
         """Test document deletion."""
         dummy_vector = [0.5] * 1536
 
@@ -103,7 +108,7 @@ class TestQdrantIntegration:
         assert not exists
 
     @pytest.mark.asyncio
-    async def test_upsert_functionality(self, qdrant_service) -> None:
+    async def test_upsert_functionality(self, qdrant_service: QdrantService) -> None:
         """Test that storing the same document twice updates it."""
         file_path = "upsert_test.md"
         original_content = "# Original Content"
@@ -138,7 +143,7 @@ class TestSyncServiceIntegration:
     """Integration tests for SyncService with real file system."""
 
     @pytest.fixture
-    async def temp_docs_dir(self):
+    async def temp_docs_dir(self) -> AsyncGenerator[Path, None]:
         """Create temporary documents directory."""
         with tempfile.TemporaryDirectory() as temp_dir:
             docs_path = Path(temp_dir) / "docs"
@@ -155,7 +160,7 @@ class TestSyncServiceIntegration:
             yield docs_path
 
     @pytest.fixture
-    def sync_service_with_temp_dir(self, temp_docs_dir):
+    def sync_service_with_temp_dir(self, temp_docs_dir: Path) -> SyncService:
         """Create SyncService with temporary directory."""
         with patch("app.core.config.settings") as mock_settings:
             mock_settings.documents_path = str(temp_docs_dir)
@@ -168,7 +173,9 @@ class TestSyncServiceIntegration:
             return SyncService()
 
     @pytest.mark.asyncio
-    async def test_bulk_sync_with_real_files(self, sync_service_with_temp_dir) -> None:
+    async def test_bulk_sync_with_real_files(
+        self, sync_service_with_temp_dir: SyncService
+    ) -> None:
         """Test bulk sync with real files."""
         try:
             result = await sync_service_with_temp_dir.execute_bulk_sync(force=True)
@@ -203,7 +210,7 @@ class TestSyncServiceIntegration:
 
 
 # Helper to patch config in integration tests
-def patch(target):
+def patch(target: str) -> None:
     """Simple patch decorator for testing."""
     from unittest.mock import patch as mock_patch
 

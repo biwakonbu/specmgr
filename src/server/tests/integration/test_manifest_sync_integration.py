@@ -40,7 +40,9 @@ def temp_sync_service() -> Generator[SyncService, None, None]:
 
 
 @pytest.mark.asyncio
-async def test_differential_sync_empty_directory(temp_sync_service):
+async def test_differential_sync_empty_directory(
+    temp_sync_service: SyncService,
+) -> None:
     """Test differential sync with empty directory."""
     # Mock file service to return empty hashes
     temp_sync_service.file_service._calculate_file_hash.return_value = ""
@@ -53,7 +55,7 @@ async def test_differential_sync_empty_directory(temp_sync_service):
 
 
 @pytest.mark.asyncio
-async def test_differential_sync_new_files(temp_sync_service):
+async def test_differential_sync_new_files(temp_sync_service: SyncService) -> None:
     """Test differential sync with new files."""
     # Create test files
     test_file1 = temp_sync_service.docs_path / "test1.md"
@@ -85,7 +87,7 @@ async def test_differential_sync_new_files(temp_sync_service):
 
 
 @pytest.mark.asyncio
-async def test_differential_sync_no_changes(temp_sync_service):
+async def test_differential_sync_no_changes(temp_sync_service: SyncService) -> None:
     """Test differential sync with no changes."""
     # Create test file and initial manifest
     test_file = temp_sync_service.docs_path / "test.md"
@@ -108,7 +110,7 @@ async def test_differential_sync_no_changes(temp_sync_service):
 
 
 @pytest.mark.asyncio
-async def test_differential_sync_modified_files(temp_sync_service):
+async def test_differential_sync_modified_files(temp_sync_service: SyncService) -> None:
     """Test differential sync with modified files."""
     # Create test file and setup initial manifest
     test_file = temp_sync_service.docs_path / "test.md"
@@ -136,7 +138,7 @@ async def test_differential_sync_modified_files(temp_sync_service):
 
 
 @pytest.mark.asyncio
-async def test_differential_sync_deleted_files(temp_sync_service):
+async def test_differential_sync_deleted_files(temp_sync_service: SyncService) -> None:
     """Test differential sync with deleted files."""
     # Setup manifest with existing file
     await temp_sync_service.manifest_service.update_file_in_manifest(
@@ -163,7 +165,7 @@ async def test_differential_sync_deleted_files(temp_sync_service):
 
 
 @pytest.mark.asyncio
-async def test_force_sync_ignores_manifest(temp_sync_service):
+async def test_force_sync_ignores_manifest(temp_sync_service: SyncService) -> None:
     """Test that force sync processes all files regardless of manifest."""
     # Create test file and setup manifest (simulating no changes)
     test_file = temp_sync_service.docs_path / "test.md"
@@ -185,7 +187,9 @@ async def test_force_sync_ignores_manifest(temp_sync_service):
 
 
 @pytest.mark.asyncio
-async def test_sync_single_file_updates_manifest(temp_sync_service):
+async def test_sync_single_file_updates_manifest(
+    temp_sync_service: SyncService,
+) -> None:
     """Test that sync_single_file updates manifest."""
     # Create test file
     test_file = temp_sync_service.docs_path / "test.md"
@@ -205,7 +209,7 @@ async def test_sync_single_file_updates_manifest(temp_sync_service):
 
 
 @pytest.mark.asyncio
-async def test_remove_file_updates_manifest(temp_sync_service):
+async def test_remove_file_updates_manifest(temp_sync_service: SyncService) -> None:
     """Test that remove_file updates manifest."""
     # Setup manifest with existing file
     await temp_sync_service.manifest_service.update_file_in_manifest("test.md", "hash1")

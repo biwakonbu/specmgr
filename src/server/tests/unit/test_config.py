@@ -132,12 +132,14 @@ class TestAppConfig:
             "server": {"port": 8080, "host": "127.0.0.1"},
         }
 
+        documents_data = config_data["documents"]
+        server_data = config_data["server"]
         app_config = AppConfig(
             documents=DocumentsConfig(
-                path=config_data["documents"]["path"],
-                extensions=config_data["documents"]["extensions"],
+                path=documents_data["path"],
+                extensions=documents_data["extensions"],
             ),
-            server=ServerConfig(**config_data["server"]),
+            server=ServerConfig(**server_data),
             search=SearchConfig(),
             vector_db=VectorDbConfig(),
             queue=QueueConfig(),

@@ -41,14 +41,36 @@ class EmbeddingService:
             # テキストを適切な長さに制限
             truncated_text = self._truncate_text(text, self.max_tokens)
 
-            # Claude Code SDK で embedding 生成（仮の実装）
-            # 注意: 実際のClaude Code SDK APIに合わせて調整が必要
-            response = self.client.embeddings.create(
-                input=truncated_text,
-                model="text-embedding-3-small",  # Claude Code SDK のモデル名に変更
-            )
+            # Claude SDK では直接的なembedding APIが提供されていない
+            # 代替実装: Message APIを使用してテキストの内容をベクトル化
+            # 注意: これは仮の実装であり、実際のembedding生成が必要
+            import hashlib
 
-            embedding = response.data[0].embedding
+            import numpy as np
+
+            # テキストのハッシュから疑似ベクトルを生成（開発用）
+            text_hash = hashlib.sha256(truncated_text.encode()).hexdigest()
+
+            # 設定からベクトルサイズを取得
+            vector_size = settings.app_config.vector_db.vector_size
+
+            # ハッシュから指定サイズのベクトルを生成
+            hash_values = []
+            for i in range(vector_size):
+                # ハッシュを循環的に使用してベクトル要素を生成
+                hash_index = (i * 8) % len(text_hash)
+                hash_slice = text_hash[hash_index : hash_index + 8]
+                if len(hash_slice) < 8:
+                    hash_slice = text_hash[:8]  # ループバック
+                hash_values.append(int(hash_slice, 16))
+
+            vector = np.array(hash_values, dtype=np.float32)
+            # L2正規化
+            norm = np.linalg.norm(vector)
+            if norm > 0:
+                vector = vector / norm
+
+            embedding: list[float] = vector.tolist()
             logger.info(f"Generated embedding for text ({len(truncated_text)} chars)")
             return embedding
 

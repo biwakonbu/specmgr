@@ -1,5 +1,6 @@
 """Tests for EmbeddingService."""
 
+from collections.abc import Generator
 from unittest.mock import Mock, patch
 
 import pytest
@@ -11,7 +12,7 @@ class TestEmbeddingService:
     """Test EmbeddingService functionality."""
 
     @pytest.fixture
-    def mock_anthropic_client(self):
+    def mock_anthropic_client(self) -> Generator[Mock, None, None]:
         """Mock Anthropic client."""
         with patch("app.services.embedding_service.Anthropic") as mock_anthropic_class:
             mock_client = Mock()
@@ -19,7 +20,7 @@ class TestEmbeddingService:
             yield mock_client
 
     @pytest.fixture
-    def embedding_service(self, mock_anthropic_client):
+    def embedding_service(self, mock_anthropic_client: Mock) -> EmbeddingService:
         """Create EmbeddingService with mocked client."""
         with patch("app.services.embedding_service.settings") as mock_settings:
             mock_settings.anthropic_api_key = "test-api-key"
@@ -27,7 +28,7 @@ class TestEmbeddingService:
             return EmbeddingService()
 
     @pytest.fixture
-    def embedding_service_no_key(self):
+    def embedding_service_no_key(self) -> EmbeddingService:
         """Create EmbeddingService without API key."""
         with patch("app.services.embedding_service.settings") as mock_settings:
             mock_settings.anthropic_api_key = ""
@@ -36,7 +37,7 @@ class TestEmbeddingService:
 
     @pytest.mark.asyncio
     async def test_generate_embedding_success(
-        self, embedding_service, mock_anthropic_client
+        self, embedding_service: EmbeddingService, mock_anthropic_client: Mock
     ) -> None:
         """Test successful embedding generation."""
         text = "This is a test document."
@@ -55,7 +56,7 @@ class TestEmbeddingService:
 
     @pytest.mark.asyncio
     async def test_generate_embedding_no_api_key(
-        self, embedding_service_no_key
+        self, embedding_service_no_key: EmbeddingService
     ) -> None:
         """Test embedding generation without API key."""
         text = "This is a test document."
@@ -65,7 +66,7 @@ class TestEmbeddingService:
 
     @pytest.mark.asyncio
     async def test_generate_embeddings_batch_success(
-        self, embedding_service, mock_anthropic_client
+        self, embedding_service: EmbeddingService, mock_anthropic_client: Mock
     ) -> None:
         """Test batch embedding generation."""
         texts = ["Document 1", "Document 2", "Document 3"]
@@ -85,7 +86,7 @@ class TestEmbeddingService:
 
     @pytest.mark.asyncio
     async def test_generate_embeddings_batch_with_error(
-        self, embedding_service, mock_anthropic_client
+        self, embedding_service: EmbeddingService, mock_anthropic_client: Mock
     ) -> None:
         """Test batch embedding generation with some failures."""
         texts = ["Document 1", "Document 2"]
@@ -108,7 +109,9 @@ class TestEmbeddingService:
         assert results[0] == expected_embedding  # First succeeded
         assert results[1] == zero_vector  # Second failed, got zero vector
 
-    def test_truncate_text_short_text(self, embedding_service) -> None:
+    def test_truncate_text_short_text(
+        self, embedding_service: EmbeddingService
+    ) -> None:
         """Test text truncation with short text."""
         text = "Short text."
         max_tokens = 1000
@@ -117,7 +120,7 @@ class TestEmbeddingService:
 
         assert result == text
 
-    def test_truncate_text_long_text(self, embedding_service) -> None:
+    def test_truncate_text_long_text(self, embedding_service: EmbeddingService) -> None:
         """Test text truncation with long text."""
         text = "A" * 10000  # Very long text
         max_tokens = 100  # Small limit
@@ -127,7 +130,9 @@ class TestEmbeddingService:
         # Should be truncated (max_tokens * 4 characters)
         assert len(result) <= max_tokens * 4
 
-    def test_truncate_text_with_sentence_boundary(self, embedding_service) -> None:
+    def test_truncate_text_with_sentence_boundary(
+        self, embedding_service: EmbeddingService
+    ) -> None:
         """Test text truncation respects sentence boundaries."""
         text = "First sentence. Second sentence. Third sentence." + "A" * 1000
         max_tokens = 100  # Will trigger truncation
@@ -137,24 +142,28 @@ class TestEmbeddingService:
         # Should end at a sentence boundary if possible
         assert result.endswith(".") or len(result) <= max_tokens * 4
 
-    def test_get_zero_vector(self, embedding_service) -> None:
+    def test_get_zero_vector(self, embedding_service: EmbeddingService) -> None:
         """Test zero vector generation."""
         zero_vector = embedding_service._get_zero_vector()
 
         assert len(zero_vector) == 1536
         assert all(value == 0.0 for value in zero_vector)
 
-    def test_is_available_with_api_key(self, embedding_service) -> None:
+    def test_is_available_with_api_key(
+        self, embedding_service: EmbeddingService
+    ) -> None:
         """Test availability check with API key."""
         assert embedding_service.is_available() is True
 
-    def test_is_available_without_api_key(self, embedding_service_no_key) -> None:
+    def test_is_available_without_api_key(
+        self, embedding_service_no_key: EmbeddingService
+    ) -> None:
         """Test availability check without API key."""
         assert embedding_service_no_key.is_available() is False
 
     @pytest.mark.asyncio
     async def test_generate_embedding_api_error(
-        self, embedding_service, mock_anthropic_client
+        self, embedding_service: EmbeddingService, mock_anthropic_client: Mock
     ) -> None:
         """Test embedding generation with API error."""
         text = "This is a test document."
@@ -167,7 +176,7 @@ class TestEmbeddingService:
         with pytest.raises(Exception, match="API rate limit"):
             await embedding_service.generate_embedding(text)
 
-    def test_token_estimation(self, embedding_service) -> None:
+    def test_token_estimation(self, embedding_service: EmbeddingService) -> None:
         """Test token estimation logic in text truncation."""
         # Test the assumption that 1 token ≈ 4 characters
         text = "A" * 1000  # 1000 characters

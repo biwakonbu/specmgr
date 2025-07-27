@@ -16,6 +16,7 @@ dependencies = [
     "watchdog>=3.0.0",
     "python-multipart>=0.0.6",
     "pyyaml>=6.0",
+    "numpy>=1.24.0",
 ]
 requires-python = ">=3.12"
 
@@ -98,9 +99,11 @@ strict_concatenate = true
 [[tool.mypy.overrides]]
 module = [
     "qdrant_client.*",
-    "watchdog.*"
+    "watchdog.*",
+    "numpy.*"
 ]
 ignore_missing_imports = true
+
 
 [tool.coverage.run]
 source = ["app"]

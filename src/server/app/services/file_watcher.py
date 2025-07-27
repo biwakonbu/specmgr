@@ -135,7 +135,7 @@ class FileWatcherService:
 
     async def stop(self) -> None:
         """ファイル監視を停止."""
-        if self.observer and self.observer.is_alive():
+        if self.observer is not None and self.observer.is_alive():
             self.observer.stop()
             self.observer.join()
 

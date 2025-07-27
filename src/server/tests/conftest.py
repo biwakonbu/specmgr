@@ -196,9 +196,9 @@ async def mock_async_services() -> AsyncGenerator[
             (),
             {
                 "results": [],
-                "total_results": 0,
+                "totalResults": 0,
                 "query": "test",
-                "processing_time": 0.1,
+                "processingTime": 0.1,
             },
         )()
 
@@ -263,7 +263,7 @@ pytest_plugins: list[str] = []
 
 
 # Custom markers
-def pytest_configure(config: Any) -> None:  # type: ignore[no-untyped-def]
+def pytest_configure(config: Any) -> None:
     """Configure custom pytest markers."""
     config.addinivalue_line("markers", "unit: Unit tests")
     config.addinivalue_line("markers", "integration: Integration tests")
