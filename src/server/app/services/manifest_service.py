@@ -27,7 +27,8 @@ class ManifestService:
 
         try:
             with open(self.manifest_path, encoding="utf-8") as f:
-                return json.load(f)
+                data: dict[str, Any] = json.load(f)
+                return data
         except Exception:
             # If manifest is corrupted, start fresh
             return {"files": {}, "last_updated": None}

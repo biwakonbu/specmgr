@@ -43,7 +43,7 @@ class FileService:
             target_path = self.docs_path / path
 
         if not target_path.exists():
-            return FilesResponse(files=[], directories=[], total_count=0)
+            return FilesResponse(files=[], directories=[], totalCount=0)
 
         files = []
         directories = []
@@ -75,7 +75,7 @@ class FileService:
         return FilesResponse(
             files=files,
             directories=directories,
-            total_count=len(files) + len(directories),
+            totalCount=len(files) + len(directories),
         )
 
     async def get_file_content(self, file_path: str) -> FileContent:
@@ -147,14 +147,14 @@ class FileService:
         return FileMetadata(
             name=file_path.name,
             path=str(file_path),
-            relative_path=relative_path,
+            relativePath=relative_path,
             directory=str(file_path.parent.relative_to(self.docs_path)),
             size=stat.st_size,
-            last_modified=datetime.fromtimestamp(stat.st_mtime),
+            lastModified=datetime.fromtimestamp(stat.st_mtime),
             created=datetime.fromtimestamp(stat.st_ctime),
             hash=file_hash,
-            line_count=line_count,
-            word_count=word_count,
+            lineCount=line_count,
+            wordCount=word_count,
         )
 
     async def _get_directory_info(self, dir_path: Path) -> DirectoryInfo:
@@ -167,8 +167,8 @@ class FileService:
         return DirectoryInfo(
             name=dir_path.name,
             path=str(dir_path),
-            relative_path=relative_path,
-            file_count=file_count,
+            relativePath=relative_path,
+            fileCount=file_count,
         )
 
     async def _calculate_file_hash(self, file_path: Path) -> str:

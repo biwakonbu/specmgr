@@ -27,18 +27,18 @@ class TestFilesAPI:
                 FileMetadata(
                     name="test.md",
                     path="/docs/test.md",
-                    relative_path="test.md",
+                    relativePath="test.md",
                     directory="/docs",
                     size=1024,
-                    last_modified=datetime.fromisoformat("2025-01-01T00:00:00"),
+                    lastModified=datetime.fromisoformat("2025-01-01T00:00:00"),
                     created=datetime.fromisoformat("2025-01-01T00:00:00"),
                     hash="abc123",
-                    line_count=10,
-                    word_count=50,
+                    lineCount=10,
+                    wordCount=50,
                 )
             ],
             directories=[],
-            total_count=1,
+            totalCount=1,
         )
         mock_get_files.return_value = mock_response
 
@@ -59,7 +59,7 @@ class TestFilesAPI:
     ) -> None:
         """Test file list retrieval with parameters."""
         mock_get_files.return_value = FilesResponse(
-            files=[], directories=[], total_count=0
+            files=[], directories=[], totalCount=0
         )
 
         response = client.get(
@@ -89,14 +89,14 @@ class TestFilesAPI:
             metadata=FileMetadata(
                 name="test.md",
                 path="/docs/test.md",
-                relative_path="test.md",
+                relativePath="test.md",
                 directory="/docs",
                 size=15,
-                last_modified=datetime.fromisoformat("2025-01-01T00:00:00"),
+                lastModified=datetime.fromisoformat("2025-01-01T00:00:00"),
                 created=datetime.fromisoformat("2025-01-01T00:00:00"),
                 hash="abc123",
-                line_count=2,
-                word_count=3,
+                lineCount=2,
+                wordCount=3,
             ),
         )
         mock_get_content.return_value = mock_content

@@ -27,8 +27,8 @@ class HealthService:
         overall_healthy = text_search_healthy and claude_code_healthy
 
         return HealthStatus(
-            text_search=text_search_healthy,
-            claude_code=claude_code_healthy,
+            textSearch=text_search_healthy,
+            claudeCode=claude_code_healthy,
             overall=overall_healthy,
         )
 

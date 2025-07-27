@@ -147,5 +147,5 @@ class TestFileService:
         assert isinstance(metadata.last_modified, datetime)
         assert isinstance(metadata.created, datetime)
         assert metadata.hash
-        assert metadata.line_count > 0
-        assert metadata.word_count > 0
+        assert metadata.line_count and metadata.line_count > 0
+        assert metadata.word_count and metadata.word_count > 0

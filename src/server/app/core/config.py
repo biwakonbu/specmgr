@@ -156,13 +156,13 @@ class Settings(BaseSettings):
     documents_path: str = ""
     watch_directory: str = "docs"
 
-    def __init__(self, **kwargs) -> None:  # noqa: ANN003
+    def __init__(self, **kwargs: Any) -> None:
         # Store original environment values before processing
         import os
 
         env_overrides = {
             "host": os.environ.get("HOST"),
-            "port": int(os.environ.get("PORT")) if os.environ.get("PORT") else None,
+            "port": int(port_str) if (port_str := os.environ.get("PORT")) else None,
             "qdrant_collection": os.environ.get("QDRANT_COLLECTION"),
             "log_level": os.environ.get("LOG_LEVEL"),
         }

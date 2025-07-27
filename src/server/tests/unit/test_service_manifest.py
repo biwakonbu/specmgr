@@ -1,6 +1,7 @@
 """Test manifest service."""
 
 import tempfile
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -9,7 +10,7 @@ from app.services.manifest_service import ManifestService
 
 
 @pytest.fixture
-def temp_manifest_service():
+def temp_manifest_service() -> Iterator[ManifestService]:
     """Create temporary manifest service for testing."""
     with tempfile.TemporaryDirectory() as temp_dir:
         service = ManifestService()
@@ -19,7 +20,7 @@ def temp_manifest_service():
 
 
 @pytest.mark.asyncio
-async def test_load_empty_manifest(temp_manifest_service):
+async def test_load_empty_manifest(temp_manifest_service: ManifestService) -> None:
     """Test loading non-existent manifest."""
     manifest = await temp_manifest_service.load_manifest()
 
@@ -28,7 +29,7 @@ async def test_load_empty_manifest(temp_manifest_service):
 
 
 @pytest.mark.asyncio
-async def test_save_and_load_manifest(temp_manifest_service):
+async def test_save_and_load_manifest(temp_manifest_service: ManifestService) -> None:
     """Test saving and loading manifest."""
     test_manifest = {
         "files": {"docs/test.md": "abc123", "docs/readme.md": "def456"},
@@ -43,7 +44,7 @@ async def test_save_and_load_manifest(temp_manifest_service):
 
 
 @pytest.mark.asyncio
-async def test_get_file_changes_empty_manifest(temp_manifest_service):
+async def test_get_file_changes_empty_manifest(temp_manifest_service: ManifestService) -> None:
     """Test change detection with empty manifest."""
     current_files = {"docs/new.md": "hash1", "docs/another.md": "hash2"}
 
@@ -57,7 +58,7 @@ async def test_get_file_changes_empty_manifest(temp_manifest_service):
 
 
 @pytest.mark.asyncio
-async def test_get_file_changes_with_modifications(temp_manifest_service):
+async def test_get_file_changes_with_modifications(temp_manifest_service: ManifestService) -> None:
     """Test change detection with existing manifest."""
     # Setup existing manifest
     initial_manifest = {
@@ -87,7 +88,7 @@ async def test_get_file_changes_with_modifications(temp_manifest_service):
 
 
 @pytest.mark.asyncio
-async def test_update_file_in_manifest(temp_manifest_service):
+async def test_update_file_in_manifest(temp_manifest_service: ManifestService) -> None:
     """Test updating single file in manifest."""
     # Initial manifest
     await temp_manifest_service.update_file_in_manifest("docs/test.md", "hash1")
@@ -103,7 +104,7 @@ async def test_update_file_in_manifest(temp_manifest_service):
 
 
 @pytest.mark.asyncio
-async def test_remove_file_from_manifest(temp_manifest_service):
+async def test_remove_file_from_manifest(temp_manifest_service: ManifestService) -> None:
     """Test removing file from manifest."""
     # Add file first
     await temp_manifest_service.update_file_in_manifest("docs/test.md", "hash1")
@@ -118,7 +119,7 @@ async def test_remove_file_from_manifest(temp_manifest_service):
 
 
 @pytest.mark.asyncio
-async def test_get_manifest_stats(temp_manifest_service):
+async def test_get_manifest_stats(temp_manifest_service: ManifestService) -> None:
     """Test manifest statistics."""
     # Initially empty
     stats = await temp_manifest_service.get_manifest_stats()
@@ -138,7 +139,7 @@ async def test_get_manifest_stats(temp_manifest_service):
 
 
 @pytest.mark.asyncio
-async def test_clear_manifest(temp_manifest_service):
+async def test_clear_manifest(temp_manifest_service: ManifestService) -> None:
     """Test clearing manifest."""
     # Add some data
     await temp_manifest_service.update_file_in_manifest("docs/test.md", "hash1")
@@ -151,7 +152,7 @@ async def test_clear_manifest(temp_manifest_service):
 
 
 @pytest.mark.asyncio
-async def test_corrupted_manifest_handling(temp_manifest_service):
+async def test_corrupted_manifest_handling(temp_manifest_service: ManifestService) -> None:
     """Test handling of corrupted manifest file."""
     # Write invalid JSON
     with open(temp_manifest_service.manifest_path, "w") as f:

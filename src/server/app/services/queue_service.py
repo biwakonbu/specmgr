@@ -55,7 +55,8 @@ class QueueService:
             "created_at": asyncio.get_event_loop().time(),
         }
 
-        await self.redis_client.rpush(self.job_queue, json.dumps(job))
+        if self.redis_client:
+            await self.redis_client.rpush(self.job_queue, json.dumps(job))
 
         return job_id
 
@@ -64,6 +65,9 @@ class QueueService:
 
         while True:
             try:
+                if not self.redis_client:
+                    await asyncio.sleep(1)
+                    continue
                 # ジョブを取得（ブロッキング）
                 job_data = await self.redis_client.blpop(self.job_queue, timeout=1)
 
@@ -116,13 +120,17 @@ class QueueService:
             delay = 2 ** job["retry_count"]
 
             await asyncio.sleep(delay)
-            await self.redis_client.rpush(self.job_queue, json.dumps(job))
+            if self.redis_client:
+                await self.redis_client.rpush(self.job_queue, json.dumps(job))
         else:
             # 失敗ジョブを別キューに移動
-            await self.redis_client.rpush("failed_jobs", json.dumps(job))
+            if self.redis_client:
+                await self.redis_client.rpush("failed_jobs", json.dumps(job))
 
     async def get_queue_stats(self) -> dict[str, int]:
         """キューの統計情報を取得."""
+        if not self.redis_client:
+            return {"pending": 0, "retry": 0, "failed": 0}
         return {
             "pending": await self.redis_client.llen(self.job_queue),
             "retry": await self.redis_client.llen(self.retry_queue),

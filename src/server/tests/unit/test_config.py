@@ -11,6 +11,12 @@ import yaml
 from app.core.config import (
     AppConfig,
     DocumentsConfig,
+    ServerConfig,
+    SearchConfig,
+    VectorDbConfig,
+    QueueConfig,
+    LoggingConfig,
+    ClaudeConfig,
     Settings,
     find_git_root,
     load_config_file,
@@ -126,7 +132,18 @@ class TestAppConfig:
             "server": {"port": 8080, "host": "127.0.0.1"},
         }
 
-        app_config = AppConfig(**config_data)
+        app_config = AppConfig(
+            documents=DocumentsConfig(
+                path=config_data["documents"]["path"],
+                extensions=config_data["documents"]["extensions"]
+            ),
+            server=ServerConfig(**config_data["server"]),
+            search=SearchConfig(),
+            vector_db=VectorDbConfig(),
+            queue=QueueConfig(),
+            logging=LoggingConfig(),
+            claude=ClaudeConfig(),
+        )
 
         assert app_config.documents.path == "custom-docs"
         assert app_config.documents.extensions == [".md"]
@@ -142,7 +159,17 @@ class TestAppConfig:
             }
         }
 
-        app_config = AppConfig(**config_data)
+        app_config = AppConfig(
+            documents=DocumentsConfig(
+                path=config_data["documents"]["path"]
+            ),
+            server=ServerConfig(),
+            search=SearchConfig(),
+            vector_db=VectorDbConfig(),
+            queue=QueueConfig(),
+            logging=LoggingConfig(),
+            claude=ClaudeConfig(),
+        )
 
         assert app_config.documents.path == "my-docs"
         assert app_config.documents.extensions == [".md", ".markdown"]  # Default

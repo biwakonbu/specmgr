@@ -2,7 +2,8 @@
 
 import asyncio
 import tempfile
-from collections.abc import Generator
+from collections.abc import Generator, AsyncGenerator
+from typing import Any
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -174,8 +175,8 @@ def mock_redis_client() -> Generator[Mock, None, None]:
 
 
 @pytest.fixture
-async def mock_async_services() -> Generator[
-    tuple[Mock, Mock, Mock, Mock, Mock], None, None
+async def mock_async_services() -> AsyncGenerator[
+    tuple[Mock, Mock, Mock, Mock, Mock], None
 ]:
     """Mock async services for testing."""
     with (
@@ -207,13 +208,13 @@ async def mock_async_services() -> Generator[
             {"text_search": True, "claude_code": True, "overall": True},
         )()
 
-        yield {
-            "file_service": mock_file_service,
-            "search_service": mock_search_service,
-            "sync_service": mock_sync_service,
-            "chat_service": mock_chat_service,
-            "health_service": mock_health_service,
-        }
+        yield (
+            mock_file_service,
+            mock_search_service,
+            mock_sync_service,
+            mock_chat_service,
+            mock_health_service,
+        )
 
 
 @pytest.fixture
@@ -258,11 +259,11 @@ def sample_search_result() -> SearchResult:
 
 
 # Pytest markers for test categorization
-pytest_plugins = []
+pytest_plugins: list[str] = []
 
 
 # Custom markers
-def pytest_configure(config) -> None:  # noqa: ANN001
+def pytest_configure(config: Any) -> None:
     """Configure custom pytest markers."""
     config.addinivalue_line("markers", "unit: Unit tests")
     config.addinivalue_line("markers", "integration: Integration tests")
