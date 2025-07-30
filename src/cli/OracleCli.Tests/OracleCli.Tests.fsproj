@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <GenerateProgramFile>false</GenerateProgramFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="CommandParserTests.fs" />
+    <Compile Include="TypeValidationTests.fs" />
+    <Compile Include="ServiceIntegrationTests.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../OracleCli.Core/OracleCli.Core.fsproj" />
+    <ProjectReference Include="../OracleCli.Commands/OracleCli.Commands.fsproj" />
+    <ProjectReference Include="../OracleCli.Services/OracleCli.Services.fsproj" />
+    <ProjectReference Include="../OracleCli/OracleCli.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="NSubstitute" Version="5.1.0" />
+    <PackageReference Include="FsCheck" Version="2.16.6" />
+    <PackageReference Include="FsCheck.Xunit" Version="2.16.6" />
+    <PackageReference Include="Bogus" Version="35.6.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.0" />
+  </ItemGroup>
+
+</Project>
