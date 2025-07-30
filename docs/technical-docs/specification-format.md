@@ -4,6 +4,8 @@
 
 This document defines the format for writing executable specifications that can be automatically validated against implementations.
 
+**Note**: For comprehensive layer-specific YAML formats and type constraint definitions, see the [SDD YAML Format Guide](sdd-yaml-format-guide.md).
+
 ## Specification Structure
 
 ### 1. YAML Format
@@ -47,7 +49,7 @@ specification:
 
 ### 2. Type Definitions
 
-Supported types for parameters:
+Basic types for parameters:
 - `string`: Text values
 - `number`: Numeric values (int or float)
 - `boolean`: True/False values
@@ -57,6 +59,8 @@ Supported types for parameters:
 - `url`: URL (validated)
 - `date`: ISO 8601 date
 - `datetime`: ISO 8601 datetime
+
+For advanced type constraints and custom types, see the [Type Constraint System](sdd-yaml-format-guide.md#type-constraint-system) in the SDD YAML Format Guide.
 
 ### 3. Condition Expressions
 

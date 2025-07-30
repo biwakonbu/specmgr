@@ -94,6 +94,94 @@ Current Stage: **📊 MANIFEST OPTIMIZATION** - High-Performance Differential Sy
 8. **M8**: ✅ URL-based navigation with History API integration
 9. **M9**: ✅ Chat UI optimization (compact design, improved spacing)
 
+## Oracle System - Specification Management
+
+### Overview
+Oracle is a specification management and validation system designed to prevent AI development agents from deviating from specifications or manipulating tests. It enforces ubiquitous language in code naming and ensures implementations match their specifications.
+
+### Key Features
+- **Bidirectional Verification**: Check spec→code AND code→spec relationships
+- **Real-time Monitoring**: Watch code changes for specification compliance
+- **Natural Language Search**: Find specs using everyday language
+- **AI Guardian**: Monitor and prevent AI-generated code violations
+- **Ubiquitous Language Enforcement**: Validates naming conventions
+- **Type Constraint Validation**: Set-theoretic type system with guarantees
+
+### Document Structure (v2 - Natural Language Approach)
+```
+specifications/
+├── features/           # User-facing features organized by domain
+│   ├── user-management/
+│   │   ├── registration.yaml
+│   │   ├── login.yaml
+│   │   └── password-reset.yaml
+│   ├── e-commerce/
+│   │   ├── shopping-cart.yaml
+│   │   └── checkout.yaml
+│   └── messaging/
+│       └── notifications.yaml
+├── technical/         # Technical specifications
+│   ├── infrastructure/
+│   ├── security/
+│   └── performance/
+├── domain/           # Domain models and business rules
+│   ├── user.yaml
+│   ├── order.yaml
+│   └── product.yaml
+└── shared/          # Shared types and validators
+    └── types/
+```
+
+### SDD YAML Format (v2 - ID-Free)
+Oracle uses a simplified, natural language-first approach:
+- **No IDs**: File paths serve as unique identifiers
+- **Natural Search**: Find specs using everyday language
+- **Tags & Keywords**: Enhanced discoverability
+- **Simple References**: Use relative file paths
+
+For the new simplified format, see [SDD YAML Format v2](docs/technical-docs/sdd-yaml-format-v2.md).
+For the complete specification format, see [Specification Format v2](docs/technical-docs/specification-format-v2.md).
+
+### Operational Documents
+- **Naming Rules**: [Naming and File Placement Rules](docs/technical-docs/naming-and-file-placement-rules.md)
+- **Operation Flow**: [Specification Operation Flow](docs/technical-docs/specification-operation-flow.md)
+- **Type Theory**: [Type System Theory](docs/technical-docs/type-system-theory.md)
+- **Bidirectional Verification**: [Bidirectional Verification System](docs/technical-docs/bidirectional-verification-system.md)
+- **Format v2**: [Specification Format v2](docs/technical-docs/specification-format-v2.md)
+
+### Type Constraint System
+Oracle enforces a comprehensive set-theoretic type system including:
+- **Set-based definitions**: Types as sets with subset/superset relationships
+- **Type transformations**: Filters that convert between types with guarantees
+- **Union/Intersection types**: Algebraic type composition
+- **Refinement types**: Types refined by predicates
+- **Value constraints**: required, immutable, unique
+- **Domain constraints**: patterns, formats, ranges
+- **Business rule constraints**: Complex cross-field validations
+
+For theoretical foundation, see [Type System Theory](docs/technical-docs/type-system-theory.md).
+
+### Oracle Commands (v2 - Bidirectional)
+```bash
+# Natural language search
+oracle find "user registration"
+oracle ask "How does email verification work?"
+
+# From specification → implementation
+oracle status features/user-management/registration.yaml
+oracle implement features/user-management/registration.yaml
+
+# From implementation → specification (NEW!)
+oracle spec src/auth/registration.py
+oracle check src/auth/registration.py
+oracle requirements src/auth/registration.py
+oracle watch src/auth/registration.py
+
+# AI monitoring
+oracle guard --ai-mode
+oracle check-pr PR-123
+```
+
 ## Implementation Notes
 
 ### Backend Services Architecture
