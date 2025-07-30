@@ -391,6 +391,36 @@ When any system (pre-commit hooks, linters, tests, etc.) raises warnings or erro
 
 **Mindset**: Warnings are guidance from experienced developers embedded in tools - treat them as valuable input, not obstacles to overcome.
 
+## Document Structure
+
+### 5-Layer Specification Hierarchy
+The project uses a 5-layer document structure for specifications:
+
+```
+docs/
+├── specifications/              # All project specifications
+│   ├── requirements/           # User requirements (what users need)
+│   ├── domain-features/        # Business features (domain functionality)
+│   ├── system-features/        # Technical features (infrastructure)
+│   ├── system-design/          # Architecture and design decisions
+│   └── components/             # Implementation specifications
+│
+└── technical-docs/             # Non-specification documentation
+    ├── api/                    # API documentation
+    ├── architecture/           # System architecture docs
+    ├── development/            # Development guides
+    └── testing/                # Test documentation
+```
+
+### Oracle System
+Oracle is the specification management system that:
+- Validates specifications against implementations
+- Enforces ubiquitous language in naming conventions
+- Prevents unauthorized specification changes via HMAC signatures
+- Provides AI-driven specification queries using Claude Code SDK
+
+Oracle specifications are integrated into the main specification structure as part of the specmgr system.
+
 ## Language and Interaction Guidelines
 
 ### Language Interaction Principles
