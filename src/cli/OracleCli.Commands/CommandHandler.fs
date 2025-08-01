@@ -16,7 +16,7 @@ let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPat
         if not (File.Exists(filePath)) then
             Error $"Specification file not found: {filePath}"
         elif not (Paths.isValidSpecificationPath specPath) then
-            Error $"Invalid specification file format. Expected .yaml or .yml file: {filePath}"
+            Error $"Invalid specification file format. Expected .yaml, .yml, or .md file: {filePath}"
         else
             // Get secret key from environment
             let secretKey = Environment.GetEnvironmentVariable("ORACLE_SECRET_KEY")
@@ -102,7 +102,7 @@ COMMANDS:
     docs-sign <spec-path>          Digitally sign a specification document
     help                           Show this help message
 
-For more information, see: https://github.com/your-org/specmgr"""
+For more information, see: https://github.com/biwakonbu/specmgr"""
 
 /// Validate command context and environment
 let validateContext (context: CommandContext) : Result<unit, string> =

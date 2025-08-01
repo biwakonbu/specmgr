@@ -5,7 +5,38 @@ open System.IO
 open System.Diagnostics
 open OracleCli.Core
 
-/// Execute git command and return result
+/// Execute git command with safe argument list and return result  
+let private executeGitCommandSafe (workingDir: string) (argumentList: string list) : Result<string, string> =
+    try
+        let startInfo = ProcessStartInfo()
+        startInfo.FileName <- "git"
+        startInfo.WorkingDirectory <- workingDir
+        startInfo.RedirectStandardOutput <- true
+        startInfo.RedirectStandardError <- true
+        startInfo.UseShellExecute <- false
+        startInfo.CreateNoWindow <- true
+        
+        // Use ArgumentList for safe argument passing
+        argumentList |> List.iter (fun arg -> startInfo.ArgumentList.Add(arg))
+        
+        use proc = Process.Start(startInfo)
+        if proc = null then
+            Error "Failed to start git process"
+        else
+            proc.WaitForExit()
+            
+            let output = proc.StandardOutput.ReadToEnd().Trim()
+            let error = proc.StandardError.ReadToEnd().Trim()
+            
+            if proc.ExitCode = 0 then
+                Ok output
+            else
+                Error error
+                
+    with
+    | ex -> Error $"Failed to execute git command: {ex.Message}"
+
+/// Execute git command and return result (legacy method for simple commands)
 let private executeGitCommand (workingDir: string) (args: string) : Result<string, string> =
     try
         let startInfo = ProcessStartInfo()
@@ -37,23 +68,18 @@ let isGitRepository (workingDir: string) : bool =
 
 /// Add file to git staging area
 let addFileToGit (workingDir: string) (filePath: string) : Result<unit, string> =
-    match executeGitCommand workingDir $"add \"{filePath}\"" with
+    match executeGitCommandSafe workingDir ["add"; filePath] with
     | Ok _ -> Ok ()
     | Error err -> Error err
 
 /// Commit files with message
 let commitWithMessage (workingDir: string) (message: string) : Result<string, string> =
-    match executeGitCommand workingDir $"commit -m \"{message}\"" with
+    match executeGitCommandSafe workingDir ["commit"; "-m"; message] with
     | Ok output -> 
-        // Extract commit hash from output
-        let lines = output.Split('\n')
-        let commitInfo = lines |> Array.tryFind (fun line -> line.Contains("["))
-        match commitInfo with
-        | Some info -> 
-            let parts = info.Split(' ')
-            let hash = parts |> Array.tryFind (fun part -> part.Length >= 7 && part |> Seq.forall Char.IsLetterOrDigit)
-            Ok (hash |> Option.defaultValue "unknown")
-        | None -> Ok "committed"
+        // Get the commit hash directly after committing
+        match executeGitCommand workingDir "rev-parse HEAD" with
+        | Ok hash -> Ok (hash.Trim())
+        | Error _ -> Ok "committed"
     | Error err -> Error err
 
 /// Create git commit for signature operation

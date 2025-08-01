@@ -23,13 +23,19 @@ let parseCommand (args: string array) : Result<OracleCommand, string> =
     | [| "ask"; query |] ->
         Ok (Ask (Query query))
     | [| "docs-sign"; specPath |] ->
-        // Default signer info - should be retrieved from config or environment
-        let defaultSigner = {
-            Email = System.Environment.GetEnvironmentVariable("ORACLE_SIGNER_EMAIL") |> Option.ofObj |> Option.defaultValue "user@example.com"
-            Role = System.Environment.GetEnvironmentVariable("ORACLE_SIGNER_ROLE") |> Option.ofObj |> Option.defaultValue "developer"
-            SigningReason = "Document approval"
-        }
-        Ok (DocsSign (SpecificationPath specPath, defaultSigner))
+        match System.Environment.GetEnvironmentVariable("ORACLE_SIGNER_EMAIL") |> Option.ofObj,
+              System.Environment.GetEnvironmentVariable("ORACLE_SIGNER_ROLE") |> Option.ofObj with
+        | Some email, Some role ->
+            let defaultSigner = {
+                Email = email
+                Role = role
+                SigningReason = "Document approval"
+            }
+            Ok (DocsSign (SpecificationPath specPath, defaultSigner))
+        | None, _ ->
+            Error "ORACLE_SIGNER_EMAIL environment variable is required for signing"
+        | _, None ->
+            Error "ORACLE_SIGNER_ROLE environment variable is required for signing"
     | [| "docs-sign"; specPath; "--email"; email; "--role"; role; "--reason"; reason |] ->
         let signerInfo = {
             Email = email

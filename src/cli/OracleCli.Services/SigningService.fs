@@ -44,7 +44,10 @@ let generateSignature (filePath: string) (signerInfo: SignerInfo) (secretKey: st
                 Algorithm = "HMAC-SHA256"
                 SignatureValue = signature
                 ContentHash = Convert.ToHexString(contentHash).ToLowerInvariant()
-                KeyIdentifier = "oracle-key-2025-01"
+                KeyIdentifier = 
+                    Environment.GetEnvironmentVariable("ORACLE_KEY_IDENTIFIER")
+                    |> Option.ofObj
+                    |> Option.defaultValue "oracle-key-2025-01"
                 SignerInfo = signerInfo
                 ValidFrom = timestamp
                 ExpiresAt = timestamp.AddMonths(3) // Default 3 months expiry
