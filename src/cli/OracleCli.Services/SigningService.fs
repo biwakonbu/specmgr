@@ -25,7 +25,7 @@ let generateSignature (filePath: string) (signerInfo: SignerInfo) (secretKey: st
             // 2. Create signing payload
             let timestamp = DateTimeOffset.UtcNow
             let timestampStr = timestamp.ToString("yyyy-MM-ddTHH:mm:ssZ")
-            let payload = $"{filePath}|{Convert.ToHexString(contentHash)}|{timestampStr}|{signerInfo.Email}|{signerInfo.Role}"
+            let payload = $"{filePath}|{Convert.ToHexString(contentHash).ToLowerInvariant()}|{timestampStr}|{signerInfo.Email}|{signerInfo.Role}"
             
             // 3. Generate HMAC signature
             let secretKeyBytes = Encoding.UTF8.GetBytes(secretKey)
