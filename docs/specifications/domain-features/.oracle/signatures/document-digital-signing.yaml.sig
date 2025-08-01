@@ -1,25 +1,22 @@
-# Sample signature file – do not use in production
-# This is a demonstration file showing the structure of Oracle CLI digital signatures
-
 digital_signature:
-  signature_id: "sig_20250801T073409Z_document-digital-signing"
-  specification_path: "../document-digital-signing.md"
+  signature_id: "sig_20250801T100149Z_document-digital-signing"
+  specification_path: "/home/biwakonbu/work/specmgr/docs/specifications/domain-features/document-digital-signing.md"
   
   cryptographic_info:
     algorithm: "HMAC-SHA256"
-    signature_value: "<dummy_signature_value_replace_with_actual>"
-    content_hash: "sha256:<dummy_content_hash_replace_with_actual>"
+    signature_value: "a6cf386cf57c111d12ea28fee354ff5305aaadc264013331a3a4cf1100eb4cc9"
+    content_hash: "sha256:08393e78d47e844b8a344062a9a8a954d67f9a6e9fc78a34de1026dc3940d6b1"
     key_identifier: "oracle-key-2025-01"
     
   signer_info:
-    signer_email: "developer@example.com"
-    signer_role: "developer"
-    signing_timestamp: "2025-08-01T07:34:09Z"
+    signer_email: "ryo.higasigawa@gmail.com"
+    signer_role: "Ryo Higasigawa"
+    signing_timestamp: "2025-08-01T10:01:49Z"
     signing_reason: "Document approval"
     
   validity_info:
-    valid_from: "2025-08-01T07:34:09Z"
-    expires_at: "2025-11-01T07:34:09Z"
+    valid_from: "2025-08-01T10:01:49Z"
+    expires_at: "2025-11-01T10:01:49Z"
     status: "active"
     
   metadata:
