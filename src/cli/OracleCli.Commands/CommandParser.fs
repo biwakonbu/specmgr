@@ -23,40 +23,18 @@ let parseCommand (args: string array) : Result<OracleCommand, string> =
     | [| "ask"; query |] ->
         Ok (Ask (Query query))
     | [| "docs-sign"; specPath |] ->
-        match System.Environment.GetEnvironmentVariable("ORACLE_SIGNER_EMAIL") |> Option.ofObj,
-              System.Environment.GetEnvironmentVariable("ORACLE_SIGNER_ROLE") |> Option.ofObj with
-        | Some email, Some role ->
-            let defaultSigner = {
-                Email = email
-                Role = role
-                SigningReason = "Document approval"
-            }
-            Ok (DocsSign (SpecificationPath specPath, defaultSigner, None))
-        | None, _ ->
-            Error "ORACLE_SIGNER_EMAIL environment variable is required for signing"
-        | _, None ->
-            Error "ORACLE_SIGNER_ROLE environment variable is required for signing"
+        // Signer info will be resolved from git config at execution time
+        Ok (DocsSign (SpecificationPath specPath, None, None))
     | [| "docs-sign"; specPath; "--email"; email; "--role"; role; "--reason"; reason |] ->
         let signerInfo = {
             Email = email
             Role = role
             SigningReason = reason
         }
-        Ok (DocsSign (SpecificationPath specPath, signerInfo, None))
+        Ok (DocsSign (SpecificationPath specPath, Some signerInfo, None))
     | [| "docs-sign"; specPath; "-m"; message |] ->
-        match System.Environment.GetEnvironmentVariable("ORACLE_SIGNER_EMAIL") |> Option.ofObj,
-              System.Environment.GetEnvironmentVariable("ORACLE_SIGNER_ROLE") |> Option.ofObj with
-        | Some email, Some role ->
-            let defaultSigner = {
-                Email = email
-                Role = role
-                SigningReason = "Document approval"
-            }
-            Ok (DocsSign (SpecificationPath specPath, defaultSigner, Some message))
-        | None, _ ->
-            Error "ORACLE_SIGNER_EMAIL environment variable is required for signing"
-        | _, None ->
-            Error "ORACLE_SIGNER_ROLE environment variable is required for signing"
+        // Signer info will be resolved from git config at execution time
+        Ok (DocsSign (SpecificationPath specPath, None, Some message))
     | [| "help" |] | [| "--help" |] | [| "-h" |] ->
         Ok Help
     | _ ->
@@ -74,7 +52,7 @@ COMMANDS:
     list [--tag <tag>]             List specifications, optionally filtered by tag
     watch <code>                   Watch code file for changes and validate
     ask <question>                 Ask questions about specifications
-    docs-sign <spec-path> [-m <message>]  Digitally sign a specification document with optional commit message
+    docs-sign <spec-path> [-m <message>]  Digitally sign a specification document (uses git config for signer)
     help                           Show this help message
 
 EXAMPLES:

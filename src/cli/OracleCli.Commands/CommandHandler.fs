@@ -8,7 +8,7 @@ open OracleCli.Services.SigningService
 open OracleCli.Services.GitService
 
 /// Execute docs-sign command
-let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPath) (signerInfo: SignerInfo) (customMessage: string option) : Result<string, string> =
+let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPath) (signerInfoOpt: SignerInfo option) (customMessage: string option) : Result<string, string> =
     try
         let filePath = Paths.getSpecificationPath specPath
         
@@ -18,50 +18,59 @@ let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPat
         elif not (Paths.isValidSpecificationPath specPath) then
             Error $"Invalid specification file format. Expected .yaml, .yml, or .md file: {filePath}"
         else
-            // Get secret key from environment
-            let secretKey = Environment.GetEnvironmentVariable("ORACLE_SECRET_KEY")
-            if String.IsNullOrWhiteSpace(secretKey) then
-                Error "ORACLE_SECRET_KEY environment variable is required for digital signing"
-            else
-                // Get git root directory
-                match getGitRootDirectory filePath with
-                | Error gitErr -> Error $"Git repository required for digital signing: {gitErr}"
-                | Ok gitRoot ->
-                    if context.DryRun then
-                        // Dry run mode - simulate signature generation
-                        match generateSignature filePath signerInfo secretKey with
-                        | Error err -> Error err
-                        | Ok signature ->
-                            let signatureFilePath = getSignatureFilePath filePath
-                            let validFromStr = signature.ValidFrom.ToString("yyyy-MM-dd HH:mm:ss UTC")
-                            let expiresAtStr = signature.ExpiresAt.ToString("yyyy-MM-dd HH:mm:ss UTC")
-                            let fileName = Path.GetFileName(filePath)
-                            Ok $"[DRY RUN] Would create digital signature:\n\nSignature ID: {signature.SignatureId}\nFile: {filePath}\nSignature File: {signatureFilePath}\nSigner: {signerInfo.Email} ({signerInfo.Role})\nAlgorithm: {signature.Algorithm}\nValid From: {validFromStr}\nExpires At: {expiresAtStr}\nContent Hash: {signature.ContentHash}\n\nGit commit message would be:\ndocs: digitally sign {fileName}"
+            // Get git root directory for signer info resolution
+            match getGitRootDirectory filePath with
+            | Error gitErr -> Error $"Git repository required for digital signing: {gitErr}"
+            | Ok gitRoot ->
+                // Resolve signer information
+                let signerResult = 
+                    match signerInfoOpt with
+                    | Some explicitSigner -> Ok explicitSigner  // Use explicit signer info from command args
+                    | None -> getSignerFromGitConfig gitRoot    // Get from git config
+                
+                match signerResult with
+                | Error signerErr -> Error signerErr
+                | Ok signerInfo ->
+                    // Get secret key from environment
+                    let secretKey = Environment.GetEnvironmentVariable("ORACLE_SECRET_KEY")
+                    if String.IsNullOrWhiteSpace(secretKey) then
+                        Error "ORACLE_SECRET_KEY environment variable is required for digital signing"
                     else
-                        // Generate signature
-                        match generateSignature filePath signerInfo secretKey with
-                        | Error err -> Error $"Signature generation failed: {err}"
-                        | Ok signature ->
-                            // Check signature expiration status 
-                            let currentStatus = checkSignatureExpiration signature
-                            let updatedSignature = { signature with Status = currentStatus }
-                            
-                            // Save signature file
-                            match saveSignatureToFile updatedSignature with
-                            | Error err -> Error $"Failed to save signature file: {err}"
-                            | Ok signatureFilePath ->
-                                // Commit to git
-                                match commitSignature gitRoot updatedSignature signatureFilePath customMessage with
-                                | Error err -> Error $"Git commit failed: {err}"
-                                | Ok commitHash ->
-                                    let validFromStr = updatedSignature.ValidFrom.ToString("yyyy-MM-dd HH:mm:ss UTC")
-                                    let expiresAtStr = updatedSignature.ExpiresAt.ToString("yyyy-MM-dd HH:mm:ss UTC")
-                                    let successMessage = $"✅ Digital signature created successfully!\n\nSignature ID: {updatedSignature.SignatureId}\nFile: {filePath}\nSignature File: {signatureFilePath}\nSigner: {signerInfo.Email} ({signerInfo.Role})\nReason: {signerInfo.SigningReason}\nAlgorithm: {updatedSignature.Algorithm}\nValid From: {validFromStr}\nExpires At: {expiresAtStr}\nStatus: {updatedSignature.Status}\nGit Commit: {commitHash}\n\n🔐 Document is now digitally signed and committed to Git."
-                                    
-                                    if context.Verbose then
-                                        Ok $"{successMessage}\n\n🔍 Signature Details:\n- Content Hash: {updatedSignature.ContentHash}\n- Key ID: {updatedSignature.KeyIdentifier}\n- Oracle Version: {updatedSignature.OracleVersion}"
-                                    else
-                                        Ok successMessage
+                        if context.DryRun then
+                            // Dry run mode - simulate signature generation
+                            match generateSignature filePath signerInfo secretKey with
+                            | Error err -> Error err
+                            | Ok signature ->
+                                let signatureFilePath = getSignatureFilePath filePath
+                                let validFromStr = signature.ValidFrom.ToString("yyyy-MM-dd HH:mm:ss UTC")
+                                let expiresAtStr = signature.ExpiresAt.ToString("yyyy-MM-dd HH:mm:ss UTC")
+                                let fileName = Path.GetFileName(filePath)
+                                Ok $"[DRY RUN] Would create digital signature:\n\nSignature ID: {signature.SignatureId}\nFile: {filePath}\nSignature File: {signatureFilePath}\nSigner: {signerInfo.Email} ({signerInfo.Role})\nAlgorithm: {signature.Algorithm}\nValid From: {validFromStr}\nExpires At: {expiresAtStr}\nContent Hash: {signature.ContentHash}\n\nGit commit message would be:\ndocs: digitally sign {fileName}"
+                        else
+                            // Generate signature
+                            match generateSignature filePath signerInfo secretKey with
+                            | Error err -> Error $"Signature generation failed: {err}"
+                            | Ok signature ->
+                                // Check signature expiration status 
+                                let currentStatus = checkSignatureExpiration signature
+                                let updatedSignature = { signature with Status = currentStatus }
+                                
+                                // Save signature file
+                                match saveSignatureToFile updatedSignature with
+                                | Error err -> Error $"Failed to save signature file: {err}"
+                                | Ok signatureFilePath ->
+                                    // Commit to git
+                                    match commitSignature gitRoot updatedSignature signatureFilePath customMessage with
+                                    | Error err -> Error $"Git commit failed: {err}"
+                                    | Ok commitHash ->
+                                        let validFromStr = updatedSignature.ValidFrom.ToString("yyyy-MM-dd HH:mm:ss UTC")
+                                        let expiresAtStr = updatedSignature.ExpiresAt.ToString("yyyy-MM-dd HH:mm:ss UTC")
+                                        let successMessage = $"✅ Digital signature created successfully!\n\nSignature ID: {updatedSignature.SignatureId}\nFile: {filePath}\nSignature File: {signatureFilePath}\nSigner: {signerInfo.Email} ({signerInfo.Role})\nReason: {signerInfo.SigningReason}\nAlgorithm: {updatedSignature.Algorithm}\nValid From: {validFromStr}\nExpires At: {expiresAtStr}\nStatus: {updatedSignature.Status}\nGit Commit: {commitHash}\n\n🔐 Document is now digitally signed and committed to Git."
+                                        
+                                        if context.Verbose then
+                                            Ok $"{successMessage}\n\n🔍 Signature Details:\n- Content Hash: {updatedSignature.ContentHash}\n- Key ID: {updatedSignature.KeyIdentifier}\n- Oracle Version: {updatedSignature.OracleVersion}"
+                                        else
+                                            Ok successMessage
                                         
     with
     | ex -> Error $"Command execution failed: {ex.Message}"
@@ -69,8 +78,8 @@ let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPat
 /// Execute Oracle CLI commands
 let executeCommand (context: CommandContext) (command: OracleCommand) : Result<string, string> =
     match command with
-    | DocsSign (specPath, signerInfo, customMessage) ->
-        executeDocsSignCommand context specPath signerInfo customMessage
+    | DocsSign (specPath, signerInfoOpt, customMessage) ->
+        executeDocsSignCommand context specPath signerInfoOpt customMessage
     | FindSpec query ->
         Error "FindSpec command not implemented yet"
     | CheckImpl (codePath, specPath) ->
