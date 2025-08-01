@@ -1,6 +1,7 @@
 """Sync service tests."""
 
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock, patch
@@ -17,7 +18,7 @@ class TestSyncService:
     """Sync service test class."""
 
     @pytest.fixture
-    def mock_embedding_service(self):
+    def mock_embedding_service(self) -> Generator[Mock, None, None]:
         """Mock embedding service."""
         mock_service = Mock()
         mock_service.is_available.return_value = False
@@ -25,13 +26,15 @@ class TestSyncService:
         return mock_service
 
     @pytest.fixture
-    def mock_qdrant_service(self):
+    def mock_qdrant_service(self) -> Generator[AsyncMock, None, None]:
         """Mock Qdrant service."""
         mock_service = AsyncMock()
         return mock_service
 
     @pytest.fixture
-    def sync_service(self, mock_embedding_service, mock_qdrant_service) -> SyncService:
+    def sync_service(
+        self, mock_embedding_service: AsyncMock, mock_qdrant_service: AsyncMock
+    ) -> SyncService:
         """Create sync service instance with mocked dependencies."""
         with (
             patch(
@@ -42,11 +45,25 @@ class TestSyncService:
                 "app.services.sync_service.QdrantService",
                 return_value=mock_qdrant_service,
             ),
+            patch("app.services.sync_service.ManifestService") as mock_manifest,
+            patch("app.services.sync_service.FileService"),
         ):
+            # Configure manifest service mock
+            mock_manifest_instance = mock_manifest.return_value
+            mock_manifest_instance.get_file_changes = AsyncMock(
+                return_value=([], [], [])
+            )  # No changes
+            mock_manifest_instance.update_file_in_manifest = AsyncMock(
+                return_value=None
+            )
+            mock_manifest_instance.remove_file_from_manifest = AsyncMock(
+                return_value=None
+            )
+
             return SyncService()
 
     @pytest.fixture
-    def temp_docs_dir(self) -> Path:
+    def temp_docs_dir(self) -> Generator[Path, None, None]:
         """Create temporary docs directory for tests."""
         with tempfile.TemporaryDirectory() as tmpdir:
             temp_path = Path(tmpdir)
@@ -63,30 +80,54 @@ class TestSyncService:
 
     @pytest.mark.asyncio
     async def test_execute_bulk_sync_success(
-        self, sync_service: SyncService, temp_docs_dir: Path, mock_qdrant_service
+        self,
+        sync_service: SyncService,
+        temp_docs_dir: Path,
+        mock_qdrant_service: AsyncMock,
     ) -> None:
         """Test successful bulk sync execution."""
         # Mock the docs_path to use temp directory
         sync_service.docs_path = temp_docs_dir
 
-        # Mock the sync_file method to avoid actual processing
+        # Configure manifest service to return 2 files for sync
+        test_files = ["test1.md", "test2.md"]
+
         with patch.object(
-            sync_service, "sync_file", new_callable=AsyncMock
-        ) as mock_sync:
-            mock_sync.return_value = None  # sync_file doesn't return anything
+            sync_service.manifest_service, "get_file_changes", new_callable=AsyncMock
+        ) as mock_changes:
+            mock_changes.return_value = (
+                test_files,
+                [],
+                [],
+            )  # 2 added files, no modified/deleted
 
-            # Execute test
-            result = await sync_service.execute_bulk_sync(force=False)
+            # Mock the sync_file method to avoid actual processing
+            with patch.object(
+                sync_service, "sync_file", new_callable=AsyncMock
+            ) as mock_sync:
+                mock_sync.return_value = None  # sync_file doesn't return anything
 
-            # Verify results
-            assert result.success is True
-            assert result.total_files == 2  # Two test files created
-            assert result.processed_files == 2
-            assert result.total_chunks > 0
-            assert len(result.errors) == 0
+                # Mock _get_current_file_hashes to return test files
+                with patch.object(
+                    sync_service, "_get_current_file_hashes", new_callable=AsyncMock
+                ) as mock_hashes:
+                    mock_hashes.return_value = {
+                        "test1.md": "hash1",
+                        "test2.md": "hash2",
+                    }
 
-            # Verify Qdrant initialization was called
-            mock_qdrant_service.initialize_collection.assert_called_once()
+                    # Execute test
+                    result = await sync_service.execute_bulk_sync(force=False)
+
+                    # Verify results
+                    assert result.success is True
+                    assert result.total_files == 2  # Two test files created
+                    assert result.processed_files == 2
+                    assert result.total_chunks > 0
+                    assert len(result.errors) == 0
+
+                    # Verify Qdrant initialization was called
+                    mock_qdrant_service.initialize_collection.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_execute_bulk_sync_with_errors(
@@ -96,24 +137,45 @@ class TestSyncService:
         # Mock the docs_path to use temp directory
         sync_service.docs_path = temp_docs_dir
 
-        # Mock sync_file to raise exception for some files
+        # Configure manifest service to return 2 files for sync
+        test_files = ["test1.md", "test2.md"]
+
         with patch.object(
-            sync_service, "sync_file", new_callable=AsyncMock
-        ) as mock_sync:
-            mock_sync.side_effect = [
-                None,
-                Exception("Test error"),
-            ]  # First succeeds, second fails
+            sync_service.manifest_service, "get_file_changes", new_callable=AsyncMock
+        ) as mock_changes:
+            mock_changes.return_value = (
+                test_files,
+                [],
+                [],
+            )  # 2 added files, no modified/deleted
 
-            # Execute test
-            result = await sync_service.execute_bulk_sync(force=False)
+            # Mock sync_file to raise exception for some files
+            with patch.object(
+                sync_service, "sync_file", new_callable=AsyncMock
+            ) as mock_sync:
+                mock_sync.side_effect = [
+                    None,
+                    Exception("Test error"),
+                ]  # First succeeds, second fails
 
-            # Verify results
-            assert result.success is False  # Has errors
-            assert result.total_files == 2
-            assert result.processed_files == 1  # Only one successful
-            assert len(result.errors) == 1
-            assert "Test error" in result.errors[0]
+                # Mock _get_current_file_hashes to return test files
+                with patch.object(
+                    sync_service, "_get_current_file_hashes", new_callable=AsyncMock
+                ) as mock_hashes:
+                    mock_hashes.return_value = {
+                        "test1.md": "hash1",
+                        "test2.md": "hash2",
+                    }
+
+                    # Execute test
+                    result = await sync_service.execute_bulk_sync(force=False)
+
+                    # Verify results
+                    assert result.success is False  # Has errors
+                    assert result.total_files == 2
+                    assert result.processed_files == 1  # Only one successful
+                    assert len(result.errors) == 1
+                    assert "Test error" in result.errors[0]
 
     @pytest.mark.asyncio
     async def test_get_sync_status_running(self, sync_service: SyncService) -> None:
@@ -138,8 +200,8 @@ class TestSyncService:
         self,
         sync_service: SyncService,
         temp_docs_dir: Path,
-        mock_embedding_service,
-        mock_qdrant_service,
+        mock_embedding_service: Mock,
+        mock_qdrant_service: AsyncMock,
     ) -> None:
         """Test syncing individual file with embedding generation."""
         # Setup embedding service to be available
@@ -170,8 +232,8 @@ class TestSyncService:
         self,
         sync_service: SyncService,
         temp_docs_dir: Path,
-        mock_embedding_service,
-        mock_qdrant_service,
+        mock_embedding_service: Mock,
+        mock_qdrant_service: AsyncMock,
     ) -> None:
         """Test syncing individual file without embedding (API key not available)."""
         # Setup embedding service to not be available
@@ -201,7 +263,10 @@ class TestSyncService:
 
     @pytest.mark.asyncio
     async def test_remove_file(
-        self, sync_service: SyncService, temp_docs_dir: Path, mock_qdrant_service
+        self,
+        sync_service: SyncService,
+        temp_docs_dir: Path,
+        mock_qdrant_service: AsyncMock,
     ) -> None:
         """Test file removal."""
         # Create test file path

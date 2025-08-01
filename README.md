@@ -80,10 +80,10 @@ PORT=3000
 NODE_ENV=development
 
 # Redis Configuration
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://localhost:6400
 
 # Qdrant Configuration
-QDRANT_URL=http://localhost:6333
+QDRANT_URL=http://localhost:6350
 
 # Claude Code SDK Configuration (Required)
 ANTHROPIC_API_KEY=your_anthropic_api_key_here

@@ -1,6 +1,7 @@
 """Synchronization service."""
 
 import asyncio
+import logging
 import time
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,21 @@ from app.services.embedding_service import EmbeddingService
 from app.services.file_service import FileService
 from app.services.manifest_service import ManifestService
 from app.services.qdrant_service import QdrantService
+
+# モジュールレベルでloggerを初期化
+logger = logging.getLogger(__name__)
+
+
+class SyncError(Exception):
+    """Synchronization operation specific error."""
+
+    pass
+
+
+class SyncInProgressError(SyncError):
+    """Sync is already in progress."""
+
+    pass
 
 
 class SyncService:
@@ -40,7 +56,7 @@ class SyncService:
             Sync result
         """
         if self._sync_status["is_running"]:
-            raise ValueError("Sync is already running")
+            raise SyncInProgressError("Sync is already running")
 
         start_time = time.time()
         errors = []
@@ -60,11 +76,13 @@ class SyncService:
                 # Force sync all files
                 files_to_sync = list(current_files.keys())
                 files_to_delete = []
-                import logging
-
-                logger = logging.getLogger(__name__)
                 logger.info(
-                    f"Force sync enabled, processing {len(files_to_sync)} files"
+                    "Force sync enabled",
+                    extra={
+                        "total_files": len(files_to_sync),
+                        "operation": "force_sync",
+                        "sync_type": "full",
+                    },
                 )
             else:
                 # Differential sync using manifest
@@ -76,14 +94,16 @@ class SyncService:
                 files_to_sync = added_files + modified_files
                 files_to_delete = deleted_files
 
-                import logging
-
-                logger = logging.getLogger(__name__)
-                msg = (
-                    f"Differential sync: {len(added_files)} added, "
-                    f"{len(modified_files)} modified, {len(deleted_files)} deleted"
+                logger.info(
+                    "Differential sync detected changes",
+                    extra={
+                        "added_files": len(added_files),
+                        "modified_files": len(modified_files),
+                        "deleted_files": len(deleted_files),
+                        "operation": "differential_sync",
+                        "sync_type": "incremental",
+                    },
                 )
-                logger.info(msg)
 
             total_operations = len(files_to_sync) + len(files_to_delete)
             self._sync_status["total"] = total_operations
@@ -99,7 +119,17 @@ class SyncService:
                     await self.manifest_service.remove_file_from_manifest(relative_path)
                     processed_files += 1
                 except Exception as e:
-                    errors.append(f"Delete {relative_path}: {str(e)}")
+                    error_msg = f"Delete {relative_path}: {str(e)}"
+                    errors.append(error_msg)
+                    logger.error(
+                        "Failed to delete file during sync",
+                        extra={
+                            "file_path": relative_path,
+                            "error": str(e),
+                            "error_type": type(e).__name__,
+                            "operation": "sync_delete_file",
+                        },
+                    )
 
                 await asyncio.sleep(0.05)
 
@@ -126,27 +156,40 @@ class SyncService:
                     await asyncio.sleep(0.05)
 
                 except Exception as e:
-                    errors.append(f"{relative_path}: {str(e)}")
+                    error_msg = f"{relative_path}: {str(e)}"
+                    errors.append(error_msg)
+                    logger.error(
+                        "Failed to sync file during bulk sync",
+                        extra={
+                            "file_path": relative_path,
+                            "error": str(e),
+                            "error_type": type(e).__name__,
+                            "operation": "sync_process_file",
+                        },
+                    )
 
             processing_time = time.time() - start_time
 
             # Report results
             total_files = len(current_files)
-            import logging
-
-            logger = logging.getLogger(__name__)
-            msg = (
-                f"Sync completed: {processed_files}/{total_operations} operations, "
-                f"{len(errors)} errors"
+            logger.info(
+                "Bulk sync completed",
+                extra={
+                    "processed_files": processed_files,
+                    "total_operations": total_operations,
+                    "errors_count": len(errors),
+                    "processing_time": processing_time,
+                    "success": len(errors) == 0,
+                    "operation": "bulk_sync_complete",
+                },
             )
-            logger.info(msg)
 
             return BulkSyncResult(
                 success=len(errors) == 0,
-                total_files=total_files,
-                processed_files=processed_files,
-                total_chunks=total_chunks,
-                processing_time=processing_time,
+                totalFiles=total_files,
+                processedFiles=processed_files,
+                totalChunks=total_chunks,
+                processingTime=processing_time,
                 errors=errors,
             )
 
@@ -162,10 +205,10 @@ class SyncService:
             Sync status
         """
         return SyncStatus(
-            is_running=self._sync_status["is_running"],
+            isRunning=self._sync_status["is_running"],
             current=self._sync_status["current"],
             total=self._sync_status["total"],
-            current_file=self._sync_status["current_file"],
+            currentFile=self._sync_status["current_file"],
         )
 
     async def sync_file(self, file_path: str) -> None:
@@ -190,10 +233,13 @@ class SyncService:
                     vector = await self.embedding_service.generate_embedding(content)
                 else:
                     # APIキーがない場合はダミーベクトルを使用
-                    import logging
-
-                    logger = logging.getLogger(__name__)
-                    logger.info(f"Using dummy vector for {relative_path} (no API key)")
+                    logger.info(
+                        "Using dummy vector (no API key available)",
+                        extra={
+                            "file_path": relative_path,
+                            "operation": "sync_file_dummy_vector",
+                        },
+                    )
                     vector = self.embedding_service._get_zero_vector()
 
                 # Qdrantに保存
@@ -203,17 +249,30 @@ class SyncService:
                     vector=vector,
                 )
             except Exception as e:
-                # 保存に失敗した場合はログに記録して続行
-                import logging
-
-                logger = logging.getLogger(__name__)
-                logger.warning(f"Failed to store document {relative_path}: {e}")
+                # 保存に失敗した場合はログに記録してraiseする
+                logger.error(
+                    "Failed to store document in vector database",
+                    extra={
+                        "file_path": relative_path,
+                        "error": str(e),
+                        "error_type": type(e).__name__,
+                        "operation": "sync_file_store_document",
+                    },
+                )
+                raise SyncError(f"Failed to store document {relative_path}: {e}") from e
 
         except Exception as e:
-            import logging
-
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to sync file {file_path}: {e}")
+            logger.error(
+                "Failed to sync file",
+                extra={
+                    "file_path": file_path,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "operation": "sync_file",
+                },
+            )
+            if not isinstance(e, SyncError):
+                raise SyncError(f"Failed to sync file {file_path}: {e}") from e
             raise
 
     async def _get_current_file_hashes(self) -> dict[str, str]:
@@ -237,10 +296,15 @@ class SyncService:
                 if file_hash:  # Only add if hash calculation succeeded
                     file_hashes[relative_path] = file_hash
             except Exception as e:
-                import logging
-
-                logger = logging.getLogger(__name__)
-                logger.warning(f"Failed to hash file {file_path}: {e}")
+                logger.warning(
+                    "Failed to calculate file hash",
+                    extra={
+                        "file_path": str(file_path),
+                        "error": str(e),
+                        "error_type": type(e).__name__,
+                        "operation": "get_current_file_hashes",
+                    },
+                )
 
         return file_hashes
 
@@ -262,10 +326,17 @@ class SyncService:
             await self.manifest_service.remove_file_from_manifest(relative_path)
 
         except Exception as e:
-            import logging
-
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to remove file {file_path}: {e}")
+            logger.error(
+                "Failed to remove file",
+                extra={
+                    "file_path": file_path,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "operation": "remove_file",
+                },
+            )
+            if not isinstance(e, SyncError):
+                raise SyncError(f"Failed to remove file {file_path}: {e}") from e
             raise
 
     async def sync_single_file(self, file_path: str) -> None:
@@ -290,8 +361,15 @@ class SyncService:
                 )
 
         except Exception as e:
-            import logging
-
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to sync single file {file_path}: {e}")
+            logger.error(
+                "Failed to sync single file",
+                extra={
+                    "file_path": file_path,
+                    "error": str(e),
+                    "error_type": type(e).__name__,
+                    "operation": "sync_single_file",
+                },
+            )
+            if not isinstance(e, SyncError):
+                raise SyncError(f"Failed to sync single file {file_path}: {e}") from e
             raise

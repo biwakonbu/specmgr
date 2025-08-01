@@ -1,6 +1,7 @@
 """Service integration tests."""
 
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,7 @@ class TestServiceIntegration:
     """Service integration test class."""
 
     @pytest.fixture
-    def temp_docs_dir(self) -> Path:
+    def temp_docs_dir(self) -> Generator[Path, None, None]:
         """Create temporary docs directory for tests."""
         with tempfile.TemporaryDirectory() as tmpdir:
             temp_path = Path(tmpdir)
@@ -120,8 +121,8 @@ class TestServiceIntegration:
         # Verify metadata
         assert metadata.name == "test1.md"
         assert metadata.size > 0
-        assert metadata.line_count > 0
-        assert metadata.word_count > 0
+        assert metadata.line_count is not None and metadata.line_count > 0
+        assert metadata.word_count is not None and metadata.word_count > 0
         assert metadata.hash
 
     @pytest.mark.asyncio

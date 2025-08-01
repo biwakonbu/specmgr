@@ -111,7 +111,7 @@ class FileWatcherService:
     """ファイル監視サービス."""
 
     def __init__(self) -> None:
-        self.observer: Observer | None = None
+        self.observer: Observer | None = None  # type: ignore[valid-type]
         self.queue_service = QueueService()
         self.handler = MarkdownFileHandler(self.queue_service)
 
@@ -135,8 +135,9 @@ class FileWatcherService:
 
     async def stop(self) -> None:
         """ファイル監視を停止."""
-        if self.observer and self.observer.is_alive():
-            self.observer.stop()
+        if self.observer is not None:
+            if self.observer.is_alive():
+                self.observer.stop()
             self.observer.join()
 
     async def get_watched_files(self) -> list[str]:

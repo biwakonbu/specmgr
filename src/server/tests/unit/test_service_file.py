@@ -1,6 +1,7 @@
 """File service tests."""
 
 import tempfile
+from collections.abc import Generator
 from datetime import datetime
 from pathlib import Path
 
@@ -18,7 +19,7 @@ class TestFileService:
         return FileService()
 
     @pytest.fixture
-    def temp_dir(self) -> Path:
+    def temp_dir(self) -> Generator[Path, None, None]:
         """Create temporary directory for tests."""
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)

@@ -16,11 +16,11 @@ async def get_files(
     recursive: bool = Query(True, description="Recursive search"),
     sort_by: str = Query(
         "name",
-        regex="^(name|modified|size)$",
+        pattern="^(name|modified|size)$",
         description="Sort criteria",
         alias="sortBy",
     ),
-    order: str = Query("asc", regex="^(asc|desc)$", description="Sort order"),
+    order: str = Query("asc", pattern="^(asc|desc)$", description="Sort order"),
 ) -> ApiResponse[FilesResponse]:
     """
     Get file list.
