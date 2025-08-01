@@ -27,6 +27,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Queue: Redis for async processing
 - File Watching: watchdog (Python)
 - Streaming: SSE (Server-Sent Events)
+- **Oracle CLI**: F# with .NET 9.0 for specification management and bidirectional verification
+  - **Purpose**: Prevent AI development agents from deviating from specifications
+  - **Core Features**: 
+    - Natural language specification search using RAG
+    - Bidirectional verification (spec→code AND code→spec)
+    - AI-powered implementation compliance checking
+    - Specification generation from code analysis
+  - **Architecture**: Functional programming with immutable types and pattern matching
+  - **Type System**: Set-theoretic type constraints with transformations and validations
+  - **Integration**: HTTP client to existing Python FastAPI endpoints via JSON serialization
+  - **Test Framework**: xUnit with F# support
+  - **Mocking**: NSubstitute for service mocks  
+  - **Property Testing**: FsCheck for property-based testing
+  - **Test Data**: Bogus for test data generation
+  - **HTTP Testing**: Microsoft.AspNetCore.Mvc.Testing for API integration
+  - **Logging**: Serilog for structured logging
 
 ## Development Guidelines
 
@@ -93,6 +109,126 @@ Current Stage: **📊 MANIFEST OPTIMIZATION** - High-Performance Differential Sy
 7. **M7**: ✅ TypeScript compilation and lint error resolution
 8. **M8**: ✅ URL-based navigation with History API integration
 9. **M9**: ✅ Chat UI optimization (compact design, improved spacing)
+
+## Oracle System - Specification Management
+
+### Overview
+Oracle is a specification management and validation system designed to prevent AI development agents from deviating from specifications or manipulating tests. It enforces ubiquitous language in code naming and ensures implementations match their specifications.
+
+### Implementation Architecture
+Oracle is implemented as an F# CLI tool located in `src/cli/`, providing a functional programming approach to specification management and verification.
+
+### Project Structure
+```
+src/cli/
+├── oracle-cli.sln                # Solution file
+├── OracleCli.Core/               # Core types and domain models
+│   ├── Types.fs                  # Domain types (SpecificationPath, CodePath, Query)
+│   └── Domain.fs                 # Business logic types
+├── OracleCli.Services/           # External service integrations
+│   ├── SearchService.fs          # RAG search integration
+│   ├── VerificationService.fs    # AI-based verification
+│   └── SpecMgrBridge.fs          # Integration with existing system
+├── OracleCli.Commands/           # Command handling and parsing
+│   ├── CommandTypes.fs           # Command definitions (OracleCommand DU)
+│   ├── CommandHandler.fs         # Command execution logic
+│   └── CommandParser.fs          # CLI argument parsing
+├── OracleCli/                    # CLI entry point
+│   ├── Program.fs                # Main entry point
+│   └── Configuration.fs          # Configuration management
+└── OracleCli.Tests/              # Unit and integration tests
+    ├── CommandParserTests.fs
+    ├── TypeValidationTests.fs
+    └── ServiceIntegrationTests.fs
+```
+
+### Key Features
+- **Bidirectional Verification**: Check spec→code AND code→spec relationships
+- **Real-time Monitoring**: Watch code changes for specification compliance
+- **Natural Language Search**: Find specs using everyday language via RAG
+- **AI Guardian**: Monitor and prevent AI-generated code violations
+- **Ubiquitous Language Enforcement**: Validates naming conventions
+- **Type Constraint Validation**: Set-theoretic type system with guarantees
+- **Integration**: HTTP client to existing Python FastAPI endpoints
+
+### Document Structure (v2 - Natural Language Approach)
+```
+specifications/
+├── features/           # User-facing features organized by domain
+│   ├── user-management/
+│   │   ├── registration.yaml
+│   │   ├── login.yaml
+│   │   └── password-reset.yaml
+│   ├── e-commerce/
+│   │   ├── shopping-cart.yaml
+│   │   └── checkout.yaml
+│   └── messaging/
+│       └── notifications.yaml
+├── technical/         # Technical specifications
+│   ├── infrastructure/
+│   ├── security/
+│   └── performance/
+├── domain/           # Domain models and business rules
+│   ├── user.yaml
+│   ├── order.yaml
+│   └── product.yaml
+└── shared/          # Shared types and validators
+    └── types/
+```
+
+### SDD YAML Format (v2 - ID-Free)
+Oracle uses a simplified, natural language-first approach:
+- **No IDs**: File paths serve as unique identifiers
+- **Natural Search**: Find specs using everyday language
+- **Tags & Keywords**: Enhanced discoverability
+- **Simple References**: Use relative file paths
+
+For the new simplified format, see [SDD YAML Format v2](docs/technical-docs/sdd-yaml-format-v2.md).
+For the complete specification format, see [Specification Format v2](docs/technical-docs/specification-format-v2.md).
+
+### Operational Documents
+- **Naming Rules**: [Naming and File Placement Rules](docs/technical-docs/naming-and-file-placement-rules.md)
+- **Operation Flow**: [Specification Operation Flow](docs/technical-docs/specification-operation-flow.md)
+- **Type Theory**: [Type System Theory](docs/technical-docs/type-system-theory.md)
+- **Bidirectional Verification**: [Bidirectional Verification System](docs/technical-docs/bidirectional-verification-system.md)
+- **Format v2**: [Specification Format v2](docs/technical-docs/specification-format-v2.md)
+- **F# CLI Design**: [Oracle F# CLI Design](docs/technical-docs/oracle-fsharp-cli-design.md)
+- **CLI Implementation Memory**: See `src/cli/ORACLE.md` for detailed implementation specifications
+
+### Type Constraint System
+Oracle enforces a comprehensive set-theoretic type system including:
+- **Set-based definitions**: Types as sets with subset/superset relationships
+- **Type transformations**: Filters that convert between types with guarantees
+- **Union/Intersection types**: Algebraic type composition
+- **Refinement types**: Types refined by predicates
+- **Value constraints**: required, immutable, unique
+- **Domain constraints**: patterns, formats, ranges
+- **Business rule constraints**: Complex cross-field validations
+
+For theoretical foundation, see [Type System Theory](docs/technical-docs/type-system-theory.md).
+
+### Oracle Commands (v2 - Natural Language)
+```bash
+# Natural language specification search
+oracle find-spec "user registration"
+oracle ask "How does email verification work?"
+
+# Implementation compliance checking
+oracle check src/auth/registration.py --spec features/user-management/registration.yaml
+
+# Specification display and management
+oracle show features/user-management/registration.yaml
+oracle list --tag authentication
+
+# Specification generation from code
+oracle generate-spec src/auth/registration.py
+
+# Real-time monitoring
+oracle watch src/auth/registration.py
+
+# Help and usage information
+oracle help
+```
 
 ## Implementation Notes
 
@@ -390,6 +526,55 @@ When any system (pre-commit hooks, linters, tests, etc.) raises warnings or erro
 - If bypass is necessary, ensure it's for valid reasons with user agreement
 
 **Mindset**: Warnings are guidance from experienced developers embedded in tools - treat them as valuable input, not obstacles to overcome.
+
+## Document Structure
+
+### 5-Layer Specification Hierarchy
+The project uses a 5-layer document structure for specifications:
+
+```
+docs/
+├── specifications/              # All project specifications
+│   ├── requirements/           # User requirements (what users need)
+│   ├── domain-features/        # Business features (domain functionality)
+│   ├── system-features/        # Technical features (infrastructure)
+│   ├── system-design/          # Architecture and design decisions
+│   └── components/             # Implementation specifications
+│
+└── technical-docs/             # Non-specification documentation
+    ├── api/                    # API documentation
+    ├── architecture/           # System architecture docs
+    ├── development/            # Development guides
+    └── testing/                # Test documentation
+```
+
+### Specification Classification Guidelines
+
+**Domain Features** (`domain-features/`):
+- Business logic and domain-specific functionality
+- Core domain operations and workflows
+- Domain rules and constraints
+- Examples: User management, Order processing, Payment handling
+- Oracle CLI domain functions: Specification status query, Lifecycle management, Document integrity verification, Digital signing
+
+**System Features** (`system-features/`):
+- Technical infrastructure and system-level capabilities
+- User interfaces (CLI, Web UI, API interfaces)
+- System integration points and protocols
+- Technical constraints and non-functional requirements
+- Examples: Authentication system, Caching strategy, API endpoints
+- Oracle CLI system functions: Command-line interface design, Command options and arguments, Output formats
+
+**Key Distinction**: Domain features focus on WHAT the system does (business capabilities), while system features focus on HOW the system provides those capabilities (technical implementation).
+
+### Oracle System
+Oracle is the specification management system that:
+- Validates specifications against implementations
+- Enforces ubiquitous language in naming conventions
+- Prevents unauthorized specification changes via HMAC signatures
+- Provides AI-driven specification queries using Claude Code SDK
+
+Oracle specifications are integrated into the main specification structure as part of the specmgr system.
 
 ## Language and Interaction Guidelines
 
