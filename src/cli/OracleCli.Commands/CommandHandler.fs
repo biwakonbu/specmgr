@@ -7,10 +7,25 @@ open OracleCli.Commands
 open OracleCli.Services.SigningService
 open OracleCli.Services.GitService
 
-/// Execute docs-sign command
-let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPath) (customMessage: string option) : Result<string, string> =
+/// Get all .md files in directory recursively
+let getMarkdownFilesRecursively (directory: string) (excludePatterns: string list) : string list =
+    let allMarkdownFiles = 
+        Directory.GetFiles(directory, "*.md", SearchOption.AllDirectories)
+        |> Array.toList
+    
+    // Filter out excluded patterns
+    allMarkdownFiles
+    |> List.filter (fun file ->
+        let fileName = Path.GetFileName(file)
+        not (excludePatterns |> List.exists (fun pattern ->
+            // Simple pattern matching - contains check for now
+            fileName.Contains(pattern.Replace("*", ""))))
+    )
+
+/// Sign a single file
+let signSingleFile (context: CommandContext) (filePath: string) (customMessage: string option) : Result<string, string> =
     try
-        let filePath = Paths.getSpecificationPath specPath
+        let specPath = SpecificationPath filePath
         
         // Validate file exists and is a specification
         if not (File.Exists(filePath)) then
@@ -68,15 +83,61 @@ let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPat
                                             Ok $"{successMessage}\n\n🔍 Signature Details:\n- Content Hash: {updatedSignature.ContentHash}\n- Key ID: {updatedSignature.KeyIdentifier}\n- Oracle Version: {updatedSignature.OracleVersion}"
                                         else
                                             Ok successMessage
-                                        
+    with
+    | ex -> Error $"Command execution failed: {ex.Message}"
+
+/// Execute docs-sign command with auto-detection
+let executeDocsSignCommand (context: CommandContext) (path: string) (customMessage: string option) (excludePatterns: string list) : Result<string, string> =
+    try
+        // Auto-detect if path is file or directory
+        if File.Exists(path) then
+            // Single file signing
+            signSingleFile context path customMessage
+        elif Directory.Exists(path) then
+            // Directory batch signing
+            let markdownFiles = getMarkdownFilesRecursively path excludePatterns
+            
+            if markdownFiles.IsEmpty then
+                Ok $"No .md files found in directory: {path}"
+            else
+                let mutable signedCount = 0
+                let mutable skippedCount = 0
+                let mutable failedCount = 0
+                let mutable excludedCount = excludePatterns.Length
+                let results = System.Text.StringBuilder()
+                
+                results.AppendLine($"Oracle CLI - Directory Signing Results") |> ignore
+                results.AppendLine($"=====================================") |> ignore
+                results.AppendLine($"Directory: {path}") |> ignore
+                results.AppendLine($"Files processed: {markdownFiles.Length} (including subdirectories)") |> ignore
+                
+                for file in markdownFiles do
+                    let relativePath = Path.GetRelativePath(path, file)
+                    match signSingleFile context file customMessage with
+                    | Ok _result ->
+                        results.AppendLine($"- ✅ {relativePath} (newly signed)") |> ignore
+                        signedCount <- signedCount + 1
+                    | Error err when err.Contains("already signed") ->
+                        results.AppendLine($"- ⚠️  {relativePath} (skipped - already signed, use --force to overwrite)") |> ignore
+                        skippedCount <- skippedCount + 1
+                    | Error err ->
+                        results.AppendLine($"- ❌ {relativePath} (failed - {err})") |> ignore
+                        failedCount <- failedCount + 1
+                
+                results.AppendLine() |> ignore
+                results.AppendLine($"Total: {signedCount} signed, {skippedCount} skipped, {failedCount} failed, {excludedCount} excluded") |> ignore
+                
+                Ok (results.ToString())
+        else
+            Error $"Path not found: {path}"
     with
     | ex -> Error $"Command execution failed: {ex.Message}"
 
 /// Execute Oracle CLI commands
 let executeCommand (context: CommandContext) (command: OracleCommand) : Result<string, string> =
     match command with
-    | DocsSign (specPath, customMessage) ->
-        executeDocsSignCommand context specPath customMessage
+    | DocsSign (path, customMessage, excludePatterns) ->
+        executeDocsSignCommand context path customMessage excludePatterns
     | FindSpec _query ->
         Error "FindSpec command not implemented yet"
     | CheckImpl (_codePath, _specPath) ->
@@ -105,7 +166,7 @@ COMMANDS:
     list [--tag <tag>]             List specifications, optionally filtered by tag
     watch <code>                   Watch code file for changes and validate
     ask <question>                 Ask questions about specifications
-    docs-sign <spec-path>          Digitally sign a specification document
+    docs-sign <path>               Digitally sign a specification file or directory
     help                           Show this help message
 
 For more information, see: https://github.com/biwakonbu/specmgr"""
