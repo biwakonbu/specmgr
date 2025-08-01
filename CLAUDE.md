@@ -579,7 +579,7 @@ Oracle specifications are integrated into the main specification structure as pa
 ## Language and Interaction Guidelines
 
 ### Language Interaction Principles
-- Claude Code will communicate in the language used by the user
-- Programming-related discussions will be conducted in English
-- Project memories and documentation will be written in English
-- When interacting with users, adapt to their preferred language
+- **Conversations**: Use the language the user speaks (adapt to their preferred language)
+- **Documentation**: Always write in English (including GitHub issues, comments, commit messages, code comments, docstrings)
+- **Code**: Use English for variable names, function names, and all code-related identifiers
+- **Project Memory**: All project documentation and technical specifications in English
