@@ -56,13 +56,18 @@ build-oracle: $(DIST_DIR) ## Build Oracle CLI single binary for current platform
 		-p:PublishSingleFile=true \
 		-p:PublishTrimmed=true \
 		-p:TrimMode=partial \
-		-p:IncludeNativeLibrariesForSelfExtract=true
+		-p:IncludeNativeLibrariesForSelfExtract=true \
+		-p:DebugType=None \
+		-p:DebugSymbols=false \
+		-p:GenerateDocumentationFile=false
 	@if [ "$(OS)" = "Windows_NT" ]; then \
 		mv $(DIST_DIR)/$(RID)/OracleCli.exe $(DIST_DIR)/$(RID)/$(BINARY_NAME).exe; \
 	else \
 		mv $(DIST_DIR)/$(RID)/OracleCli $(DIST_DIR)/$(RID)/$(BINARY_NAME); \
 		chmod +x $(DIST_DIR)/$(RID)/$(BINARY_NAME); \
 	fi
+	@# Clean up debug symbols and documentation files
+	@rm -f $(DIST_DIR)/$(RID)/*.pdb $(DIST_DIR)/$(RID)/*.xml
 	@echo "✅ Oracle CLI binary built: $(DIST_DIR)/$(RID)/$(BINARY_NAME)"
 
 build-all: $(DIST_DIR) ## Build Oracle CLI for all major platforms
@@ -77,13 +82,17 @@ build-all: $(DIST_DIR) ## Build Oracle CLI for all major platforms
 			-p:PublishSingleFile=true \
 			-p:PublishTrimmed=true \
 			-p:TrimMode=partial \
-			-p:IncludeNativeLibrariesForSelfExtract=true; \
+			-p:IncludeNativeLibrariesForSelfExtract=true \
+			-p:DebugType=None \
+			-p:DebugSymbols=false \
+			-p:GenerateDocumentationFile=false; \
 		if [ "$$rid" = "win-x64" ]; then \
 			mv $(DIST_DIR)/$$rid/OracleCli.exe $(DIST_DIR)/$$rid/$(BINARY_NAME).exe; \
 		else \
 			mv $(DIST_DIR)/$$rid/OracleCli $(DIST_DIR)/$$rid/$(BINARY_NAME); \
 			chmod +x $(DIST_DIR)/$$rid/$(BINARY_NAME); \
 		fi; \
+		rm -f $(DIST_DIR)/$$rid/*.pdb $(DIST_DIR)/$$rid/*.xml; \
 		echo "✅ Built for $$rid"; \
 	done
 	@echo "🎉 All platform binaries built in $(DIST_DIR)/"
