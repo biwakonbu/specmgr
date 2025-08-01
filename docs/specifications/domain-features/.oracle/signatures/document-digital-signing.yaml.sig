@@ -1,6 +1,6 @@
 digital_signature:
   signature_id: "sig_20250801T100223Z_document-digital-signing"
-  specification_path: "/home/biwakonbu/work/specmgr/docs/specifications/domain-features/document-digital-signing.md"
+  specification_path: "docs/specifications/domain-features/document-digital-signing.md"
   
   cryptographic_info:
     algorithm: "HMAC-SHA256"
