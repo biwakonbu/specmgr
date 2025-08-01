@@ -56,9 +56,9 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
-            "http://localhost:5173",
-            "http://localhost:5174",
-        ],  # Allow both Vite ports
+            "http://localhost:3001",
+            "http://localhost:3002",
+        ],  # Allow frontend ports
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",  # noqa: S104
-        port=3000,
+        port=8080,
         reload=True,
         log_level="info",
     )

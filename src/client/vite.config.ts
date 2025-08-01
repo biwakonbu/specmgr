@@ -11,11 +11,11 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 3001,
     strictPort: true, // Exit if port is already in use
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },

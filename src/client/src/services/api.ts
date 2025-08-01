@@ -94,7 +94,7 @@ interface SyncStatus {
   currentFile: string
 }
 
-const API_BASE_URL = 'http://localhost:3000/api'
+const API_BASE_URL = 'http://localhost:8080/api'
 
 class ApiClient {
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
