@@ -20,30 +20,27 @@ let ``parseCommand should parse docs-sign command with default signer`` () =
     
     // Assert
     match result with
-    | Ok (DocsSign (SpecificationPath path, signerInfoOpt, customMessage)) ->
+    | Ok (DocsSign (SpecificationPath path, customMessage)) ->
         Assert.Equal("test.yaml", path)
-        // When no explicit signer is provided, signerInfoOpt should be None (to be resolved from git config)
-        Assert.True(signerInfoOpt.IsNone)
+        // Custom message should be None for basic command
+        Assert.True(customMessage.IsNone)
     | _ -> Assert.True(false, "Expected DocsSign command")
 
 [<Fact>]
-let ``parseCommand should parse docs-sign command with custom signer info`` () =
+let ``parseCommand should parse docs-sign command with custom message`` () =
     // Arrange
-    let args = [| "docs-sign"; "test.yaml"; "--email"; "user@test.com"; "--role"; "lead"; "--reason"; "approval" |]
+    let args = [| "docs-sign"; "test.yaml"; "-m"; "Custom commit message" |]
     
     // Act
     let result = parseCommand args
     
     // Assert
     match result with
-    | Ok (DocsSign (SpecificationPath path, signerInfoOpt, customMessage)) ->
+    | Ok (DocsSign (SpecificationPath path, customMessage)) ->
         Assert.Equal("test.yaml", path)
-        // When explicit signer info is provided, signerInfoOpt should be Some
-        Assert.True(signerInfoOpt.IsSome)
-        let signerInfo = signerInfoOpt.Value
-        Assert.Equal("user@test.com", signerInfo.Email)
-        Assert.Equal("lead", signerInfo.Role)
-        Assert.Equal("approval", signerInfo.SigningReason)
+        // Custom message should be present
+        Assert.True(customMessage.IsSome)
+        Assert.Equal("Custom commit message", customMessage.Value)
     | _ -> Assert.True(false, "Expected DocsSign command")
 
 [<Fact>]

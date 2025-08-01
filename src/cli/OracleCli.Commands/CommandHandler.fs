@@ -8,7 +8,7 @@ open OracleCli.Services.SigningService
 open OracleCli.Services.GitService
 
 /// Execute docs-sign command
-let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPath) (signerInfoOpt: SignerInfo option) (customMessage: string option) : Result<string, string> =
+let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPath) (customMessage: string option) : Result<string, string> =
     try
         let filePath = Paths.getSpecificationPath specPath
         
@@ -22,11 +22,8 @@ let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPat
             match getGitRootDirectory filePath with
             | Error gitErr -> Error $"Git repository required for digital signing: {gitErr}"
             | Ok gitRoot ->
-                // Resolve signer information
-                let signerResult = 
-                    match signerInfoOpt with
-                    | Some explicitSigner -> Ok explicitSigner  // Use explicit signer info from command args
-                    | None -> getSignerFromGitConfig gitRoot    // Get from git config
+                // Resolve signer information from git config
+                let signerResult = getSignerFromGitConfig gitRoot
                 
                 match signerResult with
                 | Error signerErr -> Error signerErr
@@ -78,8 +75,8 @@ let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPat
 /// Execute Oracle CLI commands
 let executeCommand (context: CommandContext) (command: OracleCommand) : Result<string, string> =
     match command with
-    | DocsSign (specPath, signerInfoOpt, customMessage) ->
-        executeDocsSignCommand context specPath signerInfoOpt customMessage
+    | DocsSign (specPath, customMessage) ->
+        executeDocsSignCommand context specPath customMessage
     | FindSpec query ->
         Error "FindSpec command not implemented yet"
     | CheckImpl (codePath, specPath) ->

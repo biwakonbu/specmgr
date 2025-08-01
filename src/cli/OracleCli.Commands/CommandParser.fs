@@ -24,17 +24,10 @@ let parseCommand (args: string array) : Result<OracleCommand, string> =
         Ok (Ask (Query query))
     | [| "docs-sign"; specPath |] ->
         // Signer info will be resolved from git config at execution time
-        Ok (DocsSign (SpecificationPath specPath, None, None))
-    | [| "docs-sign"; specPath; "--email"; email; "--role"; role; "--reason"; reason |] ->
-        let signerInfo = {
-            Email = email
-            Role = role
-            SigningReason = reason
-        }
-        Ok (DocsSign (SpecificationPath specPath, Some signerInfo, None))
+        Ok (DocsSign (SpecificationPath specPath, None))
     | [| "docs-sign"; specPath; "-m"; message |] ->
         // Signer info will be resolved from git config at execution time
-        Ok (DocsSign (SpecificationPath specPath, None, Some message))
+        Ok (DocsSign (SpecificationPath specPath, Some message))
     | [| "help" |] | [| "--help" |] | [| "-h" |] ->
         Ok Help
     | _ ->
@@ -62,15 +55,17 @@ EXAMPLES:
     oracle list --tag authentication
     oracle ask "How does password validation work?"
     oracle docs-sign docs/specifications/domain-features/user-auth.yaml
-    oracle docs-sign docs/spec.yaml --email user@corp.com --role tech-lead --reason "Security review approval"
+    oracle docs-sign docs/spec.yaml -m "Security review completed"
 
 ENVIRONMENT VARIABLES:
     ANTHROPIC_API_KEY             Required for AI features
     QDRANT_URL                    Qdrant endpoint (default: http://localhost:6333)
     SPECMGR_URL                   SpecMgr API endpoint (default: http://localhost:3000)
-    ORACLE_SIGNER_EMAIL           Default signer email for digital signatures
-    ORACLE_SIGNER_ROLE            Default signer role for digital signatures
     ORACLE_SECRET_KEY             Secret key for HMAC signature generation
+
+GIT CONFIGURATION:
+    git config user.email         Used as signer email address
+    git config user.name          Used as signer name/role
 """
 
 /// Parse and validate command

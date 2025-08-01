@@ -322,8 +322,8 @@ let ``Service integration should work with all command types`` () =
             | None -> Assert.True(true)
         | Watch (CodePath cp) -> Assert.NotEmpty(cp)
         | Ask (Query q) -> Assert.NotEmpty(q)
-        | DocsSign (SpecificationPath sp, signerInfoOpt, customMessage) -> 
+        | DocsSign (SpecificationPath sp, customMessage) -> 
             Assert.NotEmpty(sp)
-            // signerInfoOpt can be None (resolved from git config) or Some (explicit)
+            // customMessage can be None or Some
         | Help -> Assert.True(true)
     )
