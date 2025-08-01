@@ -13,6 +13,8 @@ open OracleCli.Services.GitService
 [<Fact>]
 let ``parseCommand should parse docs-sign command with default signer`` () =
     // Arrange
+    System.Environment.SetEnvironmentVariable("ORACLE_SIGNER_EMAIL", "test@example.com")
+    System.Environment.SetEnvironmentVariable("ORACLE_SIGNER_ROLE", "developer")
     let args = [| "docs-sign"; "test.yaml" |]
     
     // Act
