@@ -30,7 +30,7 @@ let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPat
                 | Ok signerInfo ->
                     // Get secret key from environment
                     let secretKey = Environment.GetEnvironmentVariable("ORACLE_SECRET_KEY")
-                    if String.IsNullOrWhiteSpace(secretKey) then
+                    if String.IsNullOrWhiteSpace secretKey then
                         Error "ORACLE_SECRET_KEY environment variable is required for digital signing"
                     else
                         if context.DryRun then
@@ -39,9 +39,9 @@ let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPat
                             | Error err -> Error err
                             | Ok signature ->
                                 let signatureFilePath = getSignatureFilePath filePath
-                                let validFromStr = signature.ValidFrom.ToString("yyyy-MM-dd HH:mm:ss UTC")
-                                let expiresAtStr = signature.ExpiresAt.ToString("yyyy-MM-dd HH:mm:ss UTC")
-                                let fileName = Path.GetFileName(filePath)
+                                let validFromStr = signature.ValidFrom.ToString "yyyy-MM-dd HH:mm:ss UTC"
+                                let expiresAtStr = signature.ExpiresAt.ToString "yyyy-MM-dd HH:mm:ss UTC"
+                                let fileName = Path.GetFileName filePath
                                 Ok $"[DRY RUN] Would create digital signature:\n\nSignature ID: {signature.SignatureId}\nFile: {filePath}\nSignature File: {signatureFilePath}\nSigner: {signerInfo.Email} ({signerInfo.Role})\nAlgorithm: {signature.Algorithm}\nValid From: {validFromStr}\nExpires At: {expiresAtStr}\nContent Hash: {signature.ContentHash}\n\nGit commit message would be:\ndocs: digitally sign {fileName}"
                         else
                             // Generate signature
@@ -60,8 +60,8 @@ let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPat
                                     match commitSignature gitRoot updatedSignature signatureFilePath customMessage with
                                     | Error err -> Error $"Git commit failed: {err}"
                                     | Ok commitHash ->
-                                        let validFromStr = updatedSignature.ValidFrom.ToString("yyyy-MM-dd HH:mm:ss UTC")
-                                        let expiresAtStr = updatedSignature.ExpiresAt.ToString("yyyy-MM-dd HH:mm:ss UTC")
+                                        let validFromStr = updatedSignature.ValidFrom.ToString "yyyy-MM-dd HH:mm:ss UTC"
+                                        let expiresAtStr = updatedSignature.ExpiresAt.ToString "yyyy-MM-dd HH:mm:ss UTC"
                                         let successMessage = $"✅ Digital signature created successfully!\n\nSignature ID: {updatedSignature.SignatureId}\nFile: {filePath}\nSignature File: {signatureFilePath}\nSigner: {signerInfo.Email} ({signerInfo.Role})\nReason: {signerInfo.SigningReason}\nAlgorithm: {updatedSignature.Algorithm}\nValid From: {validFromStr}\nExpires At: {expiresAtStr}\nStatus: {updatedSignature.Status}\nGit Commit: {commitHash}\n\n🔐 Document is now digitally signed and committed to Git."
                                         
                                         if context.Verbose then
@@ -77,19 +77,19 @@ let executeCommand (context: CommandContext) (command: OracleCommand) : Result<s
     match command with
     | DocsSign (specPath, customMessage) ->
         executeDocsSignCommand context specPath customMessage
-    | FindSpec query ->
+    | FindSpec _query ->
         Error "FindSpec command not implemented yet"
-    | CheckImpl (codePath, specPath) ->
+    | CheckImpl (_codePath, _specPath) ->
         Error "CheckImpl command not implemented yet"
-    | GenerateSpec codePath ->
+    | GenerateSpec _codePath ->
         Error "GenerateSpec command not implemented yet"
-    | ShowSpec specPath ->
+    | ShowSpec _specPath ->
         Error "ShowSpec command not implemented yet"
-    | ListSpecs tagFilter ->
+    | ListSpecs _tagFilter ->
         Error "ListSpecs command not implemented yet"
-    | Watch codePath ->
+    | Watch _codePath ->
         Error "Watch command not implemented yet"
-    | Ask query ->
+    | Ask _query ->
         Error "Ask command not implemented yet"
     | Help ->
         Ok """Oracle CLI - Specification Management Tool
@@ -113,7 +113,7 @@ For more information, see: https://github.com/biwakonbu/specmgr"""
 /// Validate command context and environment
 let validateContext (context: CommandContext) : Result<unit, string> =
     // Basic validation
-    if String.IsNullOrWhiteSpace(context.Config.SpecMgrUrl) then
+    if String.IsNullOrWhiteSpace context.Config.SpecMgrUrl then
         Error "SpecMgr URL is required in configuration"
     else
         Ok ()

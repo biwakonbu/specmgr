@@ -23,7 +23,7 @@ let ``parseCommand should parse docs-sign command with default signer`` () =
     | Ok (DocsSign (SpecificationPath path, customMessage)) ->
         Assert.Equal("test.yaml", path)
         // Custom message should be None for basic command
-        Assert.True(customMessage.IsNone)
+        Assert.True customMessage.IsNone
     | _ -> Assert.True(false, "Expected DocsSign command")
 
 [<Fact>]
@@ -39,7 +39,7 @@ let ``parseCommand should parse docs-sign command with custom message`` () =
     | Ok (DocsSign (SpecificationPath path, customMessage)) ->
         Assert.Equal("test.yaml", path)
         // Custom message should be present
-        Assert.True(customMessage.IsSome)
+        Assert.True customMessage.IsSome
         Assert.Equal("Custom commit message", customMessage.Value)
     | _ -> Assert.True(false, "Expected DocsSign command")
 
@@ -70,7 +70,7 @@ This is a test specification file."""
             Assert.NotEmpty(signature.SignatureValue)
             Assert.NotEmpty(signature.ContentHash)
             Assert.Equal(signerInfo.Email, signature.SignerInfo.Email)
-            Assert.Equal(SignatureStatus.Active, signature.Status)
+            Assert.Equal(Active, signature.Status)
         | Error err -> Assert.True(false, $"Expected success but got error: {err}")
     finally
         if File.Exists(tempFile) then File.Delete(tempFile)
