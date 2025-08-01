@@ -8,7 +8,7 @@ open OracleCli.Services.SigningService
 open OracleCli.Services.GitService
 
 /// Execute docs-sign command
-let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPath) (signerInfo: SignerInfo) : Result<string, string> =
+let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPath) (signerInfo: SignerInfo) (customMessage: string option) : Result<string, string> =
     try
         let filePath = Paths.getSpecificationPath specPath
         
@@ -51,7 +51,7 @@ let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPat
                             | Error err -> Error $"Failed to save signature file: {err}"
                             | Ok signatureFilePath ->
                                 // Commit to git
-                                match commitSignature gitRoot updatedSignature signatureFilePath with
+                                match commitSignature gitRoot updatedSignature signatureFilePath customMessage with
                                 | Error err -> Error $"Git commit failed: {err}"
                                 | Ok commitHash ->
                                     let validFromStr = updatedSignature.ValidFrom.ToString("yyyy-MM-dd HH:mm:ss UTC")
@@ -69,8 +69,8 @@ let executeDocsSignCommand (context: CommandContext) (specPath: SpecificationPat
 /// Execute Oracle CLI commands
 let executeCommand (context: CommandContext) (command: OracleCommand) : Result<string, string> =
     match command with
-    | DocsSign (specPath, signerInfo) ->
-        executeDocsSignCommand context specPath signerInfo
+    | DocsSign (specPath, signerInfo, customMessage) ->
+        executeDocsSignCommand context specPath signerInfo customMessage
     | FindSpec query ->
         Error "FindSpec command not implemented yet"
     | CheckImpl (codePath, specPath) ->

@@ -20,7 +20,7 @@ let ``parseCommand should parse docs-sign command with default signer`` () =
     
     // Assert
     match result with
-    | Ok (DocsSign (SpecificationPath path, signerInfo)) ->
+    | Ok (DocsSign (SpecificationPath path, signerInfo, customMessage)) ->
         Assert.Equal("test.yaml", path)
         Assert.NotEmpty(signerInfo.Email)
         Assert.NotEmpty(signerInfo.Role)
@@ -36,7 +36,7 @@ let ``parseCommand should parse docs-sign command with custom signer info`` () =
     
     // Assert
     match result with
-    | Ok (DocsSign (SpecificationPath path, signerInfo)) ->
+    | Ok (DocsSign (SpecificationPath path, signerInfo, customMessage)) ->
         Assert.Equal("test.yaml", path)
         Assert.Equal("user@test.com", signerInfo.Email)
         Assert.Equal("lead", signerInfo.Role)

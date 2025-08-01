@@ -83,7 +83,7 @@ let commitWithMessage (workingDir: string) (message: string) : Result<string, st
     | Error err -> Error err
 
 /// Create git commit for signature operation
-let commitSignature (workingDir: string) (signature: DigitalSignature) (signatureFilePath: string) : Result<string, string> =
+let commitSignature (workingDir: string) (signature: DigitalSignature) (signatureFilePath: string) (customMessage: string option) : Result<string, string> =
     try
         if not (isGitRepository workingDir) then
             Error "Not a git repository"
@@ -96,7 +96,12 @@ let commitSignature (workingDir: string) (signature: DigitalSignature) (signatur
                 let specPath = Paths.getSpecificationPath signature.SpecificationPath
                 let fileName = Path.GetFileName(specPath)
                 let validUntil = signature.ExpiresAt.ToString("yyyy-MM-dd")
-                let commitMessage = $"docs: digitally sign {fileName}\n\nSignature ID: {signature.SignatureId}\nSigner: {signature.SignerInfo.Email} ({signature.SignerInfo.Role})\nReason: {signature.SignerInfo.SigningReason}\nAlgorithm: {signature.Algorithm}\nValid until: {validUntil}\n\n🤖 Generated with Oracle CLI Digital Signing\n\nCo-Authored-By: Oracle <noreply@specmgr.com>"
+                let baseMessage = $"docs: digitally sign {fileName}"
+                let customPart = match customMessage with
+                                 | Some msg -> $"\n\n{msg}"
+                                 | None -> ""
+                let detailsPart = $"\n\nSignature ID: {signature.SignatureId}\nSigner: {signature.SignerInfo.Email} ({signature.SignerInfo.Role})\nReason: {signature.SignerInfo.SigningReason}\nAlgorithm: {signature.Algorithm}\nValid until: {validUntil}\n\n🤖 Generated with Oracle CLI Digital Signing"
+                let commitMessage = baseMessage + customPart + detailsPart
                 
                 // Commit the signature
                 commitWithMessage workingDir commitMessage
