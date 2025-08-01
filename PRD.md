@@ -169,7 +169,45 @@ React UI (URL Navigation) ◀─── SSE/REST + History API ──────
 
 ---
 
+## 15. Current Work in Progress
+
+### Oracle CLI Knowledge Enhancement (2025-08-01)
+
+**Current Task**: Enhancing Oracle CLI specification validation capabilities through comprehensive knowledge update.
+
+**Work Status**:
+1. ✅ **Oracle CLI Knowledge Update**: Successfully updated knowledge base about Oracle CLI system including:
+   - Command structure and available commands (status, lifecycle, integrity, utility)
+   - Specification format v2 (YAML structure, naming conventions, directory hierarchy)
+   - Bidirectional verification system (spec→code, code→spec)
+   - Type constraint system (set-theoretic types, transformations, validations)
+   - Integration with existing specmgr system
+
+2. 🔄 **Current State Snapshot Creation** (In Progress): Creating comprehensive snapshot of current Oracle system state to enable:
+   - Domain term consistency validation against current usage
+   - Cross-reference validation against current file structure
+   - Business rule completeness assessment based on current patterns
+   - Implementation alignment verification using current references
+
+**Current Challenge**: Moving from theoretical knowledge to practical validation by capturing the current state of:
+- All specification files and their current format patterns
+- Current ubiquitous language terms used across specifications  
+- Current cross-reference patterns and dependencies
+- Current directory structure and file organization
+- Current domain terminology and business rules
+- Current implementation file references
+
+**Next Steps**:
+- Complete current state knowledge snapshot
+- Validate Oracle CLI format compliance capabilities
+- Test validation accuracy against existing specifications
+
+**Knowledge Gap Resolution**: Addressing the distinction between "恒久的な情報" (permanent/theoretical knowledge) vs "現時点での理解" (current state understanding) for more effective Oracle CLI validation.
+
+---
+
 *Update History*
 
 - 2025-07-26  Initial version created
 - 2025-01-26  Added URL navigation, chat UI optimization, and updated architecture
+- 2025-08-01  Added Oracle CLI knowledge enhancement work in progress
