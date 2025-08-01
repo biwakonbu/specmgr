@@ -185,7 +185,7 @@ pre code.hljs {
   padding: 0.5rem;
   border-radius: 0.375rem;
   background: #2e3440;
-  border: 1px solid #3b4252;
+  border: none;
   font-size: 0.75rem;
   line-height: 1.5;
 }
@@ -200,15 +200,28 @@ pre code.hljs {
   font-size: 0.75rem;
 }
 
-/* Override prose default code styles to ensure 12px */
+/* Override prose default code styles to ensure 12px and NordDeep theme */
 .prose code {
   font-size: 0.75rem !important;
+  background: #3b4252 !important;
+  color: #d8dee9 !important;
+  padding: 0.125rem 0.25rem !important;
+  border-radius: 0.25rem !important;
 }
 
 .prose pre {
   font-size: 0.75rem !important;
+  background: #2e3440 !important;
+  color: #d8dee9 !important;
+  border: none !important;
+  border-radius: 0.375rem !important;
+  padding: 0.5rem !important;
 }
 
 .prose pre code {
   font-size: 0.75rem !important;
+  background: transparent !important;
+  color: #d8dee9 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
 }
