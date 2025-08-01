@@ -54,10 +54,53 @@ module Paths =
     let getQuery (Query query) = query
     
     let isValidSpecificationPath (SpecificationPath path) =
-        path.EndsWith(".yaml") || path.EndsWith(".yml")
+        path.EndsWith(".yaml") || path.EndsWith(".yml") || path.EndsWith(".md")
     
     let isValidCodePath (CodePath path) =
         System.IO.File.Exists(path)
+
+/// Digital signature status
+type SignatureStatus =
+    | Active
+    | Expired
+    | Revoked
+    | Suspended
+    | ExpiringWarn
+    | ExpiringInfo
+
+/// Signer information
+type SignerInfo = {
+    Email: string
+    Role: string
+    SigningReason: string
+}
+
+/// Digital signature data
+type DigitalSignature = {
+    SignatureId: string
+    SpecificationPath: SpecificationPath
+    Algorithm: string
+    SignatureValue: string
+    ContentHash: string
+    KeyIdentifier: string
+    SignerInfo: SignerInfo
+    ValidFrom: DateTimeOffset
+    ExpiresAt: DateTimeOffset
+    Status: SignatureStatus
+    SpecificationVersion: string
+    SpecificationStatusAtSigning: string
+    RelatedApprovals: string list
+    OracleVersion: string
+}
+
+/// Signature operation result
+type SignatureResult = {
+    Success: bool
+    SignatureId: string option
+    ErrorMessage: string option
+    SignedFilePath: string option
+    CommitHash: string option
+}
 
 /// Helper functions for working with results
 module Results =

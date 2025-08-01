@@ -322,5 +322,9 @@ let ``Service integration should work with all command types`` () =
             | None -> Assert.True(true)
         | Watch (CodePath cp) -> Assert.NotEmpty(cp)
         | Ask (Query q) -> Assert.NotEmpty(q)
+        | DocsSign (SpecificationPath sp, signerInfo, customMessage) -> 
+            Assert.NotEmpty(sp)
+            Assert.NotEmpty(signerInfo.Email)
+            Assert.NotEmpty(signerInfo.Role)
         | Help -> Assert.True(true)
     )
