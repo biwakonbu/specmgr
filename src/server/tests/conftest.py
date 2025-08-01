@@ -90,10 +90,10 @@ def mock_settings() -> Generator[Mock, None, None]:
         mock.documents_path = "/tmp/test_docs"  # noqa: S108
         mock.anthropic_api_key = "test-api-key"
         mock.qdrant_host = "localhost"
-        mock.qdrant_port = 6333
+        mock.qdrant_port = 6350
         mock.qdrant_collection = "test_documents"
         mock.redis_host = "localhost"
-        mock.redis_port = 6379
+        mock.redis_port = 6400
         mock.redis_db = 0
         mock.log_level = "debug"
         yield mock

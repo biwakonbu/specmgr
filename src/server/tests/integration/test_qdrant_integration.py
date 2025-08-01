@@ -169,7 +169,7 @@ class TestSyncServiceIntegration:
             mock_settings.anthropic_api_key = ""  # No API key for testing
             mock_settings.app_config.vector_db.vector_size = 1536
             mock_settings.qdrant_host = "localhost"
-            mock_settings.qdrant_port = 6333
+            mock_settings.qdrant_port = 6350
             mock_settings.qdrant_collection = "test_documents"
 
             return SyncService()

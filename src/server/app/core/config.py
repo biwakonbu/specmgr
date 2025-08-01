@@ -26,7 +26,10 @@ class ServerConfig(BaseModel):
     host: str = "0.0.0.0"  # noqa: S104
     port: int = 3000
     cors: dict[str, Any] = Field(
-        default_factory=lambda: {"enabled": True, "origins": ["http://localhost:5173"]}
+        default_factory=lambda: {
+            "enabled": True,
+            "origins": ["http://localhost:5173", "http://localhost:5174"],
+        }
     )
 
 
@@ -133,15 +136,15 @@ class Settings(BaseSettings):
 
     # Qdrant configuration
     qdrant_host: str = "localhost"
-    qdrant_port: int = 6333
+    qdrant_port: int = 6350
     qdrant_collection: str = "documents"
-    qdrant_url: str = "http://localhost:6333"
+    qdrant_url: str = "http://localhost:6350"
 
     # Redis configuration
     redis_host: str = "localhost"
-    redis_port: int = 6379
+    redis_port: int = 6400
     redis_db: int = 0
-    redis_url: str = "redis://localhost:6379"
+    redis_url: str = "redis://localhost:6400"
 
     # Logging configuration
     log_level: str = "info"

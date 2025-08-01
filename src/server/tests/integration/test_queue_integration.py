@@ -20,7 +20,7 @@ class TestQueueIntegration:
         try:
             # Try to connect to Redis
             client = redis.Redis(
-                host="localhost", port=6379, db=1, decode_responses=True
+                host="localhost", port=6400, db=1, decode_responses=True
             )
             await client.ping()
             yield client
@@ -37,7 +37,7 @@ class TestQueueIntegration:
         """Create QueueService with real Redis connection."""
         with patch("app.services.queue_service.settings") as mock_settings:
             mock_settings.redis_host = "localhost"
-            mock_settings.redis_port = 6379
+            mock_settings.redis_port = 6400
             mock_settings.redis_db = 1
 
             service = QueueService()
