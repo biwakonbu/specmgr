@@ -305,8 +305,8 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
   }
 
   return (
-    <div className="h-full overflow-auto p-6 bg-background">
-      <div className="max-w-none">
+    <div className="h-full overflow-auto bg-background">
+      <div className="prose prose-slate dark:prose-invert max-w-none p-6 prose-headings:scroll-m-20 prose-h1:border-b prose-h2:border-b prose-h2:mt-8 prose-h2:first:mt-0 prose-blockquote:border-l-primary/20 prose-blockquote:not-italic prose-code:bg-transparent prose-code:px-1 prose-code:py-0 prose-code:rounded prose-code:font-mono prose-code:text-sm prose-code:before:content-none prose-code:after:content-none prose-pre:bg-transparent prose-pre:border-0 prose-pre:p-0 prose-img:rounded-lg prose-img:shadow-lg prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-table:overflow-hidden prose-table:rounded-lg prose-table:border prose-thead:bg-muted prose-th:border prose-th:font-medium prose-td:border">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeHighlight]}
@@ -325,6 +325,53 @@ export function MarkdownPane({ selectedFile }: MarkdownPaneProps) {
                 </code>
               )
             },
+            // Enhanced table styling
+            table: ({ children, ...props }) => (
+              <div className="my-6 w-full overflow-x-auto">
+                <table
+                  className="w-full border-collapse border border-border rounded-lg overflow-hidden"
+                  {...props}
+                >
+                  {children}
+                </table>
+              </div>
+            ),
+            thead: ({ children, ...props }) => (
+              <thead className="bg-muted/50" {...props}>
+                {children}
+              </thead>
+            ),
+            th: ({ children, ...props }) => (
+              <th
+                className="border border-border px-4 py-3 text-left font-semibold text-sm"
+                {...props}
+              >
+                {children}
+              </th>
+            ),
+            td: ({ children, ...props }) => (
+              <td className="border border-border px-4 py-3 text-sm" {...props}>
+                {children}
+              </td>
+            ),
+            // Enhanced blockquote
+            blockquote: ({ children, ...props }) => (
+              <blockquote
+                className="border-l-4 border-primary/30 pl-6 py-2 my-6 bg-muted/30 rounded-r-lg italic text-muted-foreground"
+                {...props}
+              >
+                {children}
+              </blockquote>
+            ),
+            // Enhanced code blocks
+            pre: ({ children, ...props }) => (
+              <pre
+                className="bg-transparent border-0 p-0 overflow-x-auto text-sm font-mono my-6"
+                {...props}
+              >
+                {children}
+              </pre>
+            ),
           }}
         >
           {content}
