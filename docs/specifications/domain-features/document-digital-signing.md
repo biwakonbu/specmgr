@@ -13,6 +13,7 @@ A feature for generating and managing cryptographic digital signatures for speci
 - Specification file path
 - Signer identity (email, role)
 - Signing reason/context
+- Optional: Custom commit message
 - Optional: Signature expiration time
 - Optional: Additional metadata
 
@@ -278,13 +279,193 @@ let scheduleRenewalNotification (signature: DigitalSignature) =
         createScheduledNotification signature.SignerInfo.Email message (signature.ExpiresAt.AddDays(-days)))
 ```
 
+## Command Line Interface
+
+### Basic Signature Command
+```bash
+oracle docs-sign <specification-path>
+```
+
+**Description**: Generate a digital signature for the specified document using environment-configured signer information.
+
+**Prerequisites**:
+- `ORACLE_SIGNER_EMAIL`: Signer's email address
+- `ORACLE_SIGNER_ROLE`: Signer's role in the organization
+- `ORACLE_SECRET_KEY`: Secret key for HMAC signature generation
+
+**Example**:
+```bash
+export ORACLE_SIGNER_EMAIL="tech-lead@example.com"
+export ORACLE_SIGNER_ROLE="technical_lead"
+export ORACLE_SECRET_KEY="your-secret-key"
+
+oracle docs-sign docs/specifications/domain-features/user-registration.md
+```
+
+### Custom Commit Message
+```bash
+oracle docs-sign <specification-path> -m "Custom commit message"
+```
+
+**Description**: Generate a digital signature with a custom commit message that will be included in the Git commit.
+
+**Examples**:
+```bash
+# Security review completion
+oracle docs-sign user-registration.md -m "Security review completed, approved for production deployment"
+
+# Post-audit approval
+oracle docs-sign payment-processing.md -m "Approved after security audit - all vulnerabilities addressed"
+
+# Milestone signing
+oracle docs-sign api-specification.md -m "Version 2.0 API specification - ready for implementation"
+```
+
+**Resulting Commit Message**:
+```
+docs: digitally sign user-registration.md
+
+Security review completed, approved for production deployment
+
+Signature ID: sig_20250801T073409Z_user-registration
+Signer: tech-lead@example.com (technical_lead)
+Reason: Document approval
+Algorithm: HMAC-SHA256
+Valid until: 2025-11-01
+
+🤖 Generated with Oracle CLI Digital Signing
+```
+
+### Environment Variables
+
+| Variable | Required | Description | Example |
+|----------|----------|------------|---------|
+| `ORACLE_SIGNER_EMAIL` | Yes | Signer's email address | `tech-lead@example.com` |
+| `ORACLE_SIGNER_ROLE` | Yes | Signer's organizational role | `technical_lead` |
+| `ORACLE_SECRET_KEY` | Yes | Secret key for signature generation | `your-secret-key-here` |
+| `ORACLE_KEY_IDENTIFIER` | No | Key identifier for signatures | `oracle-key-2025-01` (default) |
+
+### Command Validation
+
+The command performs the following validations:
+1. **File Existence**: Target specification file must exist
+2. **File Format**: Must be `.md`, `.yaml`, or `.yml` file
+3. **Environment Variables**: Required environment variables must be set
+4. **Git Repository**: Must be executed within a Git repository
+5. **Write Permissions**: Must have write access to `.oracle/signatures/` directory
+
+### Error Handling
+
+Common error scenarios and their messages:
+
+```bash
+# Missing file
+oracle docs-sign nonexistent.md
+# Error: Specification file not found: nonexistent.md
+
+# Invalid file format
+oracle docs-sign document.txt
+# Error: Invalid specification file format. Expected .yaml, .yml, or .md file: document.txt
+
+# Missing environment variable
+oracle docs-sign spec.md
+# Error: ORACLE_SIGNER_EMAIL environment variable is required for signing
+
+# Not in Git repository
+oracle docs-sign spec.md
+# Error: Git repository required for digital signing: not a git repository
+```
+
+## Implementation Details
+
+### Oracle CLI Architecture
+
+Oracle CLI is implemented in F# with functional programming principles:
+
+#### Project Structure
+```
+src/cli/
+├── OracleCli.Core/               # Domain types and models
+│   ├── Types.fs                  # Core types (SpecificationPath, SignerInfo, etc.)
+│   └── Domain.fs                 # Business logic types
+├── OracleCli.Services/           # Service implementations
+│   ├── SigningService.fs         # HMAC signature generation
+│   ├── GitService.fs             # Git operations and commits
+│   └── SpecMgrBridge.fs          # Integration with specmgr system
+├── OracleCli.Commands/           # Command handling
+│   ├── CommandTypes.fs           # Command type definitions
+│   ├── CommandParser.fs          # CLI argument parsing
+│   └── CommandHandler.fs         # Command execution logic
+└── OracleCli/                    # Application entry point
+    └── Program.fs                # Main program and configuration
+```
+
+#### Key F# Types
+```fsharp
+type SignerInfo = {
+    Email: string
+    Role: string
+    SigningReason: string
+}
+
+type DigitalSignature = {
+    SignatureId: string
+    SpecificationPath: SpecificationPath
+    Algorithm: string
+    SignatureValue: string
+    ContentHash: string
+    KeyIdentifier: string
+    SignerInfo: SignerInfo
+    ValidFrom: DateTimeOffset
+    ExpiresAt: DateTimeOffset
+    Status: SignatureStatus
+    OracleVersion: string
+}
+
+type OracleCommand =
+    | DocsSign of SpecificationPath * SignerInfo * string option
+    // ... other commands
+```
+
+#### Security Implementation
+- **HMAC-SHA256**: Cryptographic signatures using .NET's built-in HMACSHA256
+- **Content Hashing**: SHA-256 hashing of normalized file content
+- **Environment Variables**: Secure key management via environment configuration
+- **Git Integration**: Atomic commits with secure argument passing to prevent injection
+
+### Technical Features Implemented
+
+- ✅ **Digital Signature Generation**: HMAC-SHA256 with content hashing
+- ✅ **CLI Interface**: Argument parsing with validation
+- ✅ **Git Integration**: Atomic commits with structured messages
+- ✅ **Custom Messages**: `-m` option for personalized commit messages
+- ✅ **Environment Configuration**: Secure key and signer management
+- ✅ **File Validation**: Support for `.md`, `.yaml`, `.yml` files
+- ✅ **Error Handling**: Comprehensive validation and error reporting
+- ✅ **Signature Storage**: YAML-based signature file format
+
 ## Integration Points
 
 ### Git Integration
 - Signature operations as atomic Git commits
-- Commit messages with signature metadata
+- Commit messages with signature metadata and optional custom messages
 - Tag creation for signed milestones
 - Branch protection for signed specifications
+
+#### Commit Message Format
+```
+docs: digitally sign {filename}
+
+[Custom message if provided via -m option]
+
+Signature ID: {signature_id}
+Signer: {email} ({role})
+Reason: {signing_reason}
+Algorithm: {algorithm}
+Valid until: {expiry_date}
+
+🤖 Generated with Oracle CLI Digital Signing
+```
 
 ### File System Integration
 - Signature files stored in `.oracle/signatures/` directory
@@ -373,7 +554,10 @@ let scheduleRenewalNotification (signature: DigitalSignature) =
 - [ ] Resistance to known attack vectors
 
 ### Functional Success
-- [ ] Accurate signature generation and verification
+- [x] Accurate signature generation and verification
+- [x] Command-line interface with custom message support
+- [x] Git integration with structured commit messages  
+- [x] Environment variable-based configuration
 - [ ] Proper authority enforcement
 - [ ] Reliable bulk operations
 - [ ] Comprehensive lifecycle management
