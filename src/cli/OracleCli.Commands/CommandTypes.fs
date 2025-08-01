@@ -11,6 +11,7 @@ type OracleCommand =
     | ListSpecs of tag: string option
     | Watch of CodePath
     | Ask of Query
+    | DocsSign of SpecificationPath * SignerInfo
     | Help
 
 /// Command execution context

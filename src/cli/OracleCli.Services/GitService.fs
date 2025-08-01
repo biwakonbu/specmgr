@@ -1,0 +1,103 @@
+module OracleCli.Services.GitService
+
+open System
+open System.IO
+open System.Diagnostics
+open OracleCli.Core
+
+/// Execute git command and return result
+let private executeGitCommand (workingDir: string) (args: string) : Result<string, string> =
+    try
+        let startInfo = ProcessStartInfo()
+        startInfo.FileName <- "git"
+        startInfo.Arguments <- args
+        startInfo.WorkingDirectory <- workingDir
+        startInfo.RedirectStandardOutput <- true
+        startInfo.RedirectStandardError <- true
+        startInfo.UseShellExecute <- false
+        startInfo.CreateNoWindow <- true
+        
+        use proc = Process.Start(startInfo)
+        proc.WaitForExit()
+        
+        let output = proc.StandardOutput.ReadToEnd().Trim()
+        let error = proc.StandardError.ReadToEnd().Trim()
+        
+        if proc.ExitCode = 0 then
+            Ok output
+        else
+            Error error
+            
+    with
+    | ex -> Error $"Failed to execute git command: {ex.Message}"
+
+/// Check if directory is a git repository
+let isGitRepository (workingDir: string) : bool =
+    Directory.Exists(Path.Combine(workingDir, ".git"))
+
+/// Add file to git staging area
+let addFileToGit (workingDir: string) (filePath: string) : Result<unit, string> =
+    match executeGitCommand workingDir $"add \"{filePath}\"" with
+    | Ok _ -> Ok ()
+    | Error err -> Error err
+
+/// Commit files with message
+let commitWithMessage (workingDir: string) (message: string) : Result<string, string> =
+    match executeGitCommand workingDir $"commit -m \"{message}\"" with
+    | Ok output -> 
+        // Extract commit hash from output
+        let lines = output.Split('\n')
+        let commitInfo = lines |> Array.tryFind (fun line -> line.Contains("["))
+        match commitInfo with
+        | Some info -> 
+            let parts = info.Split(' ')
+            let hash = parts |> Array.tryFind (fun part -> part.Length >= 7 && part |> Seq.forall Char.IsLetterOrDigit)
+            Ok (hash |> Option.defaultValue "unknown")
+        | None -> Ok "committed"
+    | Error err -> Error err
+
+/// Create git commit for signature operation
+let commitSignature (workingDir: string) (signature: DigitalSignature) (signatureFilePath: string) : Result<string, string> =
+    try
+        if not (isGitRepository workingDir) then
+            Error "Not a git repository"
+        else
+            // Add signature file to git
+            match addFileToGit workingDir signatureFilePath with
+            | Error err -> Error $"Failed to add signature file to git: {err}"
+            | Ok () ->
+                // Create commit message
+                let specPath = Paths.getSpecificationPath signature.SpecificationPath
+                let fileName = Path.GetFileName(specPath)
+                let validUntil = signature.ExpiresAt.ToString("yyyy-MM-dd")
+                let commitMessage = $"docs: digitally sign {fileName}\n\nSignature ID: {signature.SignatureId}\nSigner: {signature.SignerInfo.Email} ({signature.SignerInfo.Role})\nReason: {signature.SignerInfo.SigningReason}\nAlgorithm: {signature.Algorithm}\nValid until: {validUntil}\n\n🤖 Generated with Oracle CLI Digital Signing\n\nCo-Authored-By: Oracle <noreply@specmgr.com>"
+                
+                // Commit the signature
+                commitWithMessage workingDir commitMessage
+                
+    with
+    | ex -> Error $"Git commit failed: {ex.Message}"
+
+/// Get current git commit hash
+let getCurrentCommitHash (workingDir: string) : Result<string, string> =
+    executeGitCommand workingDir "rev-parse HEAD"
+
+/// Check if there are uncommitted changes
+let hasUncommittedChanges (workingDir: string) : Result<bool, string> =
+    match executeGitCommand workingDir "status --porcelain" with
+    | Ok output -> Ok (not (String.IsNullOrWhiteSpace(output)))
+    | Error err -> Error err
+
+/// Get git repository root directory
+let getGitRootDirectory (startPath: string) : Result<string, string> =
+    let rec findGitRoot (currentPath: string) =
+        if String.IsNullOrEmpty(currentPath) || currentPath = Path.GetPathRoot(currentPath) then
+            None
+        elif Directory.Exists(Path.Combine(currentPath, ".git")) then
+            Some currentPath
+        else
+            findGitRoot (Path.GetDirectoryName(currentPath))
+    
+    match findGitRoot startPath with
+    | Some gitRoot -> Ok gitRoot
+    | None -> Error "Not inside a git repository"

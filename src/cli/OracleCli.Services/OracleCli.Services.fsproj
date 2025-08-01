@@ -1,11 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="SigningService.fs" />
+    <Compile Include="GitService.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../OracleCli.Core/OracleCli.Core.fsproj" />
   </ItemGroup>
 
 </Project>

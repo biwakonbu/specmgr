@@ -1,17 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="CommandTypes.fs" />
     <Compile Include="CommandParser.fs" />
+    <Compile Include="CommandHandler.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../OracleCli.Core/OracleCli.Core.fsproj" />
+    <ProjectReference Include="../OracleCli.Services/OracleCli.Services.fsproj" />
   </ItemGroup>
 
 </Project>
