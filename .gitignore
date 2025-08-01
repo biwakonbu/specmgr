@@ -255,6 +255,3 @@ bld/
 
 # Application specific
 .specmgr-manifest.json
-
-# reviewtask data directory
-.pr-review/

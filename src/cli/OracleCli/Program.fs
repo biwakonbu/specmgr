@@ -2,7 +2,6 @@ open System
 open OracleCli.Core
 open OracleCli.Commands.CommandParser
 open OracleCli.Commands
-open OracleCli.Commands.CommandHandler
 
 /// Load configuration from environment variables
 let loadConfig () : ServiceConfig =
@@ -39,7 +38,6 @@ COMMANDS:
     list [--tag <tag>]             List specifications, optionally filtered by tag
     watch <code>                   Watch code file for changes and validate
     ask <question>                 Ask questions about specifications
-    docs-sign <spec-path>          Digitally sign a specification document
     help                           Show this help message
 
 EXAMPLES:
@@ -48,38 +46,21 @@ EXAMPLES:
     oracle show features/user-management/registration.yaml
     oracle list --tag authentication
     oracle ask "How does password validation work?"
-    oracle docs-sign docs/specifications/domain-features/user-auth.yaml
 
 ENVIRONMENT VARIABLES:
     ANTHROPIC_API_KEY             Required for AI features
     QDRANT_URL                    Qdrant endpoint (default: http://localhost:6333)
     SPECMGR_URL                   SpecMgr API endpoint (default: http://localhost:3000)
-    ORACLE_SECRET_KEY             Required for digital signing
-    ORACLE_SIGNER_EMAIL           Default signer email
-    ORACLE_SIGNER_ROLE            Default signer role
 
 For detailed documentation, see: src/cli/ORACLE.md
 """
 
-/// Execute command with context
-let executeOracleCommand (config: ServiceConfig) (command: OracleCommand) : Result<unit, string> =
-    let context = {
-        Config = config
-        Verbose = false
-        DryRun = false
-    }
-    
+/// Simple command execution (MVP - not implemented yet)
+let executeCommand (config: ServiceConfig) (command: OracleCommand) : Result<unit, string> =
     match command with
     | Help -> 
         handleHelp ()
         Ok ()
-    | DocsSign (specPath, signerInfo, customMessage) ->
-        match executeCommandWithValidation context command with
-        | Ok message ->
-            printfn "%s" message
-            Ok ()
-        | Error err ->
-            Error err
     | FindSpec (Query query) ->
         printfn "🔍 Searching for: %s" query
         printfn "🚧 RAG search not implemented yet"
@@ -131,7 +112,7 @@ let main args =
     match parseAndValidateCommand args with
     | Ok command ->
         try
-            let result = executeOracleCommand config command
+            let result = executeCommand config command
             match result with
             | Ok _ -> 0
             | Error msg -> 
