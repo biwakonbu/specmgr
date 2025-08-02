@@ -39,7 +39,7 @@ let private findSignatureFilePath (gitRoot: string) (filePath: string) : string 
         None
 
 /// Verify a single file's digital signature
-let private verifySingleFile (context: CommandContext) (filePath: string) (includeTimeline: bool) : Result<string, string> =
+let private verifySingleFile (context: CommandContext) (filePath: string) : Result<string, string> =
     try
         // Validate file exists
         if not (File.Exists filePath) then
@@ -73,17 +73,94 @@ let private verifySingleFile (context: CommandContext) (filePath: string) (inclu
                                 let validFromStr, expiresAtStr = formatSignatureDates claims
                                 
                                 if isValid then
-                                    let baseMessage = $"✅ Signature verification PASSED\nFile: {fileName}\nSigner: {claims.SignerEmail} ({claims.SignerRole})\nSigned: {validFromStr}\nExpires: {expiresAtStr}\nStatus: Valid - No tampering detected"
-                                    
-                                    if includeTimeline then
-                                        // TODO: Add timeline analysis here
-                                        Ok $"{baseMessage}\n\n⏱️  Timeline analysis:\n- Git commit tracking not yet implemented"
-                                    else
-                                        Ok baseMessage
+                                    Ok $"✅ Signature verification PASSED\nFile: {fileName}\nSigner: {claims.SignerEmail} ({claims.SignerRole})\nSigned: {validFromStr}\nExpires: {expiresAtStr}\nStatus: Valid - No tampering detected"
                                 else
                                     Ok $"❌ Signature verification FAILED\nFile: {fileName}\nStatus: TAMPERED - Content has been modified\nSigner: {claims.SignerEmail} ({claims.SignerRole})\nOriginal Signature Date: {validFromStr}"
     with
     | ex -> Error $"Verification failed: {ex.Message}"
+
+/// Get files changed in recent commits (up to 3 commits back)
+let private getRecentlyChangedMarkdownFiles (context: CommandContext) (projectRoot: string) : Result<string list, string> =
+    try
+        // Use git to get files changed in last 3 commits
+        let startInfo = System.Diagnostics.ProcessStartInfo()
+        startInfo.FileName <- "git"
+        startInfo.ArgumentList.Add("diff")
+        startInfo.ArgumentList.Add("--name-only")
+        startInfo.ArgumentList.Add("HEAD~3..HEAD")
+        startInfo.WorkingDirectory <- projectRoot
+        startInfo.RedirectStandardOutput <- true
+        startInfo.RedirectStandardError <- true
+        startInfo.UseShellExecute <- false
+        startInfo.CreateNoWindow <- true
+        
+        use proc = System.Diagnostics.Process.Start(startInfo)
+        if proc = null then
+            Error "Failed to start git process"
+        else
+            proc.WaitForExit()
+            
+            if proc.ExitCode = 0 then
+                let output = proc.StandardOutput.ReadToEnd()
+                let changedFiles = 
+                    output.Split([|'\n'|], StringSplitOptions.RemoveEmptyEntries)
+                    |> Array.filter (fun file -> file.EndsWith(".md"))
+                    |> Array.map (fun file -> Path.Combine(projectRoot, file))
+                    |> Array.filter File.Exists
+                    |> Array.toList
+                
+                if changedFiles.IsEmpty then
+                    Ok []
+                else
+                    Ok changedFiles
+            else
+                let error = proc.StandardError.ReadToEnd()
+                Error $"Git command failed: {error}"
+    with
+    | ex -> Error $"Failed to get recent commits: {ex.Message}"
+
+/// Verify recently changed files (last 3 commits)
+let private verifyRecentChanges (context: CommandContext) : Result<string, string> =
+    try
+        // Get current git root
+        let currentDir = Environment.CurrentDirectory
+        match getGitRootDirectory currentDir with
+        | Error gitErr -> Error $"Git repository required: {gitErr}"
+        | Ok gitRoot ->
+            match getRecentlyChangedMarkdownFiles context gitRoot with
+            | Error err -> Error err
+            | Ok [] ->
+                Ok "📋 No markdown files changed in recent 3 commits\nStatus: Nothing to verify"
+            | Ok changedFiles ->
+                let results = 
+                    changedFiles
+                    |> List.map (fun file ->
+                        let relativePath = Path.GetRelativePath(gitRoot, file)
+                        match verifySingleFile context file with
+                        | Ok result when result.Contains("✅") ->
+                            $"- ✅ {relativePath} (signature valid)"
+                        | Ok result when result.Contains("❌ No signature") ->
+                            $"- ⚠️  {relativePath} (unsigned)"
+                        | Ok result when result.Contains("❌ Signature verification FAILED") ->
+                            $"- ❌ {relativePath} (signature verification failed)"
+                        | Error err ->
+                            $"- ❌ {relativePath} (error: {err})"
+                        | _ ->
+                            $"- ❓ {relativePath} (unknown status)"
+                    )
+                
+                let header = [
+                    "Oracle CLI - Recent Changes Verification (Last 3 Commits)"
+                    "=========================================================="
+                    $"Repository: {gitRoot}"
+                    $"Files checked: {changedFiles.Length}"
+                    ""
+                ]
+                
+                let allLines = header @ results
+                Ok (String.concat "\n" allLines)
+    with
+    | ex -> Error $"Recent changes verification failed: {ex.Message}"
 
 /// Get all .md files in directory recursively
 let getMarkdownFilesRecursively (directory: string) (excludePatterns: string list) : string list =
@@ -172,7 +249,7 @@ let signSingleFile (context: CommandContext) (filePath: string) (customMessage: 
 
 
 /// Verify all signature files in a directory
-let private verifyAllFilesInDirectory (context: CommandContext) (directoryPath: string) (includeTimeline: bool) : Result<string, string> =
+let private verifyAllFilesInDirectory (context: CommandContext) (directoryPath: string) : Result<string, string> =
     try
         if not (Directory.Exists directoryPath) then
             Error $"Directory not found: {directoryPath}"
@@ -187,7 +264,7 @@ let private verifyAllFilesInDirectory (context: CommandContext) (directoryPath: 
                     markdownFiles
                     |> List.fold (fun (verified, failed, unsigned, lines) file ->
                         let relativePath = Path.GetRelativePath(directoryPath, file)
-                        match verifySingleFile context file includeTimeline with
+                        match verifySingleFile context file with
                         | Ok result when result.Contains("✅") ->
                             let line = $"- ✅ {relativePath} (signature valid)"
                             (file :: verified, failed, unsigned, line :: lines)
@@ -294,10 +371,17 @@ let executeCommand (context: CommandContext) (command: OracleCommand) : Result<s
     match command with
     | DocsSign (path, customMessage, excludePatterns) ->
         executeDocsSignCommand context path customMessage excludePatterns
-    | Verify (filePath, includeTimeline) ->
-        verifySingleFile context filePath includeTimeline
-    | VerifyAll (directoryPath, includeTimeline) ->
-        verifyAllFilesInDirectory context directoryPath includeTimeline
+    | Verify None ->
+        // No path provided - check recent commits
+        verifyRecentChanges context
+    | Verify (Some path) ->
+        // Path provided - check if it's file or directory
+        if File.Exists path then
+            verifySingleFile context path
+        elif Directory.Exists path then
+            verifyAllFilesInDirectory context path
+        else
+            Error $"Path not found: {path}"
     | FindSpec _query ->
         Error "FindSpec command not implemented yet"
     | CheckImpl (_codePath, _specPath) ->
@@ -327,8 +411,7 @@ COMMANDS:
     watch <code>                   Watch code file for changes and validate
     ask <question>                 Ask questions about specifications
     docs-sign <path>               Digitally sign a specification file or directory
-    verify <file> [--timeline]     Verify digital signature of a specification file
-    verify-all <dir> [--timeline]  Verify digital signatures of all files in directory
+    verify [path]                  Verify digital signatures (no path = recent commits, path = file/directory)
     help                           Show this help message
 
 For more information, see: https://github.com/biwakonbu/specmgr"""

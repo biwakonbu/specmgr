@@ -12,8 +12,7 @@ type OracleCommand =
     | Watch of CodePath
     | Ask of Query
     | DocsSign of string * string option * exclude: string list
-    | Verify of string * bool  // (filePath, includeTimeline)
-    | VerifyAll of string * bool  // (directoryPath, includeTimeline)
+    | Verify of string option  // None = check recent commits, Some path = specific file/directory
     | Help
 
 /// Command execution context

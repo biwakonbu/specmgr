@@ -42,14 +42,10 @@ let parseCommand (args: string array) : Result<OracleCommand, string> =
         Ok (Watch (CodePath codePath))
     | "ask" :: query :: [] ->
         Ok (Ask (Query query))
-    | "verify" :: filePath :: [] ->
-        Ok (Verify (filePath, false))
-    | "verify" :: filePath :: "--timeline" :: [] ->
-        Ok (Verify (filePath, true))
-    | "verify-all" :: directoryPath :: [] ->
-        Ok (VerifyAll (directoryPath, false))
-    | "verify-all" :: directoryPath :: "--timeline" :: [] ->
-        Ok (VerifyAll (directoryPath, true))
+    | "verify" :: [] ->
+        Ok (Verify None)  // Check recent commits
+    | "verify" :: path :: [] ->
+        Ok (Verify (Some path))  // Check specific file or directory
     | "docs-sign" :: rest ->
         match parseDocsSignArgs rest with
         | Ok (path, message, excludePatterns) ->
@@ -73,8 +69,7 @@ COMMANDS:
     watch <code>                   Watch code file for changes and validate
     ask <question>                 Ask questions about specifications
     docs-sign <path> [--exclude <pattern>] [-m <message>]  Digitally sign file or directory
-    verify <file> [--timeline]     Verify digital signature of a specification file
-    verify-all <dir> [--timeline]  Verify digital signatures of all files in directory
+    verify [path]                  Verify digital signatures (no path = recent commits, path = file/directory)
     help                           Show this help message
 
 EXAMPLES:
@@ -87,9 +82,9 @@ EXAMPLES:
     oracle docs-sign docs/specifications/ --exclude "*.draft.md" -m "Batch signing"
     oracle docs-sign docs/spec.yaml -m "Security review completed"
     oracle docs-sign docs/spec.yaml  # Generate claim-based signature
-    oracle verify docs/specifications/user-auth.md
-    oracle verify docs/specifications/user-auth.md --timeline
-    oracle verify-all docs/specifications/ --timeline
+    oracle verify                    # Check recent 3 commits for signature changes
+    oracle verify docs/specifications/user-auth.md  # Verify specific file
+    oracle verify docs/specifications/              # Verify all files in directory
 
 ENVIRONMENT VARIABLES:
     ANTHROPIC_API_KEY             Required for AI features

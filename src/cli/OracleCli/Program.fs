@@ -40,8 +40,7 @@ COMMANDS:
     watch <code>                   Watch code file for changes and validate
     ask <question>                 Ask questions about specifications
     docs-sign <spec-path>          Digitally sign a specification document
-    verify <file> [--timeline]     Verify digital signature of a specification file
-    verify-all <dir> [--timeline]  Verify digital signatures of all files in directory
+    verify [path]                  Verify digital signatures (no path = recent commits, path = file/directory)
     help                           Show this help message
 
 EXAMPLES:
@@ -51,9 +50,9 @@ EXAMPLES:
     oracle list --tag authentication
     oracle ask "How does password validation work?"
     oracle docs-sign docs/specifications/domain-features/user-auth.yaml
-    oracle verify docs/specifications/user-auth.md
-    oracle verify docs/specifications/user-auth.md --timeline
-    oracle verify-all docs/specifications/ --timeline
+    oracle verify                    # Check recent 3 commits for signature changes
+    oracle verify docs/specifications/user-auth.md  # Verify specific file
+    oracle verify docs/specifications/              # Verify all files in directory
 
 ENVIRONMENT VARIABLES:
     ANTHROPIC_API_KEY             Required for AI features
@@ -85,14 +84,7 @@ let executeOracleCommand (config: ServiceConfig) (command: OracleCommand) : Resu
             Ok ()
         | Error err ->
             Error err
-    | Verify (_filePath, _includeTimeline) ->
-        match executeCommandWithValidation context command with
-        | Ok message ->
-            printfn "%s" message
-            Ok ()
-        | Error err ->
-            Error err
-    | VerifyAll (_directoryPath, _includeTimeline) ->
+    | Verify _path ->
         match executeCommandWithValidation context command with
         | Ok message ->
             printfn "%s" message
