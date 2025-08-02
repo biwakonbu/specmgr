@@ -12,6 +12,7 @@
     <Compile Include="ServiceIntegrationTests.fs" />
     <Compile Include="DocsSignIntegrationTests.fs" />
     <Compile Include="ClaimBasedSigningTests.fs" />
+    <Compile Include="GitCommitHashTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
