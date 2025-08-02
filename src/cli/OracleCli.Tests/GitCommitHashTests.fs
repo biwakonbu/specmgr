@@ -6,6 +6,40 @@ open System.Diagnostics
 open Xunit
 open OracleCli.Services.GitService
 
+/// Helper function to initialize a Git repository with test configuration
+let private initializeTestGitRepo (tempDir: string) : unit =
+    // Initialize git repo
+    let initStartInfo = ProcessStartInfo(
+        FileName = "git",
+        Arguments = "init",
+        WorkingDirectory = tempDir,
+        RedirectStandardOutput = true,
+        UseShellExecute = false
+    )
+    let initResult = Process.Start(initStartInfo)
+    initResult.WaitForExit()
+    
+    // Set git config for testing
+    let configEmailStartInfo = ProcessStartInfo(
+        FileName = "git",
+        Arguments = "config user.email \"test@example.com\"",
+        WorkingDirectory = tempDir,
+        RedirectStandardOutput = true,
+        UseShellExecute = false
+    )
+    let configEmailResult = Process.Start(configEmailStartInfo)
+    configEmailResult.WaitForExit()
+    
+    let configNameStartInfo = ProcessStartInfo(
+        FileName = "git",
+        Arguments = "config user.name \"Test User\"",
+        WorkingDirectory = tempDir,
+        RedirectStandardOutput = true,
+        UseShellExecute = false
+    )
+    let configNameResult = Process.Start(configNameStartInfo)
+    configNameResult.WaitForExit()
+
 [<Fact>]
 let ``commitSignatureFiles should return valid commit hash`` () =
     // Arrange - Create a temporary git repository
@@ -13,37 +47,8 @@ let ``commitSignatureFiles should return valid commit hash`` () =
     Directory.CreateDirectory(tempDir) |> ignore
     
     try
-        // Initialize git repo
-        let initStartInfo = ProcessStartInfo(
-            FileName = "git",
-            Arguments = "init",
-            WorkingDirectory = tempDir,
-            RedirectStandardOutput = true,
-            UseShellExecute = false
-        )
-        let initResult = Process.Start(initStartInfo)
-        initResult.WaitForExit()
-        
-        // Set git config for testing
-        let configEmailStartInfo = ProcessStartInfo(
-            FileName = "git",
-            Arguments = "config user.email \"test@example.com\"",
-            WorkingDirectory = tempDir,
-            RedirectStandardOutput = true,
-            UseShellExecute = false
-        )
-        let configEmailResult = Process.Start(configEmailStartInfo)
-        configEmailResult.WaitForExit()
-        
-        let configNameStartInfo = ProcessStartInfo(
-            FileName = "git",
-            Arguments = "config user.name \"Test User\"",
-            WorkingDirectory = tempDir,
-            RedirectStandardOutput = true,
-            UseShellExecute = false
-        )
-        let configNameResult = Process.Start(configNameStartInfo)
-        configNameResult.WaitForExit()
+        // Initialize git repository with test configuration
+        initializeTestGitRepo tempDir
         
         // Create a test signature file
         let signatureFile = Path.Combine(tempDir, "test-signature.json")
@@ -78,36 +83,8 @@ let ``commitSignatureFiles should handle multiple files`` () =
     Directory.CreateDirectory(tempDir) |> ignore
     
     try
-        // Initialize git repo and config (same as above)
-        let initStartInfo2 = ProcessStartInfo(
-            FileName = "git",
-            Arguments = "init",
-            WorkingDirectory = tempDir,
-            RedirectStandardOutput = true,
-            UseShellExecute = false
-        )
-        let initResult = Process.Start(initStartInfo2)
-        initResult.WaitForExit()
-        
-        let configEmailStartInfo2 = ProcessStartInfo(
-            FileName = "git",
-            Arguments = "config user.email \"test@example.com\"",
-            WorkingDirectory = tempDir,
-            RedirectStandardOutput = true,
-            UseShellExecute = false
-        )
-        let configEmailResult = Process.Start(configEmailStartInfo2)
-        configEmailResult.WaitForExit()
-        
-        let configNameStartInfo2 = ProcessStartInfo(
-            FileName = "git",
-            Arguments = "config user.name \"Test User\"",
-            WorkingDirectory = tempDir,
-            RedirectStandardOutput = true,
-            UseShellExecute = false
-        )
-        let configNameResult = Process.Start(configNameStartInfo2)
-        configNameResult.WaitForExit()
+        // Initialize git repository with test configuration
+        initializeTestGitRepo tempDir
         
         // Create multiple test signature files
         let signatureFile1 = Path.Combine(tempDir, "signature1.json")
@@ -121,8 +98,15 @@ let ``commitSignatureFiles should handle multiple files`` () =
         // Assert
         match result with
         | Ok commitHash ->
-            Assert.True(commitHash.Length = 40, $"Expected 40-character commit hash, got {commitHash.Length}")
+            // Verify the commit hash is a valid SHA-1 (40 characters, hexadecimal)
+            Assert.True(commitHash.Length = 40, $"Expected 40-character commit hash, got {commitHash.Length}: {commitHash}")
             Assert.True(System.Text.RegularExpressions.Regex.IsMatch(commitHash, "^[a-f0-9]+$"), $"Expected hexadecimal commit hash, got: {commitHash}")
+            
+            // Verify we can get the same hash using git rev-parse HEAD
+            let verifyResult = getCurrentCommitHash tempDir
+            match verifyResult with
+            | Ok verifyHash -> Assert.Equal(commitHash, verifyHash)
+            | Error err -> Assert.True(false, $"Failed to verify commit hash: {err}")
         | Error err ->
             Assert.True(false, $"commitSignatureFiles failed: {err}")
     finally
