@@ -20,7 +20,7 @@ let ``parseCommand should parse docs-sign command with default signer`` () =
     
     // Assert
     match result with
-    | Ok (DocsSign (path, customMessage, excludePatterns, true)) ->
+    | Ok (DocsSign (path, customMessage, excludePatterns)) ->
         Assert.Equal("test.yaml", path)
         // Custom message should be None for basic command
         Assert.True customMessage.IsNone
@@ -38,7 +38,7 @@ let ``parseCommand should parse docs-sign command with custom message`` () =
     
     // Assert
     match result with
-    | Ok (DocsSign (path, customMessage, excludePatterns, true)) ->
+    | Ok (DocsSign (path, customMessage, excludePatterns)) ->
         Assert.Equal("test.yaml", path)
         // Custom message should be present
         Assert.True customMessage.IsSome
@@ -57,7 +57,7 @@ let ``parseCommand should parse docs-sign command with exclude patterns`` () =
     
     // Assert
     match result with
-    | Ok (DocsSign (path, customMessage, excludePatterns, true)) ->
+    | Ok (DocsSign (path, customMessage, excludePatterns)) ->
         Assert.Equal("docs/", path)
         Assert.True customMessage.IsNone
         Assert.Equal(2, excludePatterns.Length)
@@ -75,7 +75,7 @@ let ``parseCommand should parse docs-sign command with both exclude and message`
     
     // Assert
     match result with
-    | Ok (DocsSign (path, customMessage, excludePatterns, true)) ->
+    | Ok (DocsSign (path, customMessage, excludePatterns)) ->
         Assert.Equal("docs/", path)
         Assert.True customMessage.IsSome
         Assert.Equal("Batch signing", customMessage.Value)

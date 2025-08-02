@@ -4,7 +4,6 @@ open System
 open System.IO
 open OracleCli.Core
 open OracleCli.Commands
-open OracleCli.Services.SigningService
 open OracleCli.Services.ClaimBasedSigningService
 open OracleCli.Services.GitService
 
@@ -24,8 +23,8 @@ let getMarkdownFilesRecursively (directory: string) (excludePatterns: string lis
             System.Text.RegularExpressions.Regex.IsMatch(fileName, regexPattern)))
     )
 
-/// Sign a single file using claim-based signature
-let signSingleFileWithClaims (context: CommandContext) (filePath: string) (customMessage: string option) : Result<string, string> =
+/// Sign a single file using digital signature
+let signSingleFile (context: CommandContext) (filePath: string) (customMessage: string option) : Result<string, string> =
     try
         // Validate file exists and is a specification
         if not (File.Exists filePath) then
@@ -38,7 +37,7 @@ let signSingleFileWithClaims (context: CommandContext) (filePath: string) (custo
             | Error gitErr -> Error $"Git repository required for digital signing: {gitErr}"
             | Ok gitRoot ->
                 // Resolve signer information from git config
-                match getSignerFromGitConfig gitRoot with
+                match OracleCli.Services.ClaimBasedSigningService.getSignerFromGitConfig gitRoot with
                 | Error signerErr -> Error signerErr
                 | Ok signerInfo ->
                     // Get secret key from environment
@@ -104,80 +103,14 @@ let signSingleFileWithClaims (context: CommandContext) (filePath: string) (custo
     with
     | ex -> Error $"Command execution failed: {ex.Message}"
 
-/// Sign a single file using legacy format
-let signSingleFile (context: CommandContext) (filePath: string) (customMessage: string option) : Result<string, string> =
-    try
-        let specPath = SpecificationPath filePath
-        
-        // Validate file exists and is a specification
-        if not (File.Exists filePath) then
-            Error $"Specification file not found: {filePath}"
-        elif not (Paths.isValidSpecificationPath specPath) then
-            Error $"Invalid specification file format. Expected .yaml, .yml, or .md file: {filePath}"
-        else
-            // Get git root directory for signer info resolution
-            match getGitRootDirectory filePath with
-            | Error gitErr -> Error $"Git repository required for digital signing: {gitErr}"
-            | Ok gitRoot ->
-                // Resolve signer information from git config
-                let signerResult = getSignerFromGitConfig gitRoot
-                
-                match signerResult with
-                | Error signerErr -> Error signerErr
-                | Ok signerInfo ->
-                    // Get secret key from environment
-                    let secretKey = Environment.GetEnvironmentVariable "ORACLE_SECRET_KEY"
-                    if String.IsNullOrWhiteSpace secretKey then
-                        Error "ORACLE_SECRET_KEY environment variable is required for digital signing"
-                    else
-                        if context.DryRun then
-                            // Dry run mode - simulate signature generation
-                            match generateSignature filePath signerInfo secretKey with
-                            | Error err -> Error err
-                            | Ok signature ->
-                                let signatureFilePath = getSignatureFilePath filePath
-                                let validFromStr = signature.ValidFrom.ToString "yyyy-MM-dd HH:mm:ss UTC"
-                                let expiresAtStr = signature.ExpiresAt.ToString "yyyy-MM-dd HH:mm:ss UTC"
-                                let fileName = Path.GetFileName filePath
-                                Ok $"[DRY RUN] Would create digital signature:\n\nSignature ID: {signature.SignatureId}\nFile: {filePath}\nSignature File: {signatureFilePath}\nSigner: {signerInfo.Email} ({signerInfo.Role})\nAlgorithm: {signature.Algorithm}\nValid From: {validFromStr}\nExpires At: {expiresAtStr}\nContent Hash: {signature.ContentHash}\n\nGit commit message would be:\ndocs: digitally sign {fileName}"
-                        else
-                            // Generate signature
-                            match generateSignature filePath signerInfo secretKey with
-                            | Error err -> Error $"Signature generation failed: {err}"
-                            | Ok signature ->
-                                // Check signature expiration status 
-                                let currentStatus = checkSignatureExpiration signature
-                                let updatedSignature = { signature with Status = currentStatus }
-                                
-                                // Save signature file
-                                match saveSignatureToFile updatedSignature with
-                                | Error err -> Error $"Failed to save signature file: {err}"
-                                | Ok signatureFilePath ->
-                                    // Commit to git
-                                    match commitSignature gitRoot updatedSignature signatureFilePath customMessage with
-                                    | Error err -> Error $"Git commit failed: {err}"
-                                    | Ok commitHash ->
-                                        let validFromStr = updatedSignature.ValidFrom.ToString "yyyy-MM-dd HH:mm:ss UTC"
-                                        let expiresAtStr = updatedSignature.ExpiresAt.ToString "yyyy-MM-dd HH:mm:ss UTC"
-                                        let successMessage = $"✅ Digital signature created successfully!\n\nSignature ID: {updatedSignature.SignatureId}\nFile: {filePath}\nSignature File: {signatureFilePath}\nSigner: {signerInfo.Email} ({signerInfo.Role})\nReason: {signerInfo.SigningReason}\nAlgorithm: {updatedSignature.Algorithm}\nValid From: {validFromStr}\nExpires At: {expiresAtStr}\nStatus: {updatedSignature.Status}\nGit Commit: {commitHash}\n\n🔐 Document is now digitally signed and committed to Git."
-                                        
-                                        if context.Verbose then
-                                            Ok $"{successMessage}\n\n🔍 Signature Details:\n- Content Hash: {updatedSignature.ContentHash}\n- Key ID: {updatedSignature.KeyIdentifier}\n- Oracle Version: {updatedSignature.OracleVersion}"
-                                        else
-                                            Ok successMessage
-    with
-    | ex -> Error $"Command execution failed: {ex.Message}"
 
 /// Execute docs-sign command with auto-detection
-let executeDocsSignCommand (context: CommandContext) (path: string) (customMessage: string option) (excludePatterns: string list) (useClaimsBased: bool) : Result<string, string> =
+let executeDocsSignCommand (context: CommandContext) (path: string) (customMessage: string option) (excludePatterns: string list) : Result<string, string> =
     try
         // Auto-detect if path is file or directory
         if File.Exists path then
             // Single file signing
-            if useClaimsBased then
-                signSingleFileWithClaims context path customMessage
-            else
-                signSingleFile context path customMessage
+            signSingleFile context path customMessage
         elif Directory.Exists path then
             // Directory batch signing
             let markdownFiles = getMarkdownFilesRecursively path excludePatterns
@@ -194,11 +127,7 @@ let executeDocsSignCommand (context: CommandContext) (path: string) (customMessa
                     markdownFiles
                     |> List.fold (fun (signed, skipped, failed, lines) file ->
                         let relativePath = Path.GetRelativePath(path, file)
-                        let signResult = 
-                            if useClaimsBased then
-                                signSingleFileWithClaims context file customMessage
-                            else
-                                signSingleFile context file customMessage
+                        let signResult = signSingleFile context file customMessage
                         match signResult with
                         | Ok _result ->
                             let line = $"- ✅ {relativePath} (newly signed)"
@@ -240,8 +169,8 @@ let executeDocsSignCommand (context: CommandContext) (path: string) (customMessa
 /// Execute Oracle CLI commands
 let executeCommand (context: CommandContext) (command: OracleCommand) : Result<string, string> =
     match command with
-    | DocsSign (path, customMessage, excludePatterns, useClaimsBased) ->
-        executeDocsSignCommand context path customMessage excludePatterns useClaimsBased
+    | DocsSign (path, customMessage, excludePatterns) ->
+        executeDocsSignCommand context path customMessage excludePatterns
     | FindSpec _query ->
         Error "FindSpec command not implemented yet"
     | CheckImpl (_codePath, _specPath) ->

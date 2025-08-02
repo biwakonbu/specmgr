@@ -120,32 +120,6 @@ let hasUncommittedChanges (workingDir: string) : Result<bool, string> =
     | Error err -> Error err
 
 /// Get signer information from git config (repository -> global priority)
-let getSignerFromGitConfig (workingDir: string) : Result<SignerInfo, string> =
-    try
-        // Try to get user.email and user.name from git config
-        // Git config automatically handles repository -> global priority
-        match executeGitCommand workingDir "config user.email",
-              executeGitCommand workingDir "config user.name" with
-        | Ok email, Ok name when not (String.IsNullOrWhiteSpace(email)) && not (String.IsNullOrWhiteSpace(name)) ->
-            let signerInfo = {
-                Email = email.Trim()
-                Role = name.Trim()  // Use git user.name as role
-                SigningReason = "Document approval"
-            }
-            Ok signerInfo
-        | Ok email, Ok name ->
-            let missing = 
-                [if String.IsNullOrWhiteSpace(email) then "user.email"
-                 if String.IsNullOrWhiteSpace(name) then "user.name"]
-                |> String.concat ", "
-            Error $"Git config missing: {missing}. Please configure with 'git config user.email <email>' and 'git config user.name <name>'"
-        | Error emailErr, _ ->
-            Error $"Failed to get user.email from git config: {emailErr}"
-        | _, Error nameErr ->
-            Error $"Failed to get user.name from git config: {nameErr}"
-    with
-    | ex -> Error $"Git config access failed: {ex.Message}"
-
 /// Get git repository root directory
 let getGitRootDirectory (startPath: string) : Result<string, string> =
     let rec findGitRoot (currentPath: string) =
