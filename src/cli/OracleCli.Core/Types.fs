@@ -75,7 +75,39 @@ type SignerInfo = {
     SigningReason: string
 }
 
-/// Digital signature data
+/// Document claim for claim-based signatures
+type DocumentClaim = {
+    Path: string          // Project root relative path (Unix-style)
+    ContentHash: string   // SHA-256 hash (hex lowercase)
+    Size: int64          // File size for additional validation
+}
+
+/// Claim-based signature payload (JWT-inspired)
+type SignatureClaims = {
+    // Standard JWT-like claims
+    Issuer: string        // "oracle-cli"
+    Subject: string       // "document-signing"
+    IssuedAt: int64       // Unix timestamp
+    ExpiresAt: int64      // Unix timestamp
+    
+    // Oracle-specific claims
+    Documents: DocumentClaim list    // Explicit file list (no wildcards)
+    SignerEmail: string
+    SignerRole: string
+    SigningReason: string
+    ProjectRoot: string   // Git root path for verification context
+    Version: string       // Signature format version "1.0"
+}
+
+/// Claim-based signature container
+type ClaimBasedSignature = {
+    Header: string        // Base64 encoded header {"alg":"HS256","typ":"ORC"}
+    Claims: string        // Base64 encoded SignatureClaims JSON
+    Signature: string     // Base64 encoded HMAC-SHA256 signature
+    Raw: string          // Full signature string: {header}.{claims}.{signature}
+}
+
+/// Digital signature data (legacy format - kept for compatibility)
 type DigitalSignature = {
     SignatureId: string
     SpecificationPath: SpecificationPath

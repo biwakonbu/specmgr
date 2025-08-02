@@ -4,24 +4,28 @@ open OracleCli.Core
 open OracleCli.Commands
 
 /// Parse docs-sign command arguments with exclude patterns and message
-let parseDocsSignArgs (args: string list) : Result<string * string option * string list, string> =
-    let rec loop (path: string option) (message: string option) (excludePatterns: string list) (remaining: string list) =
+let parseDocsSignArgs (args: string list) : Result<string * string option * string list * bool, string> =
+    let rec loop (path: string option) (message: string option) (excludePatterns: string list) (useClaimsBased: bool) (remaining: string list) =
         match remaining with
         | [] ->
             match path with
-            | Some p -> Ok (p, message, List.rev excludePatterns)
+            | Some p -> Ok (p, message, List.rev excludePatterns, useClaimsBased)
             | None -> Error "Path argument required for docs-sign command"
         | "--exclude" :: pattern :: rest -> 
-            loop path message (pattern :: excludePatterns) rest
+            loop path message (pattern :: excludePatterns) useClaimsBased rest
         | "-m" :: msg :: rest ->
-            loop path (Some msg) excludePatterns rest
+            loop path (Some msg) excludePatterns useClaimsBased rest
+        | "--use-claims" :: rest ->
+            loop path message excludePatterns true rest
+        | "--use-legacy" :: rest ->
+            loop path message excludePatterns false rest
         | pathArg :: rest when path.IsNone && not (pathArg.StartsWith("-")) ->
-            loop (Some pathArg) message excludePatterns rest
+            loop (Some pathArg) message excludePatterns useClaimsBased rest
         | pathArg :: _ when pathArg.StartsWith("-") ->
             Error $"Unknown option: {pathArg}"
         | _ -> Error "Invalid arguments for docs-sign command"
     
-    loop None None [] args
+    loop None None [] true args
 
 /// Parse command line arguments into Oracle commands
 let parseCommand (args: string array) : Result<OracleCommand, string> =
@@ -44,8 +48,8 @@ let parseCommand (args: string array) : Result<OracleCommand, string> =
         Ok (Ask (Query query))
     | "docs-sign" :: rest ->
         match parseDocsSignArgs rest with
-        | Ok (path, message, excludePatterns) ->
-            Ok (DocsSign (path, message, excludePatterns))
+        | Ok (path, message, excludePatterns, useClaimsBased) ->
+            Ok (DocsSign (path, message, excludePatterns, useClaimsBased))
         | Error err -> Error err
     | "help" :: [] | "--help" :: [] | "-h" :: [] ->
         Ok Help
@@ -64,7 +68,7 @@ COMMANDS:
     list [--tag <tag>]             List specifications, optionally filtered by tag
     watch <code>                   Watch code file for changes and validate
     ask <question>                 Ask questions about specifications
-    docs-sign <path> [--exclude <pattern>] [-m <message>]  Digitally sign file or directory (auto-detect)
+    docs-sign <path> [--exclude <pattern>] [-m <message>] [--use-legacy]  Digitally sign file or directory (claim-based by default)
     help                           Show this help message
 
 EXAMPLES:
@@ -76,6 +80,7 @@ EXAMPLES:
     oracle docs-sign docs/specifications/domain-features/user-auth.md
     oracle docs-sign docs/specifications/ --exclude "*.draft.md" -m "Batch signing"
     oracle docs-sign docs/spec.yaml -m "Security review completed"
+    oracle docs-sign docs/spec.yaml --use-legacy  # Use legacy signature format if needed
 
 ENVIRONMENT VARIABLES:
     ANTHROPIC_API_KEY             Required for AI features

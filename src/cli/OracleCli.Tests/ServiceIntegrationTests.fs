@@ -322,7 +322,7 @@ let ``Service integration should work with all command types`` () =
             | None -> Assert.True(true)
         | Watch (CodePath cp) -> Assert.NotEmpty(cp)
         | Ask (Query q) -> Assert.NotEmpty(q)
-        | DocsSign (path, _customMessage, _excludePatterns) -> 
+        | DocsSign (path, _customMessage, _excludePatterns, false) -> 
             Assert.NotEmpty(path)
             // customMessage and excludePatterns can be None/empty or Some/present
         | Help -> Assert.True(true)

@@ -159,3 +159,44 @@ let getGitRootDirectory (startPath: string) : Result<string, string> =
     match findGitRoot startPath with
     | Some gitRoot -> Ok gitRoot
     | None -> Error "Not inside a git repository"
+
+/// Commit multiple signature files to git (for claim-based signatures)
+let commitSignatureFiles (workingDir: string) (signatureFilePaths: string list) (commitMessage: string) : Result<string, string> =
+    try
+        if not (isGitRepository workingDir) then
+            Error "Not a git repository"
+        else
+            // Add all signature files to git
+            let addResults = 
+                signatureFilePaths 
+                |> List.map (addFileToGit workingDir)
+            
+            // Check if all files were added successfully
+            let failedAdds = 
+                addResults 
+                |> List.choose (function | Error err -> Some err | Ok _ -> None)
+            
+            if not failedAdds.IsEmpty then
+                let errorMessage = String.concat "; " failedAdds
+                Error $"Failed to add signature files to git: {errorMessage}"
+            else
+                // Create and execute commit
+                match executeGitCommandSafe workingDir ["commit"; "-m"; commitMessage] with
+                | Error err -> Error $"Git commit failed: {err}"
+                | Ok output ->
+                    // Extract commit hash from output
+                    let lines = output.Split('\n')
+                    let commitLine = 
+                        lines 
+                        |> Array.tryFind (fun line -> line.Contains("[") && line.Contains("]"))
+                    
+                    match commitLine with
+                    | Some line when line.Contains(" ") ->
+                        let parts = line.Split(' ')
+                        if parts.Length > 1 then
+                            Ok parts.[1] // Return commit hash
+                        else
+                            Ok "unknown_commit"
+                    | _ -> Ok "unknown_commit"
+    with
+    | ex -> Error $"Git commit operation failed: {ex.Message}"
