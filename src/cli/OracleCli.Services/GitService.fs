@@ -183,20 +183,10 @@ let commitSignatureFiles (workingDir: string) (signatureFilePaths: string list) 
                 // Create and execute commit
                 match executeGitCommandSafe workingDir ["commit"; "-m"; commitMessage] with
                 | Error err -> Error $"Git commit failed: {err}"
-                | Ok output ->
-                    // Extract commit hash from output
-                    let lines = output.Split('\n')
-                    let commitLine = 
-                        lines 
-                        |> Array.tryFind (fun line -> line.Contains("[") && line.Contains("]"))
-                    
-                    match commitLine with
-                    | Some line when line.Contains(" ") ->
-                        let parts = line.Split(' ')
-                        if parts.Length > 1 then
-                            Ok parts.[1] // Return commit hash
-                        else
-                            Ok "unknown_commit"
-                    | _ -> Ok "unknown_commit"
+                | Ok _output ->
+                    // Get the exact commit hash using git rev-parse HEAD
+                    match executeGitCommandSafe workingDir ["rev-parse"; "HEAD"] with
+                    | Error err -> Error $"Failed to get commit hash: {err}"
+                    | Ok commitHash -> Ok (commitHash.Trim())
     with
     | ex -> Error $"Git commit operation failed: {ex.Message}"
