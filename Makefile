@@ -74,11 +74,11 @@ build-all: $(DIST_DIR) ## Build Oracle CLI for all major platforms
 	@echo "Building Oracle CLI for all platforms..."
 	@for rid in linux-x64 linux-arm64 osx-x64 osx-arm64 win-x64; do \
 		echo "Building for $$rid..."; \
-		cd "$(ORACLE_CLI_DIR)" && dotnet publish "OracleCli/OracleCli.fsproj" \
+		dotnet publish "$(ORACLE_CLI_DIR)/OracleCli/OracleCli.fsproj" \
 			--configuration Release \
 			--runtime $$rid \
 			--self-contained true \
-			--output "../../$(DIST_DIR)/$$rid" \
+			--output "$(DIST_DIR)/$$rid" \
 			-p:PublishSingleFile=true \
 			-p:PublishTrimmed=true \
 			-p:TrimMode=partial \
@@ -87,12 +87,12 @@ build-all: $(DIST_DIR) ## Build Oracle CLI for all major platforms
 			-p:DebugSymbols=false \
 			-p:GenerateDocumentationFile=false; \
 		if [ "$$rid" = "win-x64" ]; then \
-			mv $(DIST_DIR)/$$rid/OracleCli.exe $(DIST_DIR)/$$rid/$(BINARY_NAME).exe; \
+			mv "$(DIST_DIR)/$$rid/OracleCli.exe" "$(DIST_DIR)/$$rid/$(BINARY_NAME).exe"; \
 		else \
-			mv $(DIST_DIR)/$$rid/OracleCli $(DIST_DIR)/$$rid/$(BINARY_NAME); \
-			chmod +x $(DIST_DIR)/$$rid/$(BINARY_NAME); \
+			mv "$(DIST_DIR)/$$rid/OracleCli" "$(DIST_DIR)/$$rid/$(BINARY_NAME)"; \
+			chmod +x "$(DIST_DIR)/$$rid/$(BINARY_NAME)"; \
 		fi; \
-		rm -f $(DIST_DIR)/$$rid/*.pdb $(DIST_DIR)/$$rid/*.xml; \
+		rm -f "$(DIST_DIR)/$$rid"/*.pdb "$(DIST_DIR)/$$rid"/*.xml; \
 		echo "✅ Built for $$rid"; \
 	done
 	@echo "🎉 All platform binaries built in $(DIST_DIR)/"
