@@ -18,8 +18,9 @@ let getMarkdownFilesRecursively (directory: string) (excludePatterns: string lis
     |> List.filter (fun file ->
         let fileName = Path.GetFileName(file)
         not (excludePatterns |> List.exists (fun pattern ->
-            // Simple pattern matching - contains check for now
-            fileName.Contains(pattern.Replace("*", ""))))
+            // Proper glob pattern matching using regex
+            let regexPattern = pattern.Replace("*", ".*").Replace("?", ".") |> sprintf "^%s$"
+            System.Text.RegularExpressions.Regex.IsMatch(fileName, regexPattern)))
     )
 
 /// Sign a single file
@@ -100,34 +101,48 @@ let executeDocsSignCommand (context: CommandContext) (path: string) (customMessa
             if markdownFiles.IsEmpty then
                 Ok $"No .md files found in directory: {path}"
             else
-                let mutable signedCount = 0
-                let mutable skippedCount = 0
-                let mutable failedCount = 0
-                let mutable excludedCount = excludePatterns.Length
-                let results = System.Text.StringBuilder()
+                // Calculate actual excluded files count
+                let allMarkdownFiles = Directory.GetFiles(path, "*.md", SearchOption.AllDirectories) |> Array.length
+                let excludedCount = allMarkdownFiles - markdownFiles.Length
                 
-                results.AppendLine($"Oracle CLI - Directory Signing Results") |> ignore
-                results.AppendLine($"=====================================") |> ignore
-                results.AppendLine($"Directory: {path}") |> ignore
-                results.AppendLine($"Files processed: {markdownFiles.Length} (including subdirectories)") |> ignore
+                // Use immutable fold operation instead of mutable variables
+                let (signedFiles, skippedFiles, failedFiles, resultLines) =
+                    markdownFiles
+                    |> List.fold (fun (signed, skipped, failed, lines) file ->
+                        let relativePath = Path.GetRelativePath(path, file)
+                        match signSingleFile context file customMessage with
+                        | Ok _result ->
+                            let line = $"- ✅ {relativePath} (newly signed)"
+                            (file :: signed, skipped, failed, line :: lines)
+                        | Error err when err.Contains("already signed") ->
+                            let line = $"- ⚠️  {relativePath} (skipped - already signed, use --force to overwrite)"
+                            (signed, file :: skipped, failed, line :: lines)
+                        | Error err ->
+                            let line = $"- ❌ {relativePath} (failed - {err})"
+                            (signed, skipped, file :: failed, line :: lines)
+                    ) ([], [], [], [])
                 
-                for file in markdownFiles do
-                    let relativePath = Path.GetRelativePath(path, file)
-                    match signSingleFile context file customMessage with
-                    | Ok _result ->
-                        results.AppendLine($"- ✅ {relativePath} (newly signed)") |> ignore
-                        signedCount <- signedCount + 1
-                    | Error err when err.Contains("already signed") ->
-                        results.AppendLine($"- ⚠️  {relativePath} (skipped - already signed, use --force to overwrite)") |> ignore
-                        skippedCount <- skippedCount + 1
-                    | Error err ->
-                        results.AppendLine($"- ❌ {relativePath} (failed - {err})") |> ignore
-                        failedCount <- failedCount + 1
+                let signedCount = List.length signedFiles
+                let skippedCount = List.length skippedFiles
+                let failedCount = List.length failedFiles
                 
-                results.AppendLine() |> ignore
-                results.AppendLine($"Total: {signedCount} signed, {skippedCount} skipped, {failedCount} failed, {excludedCount} excluded") |> ignore
+                // Build result string
+                let header = [
+                    "Oracle CLI - Directory Signing Results"
+                    "====================================="
+                    $"Directory: {path}"
+                    $"Files processed: {markdownFiles.Length} (including subdirectories)"
+                ]
                 
-                Ok (results.ToString())
+                let footer = [
+                    ""
+                    $"Total: {signedCount} signed, {skippedCount} skipped, {failedCount} failed, {excludedCount} excluded"
+                ]
+                
+                let allLines = header @ (List.rev resultLines) @ footer
+                let result = String.concat "\n" allLines
+                
+                Ok result
         else
             Error $"Path not found: {path}"
     with

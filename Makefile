@@ -28,7 +28,7 @@ else
     RID = linux-x64
 endif
 
-.PHONY: help build build-oracle test clean install
+.PHONY: help build build-oracle build-all test test-verbose clean install uninstall info all
 
 help: ## Show this help message
 	@echo "Oracle CLI Build System"
@@ -44,15 +44,15 @@ $(DIST_DIR):
 
 build: $(DIST_DIR) ## Build Oracle CLI for development
 	@echo "Building Oracle CLI for development..."
-	cd $(ORACLE_CLI_DIR) && dotnet build --configuration Release
+	cd "$(ORACLE_CLI_DIR)" && dotnet build --configuration Release
 
 build-oracle: $(DIST_DIR) ## Build Oracle CLI single binary for current platform
 	@echo "Building Oracle CLI single binary for $(RID)..."
-	cd $(ORACLE_CLI_DIR) && dotnet publish OracleCli/OracleCli.fsproj \
+	cd "$(ORACLE_CLI_DIR)" && dotnet publish "OracleCli/OracleCli.fsproj" \
 		--configuration Release \
 		--runtime $(RID) \
 		--self-contained true \
-		--output ../../$(DIST_DIR)/$(RID) \
+		--output "../../$(DIST_DIR)/$(RID)" \
 		-p:PublishSingleFile=true \
 		-p:PublishTrimmed=true \
 		-p:TrimMode=partial \
@@ -74,11 +74,11 @@ build-all: $(DIST_DIR) ## Build Oracle CLI for all major platforms
 	@echo "Building Oracle CLI for all platforms..."
 	@for rid in linux-x64 linux-arm64 osx-x64 osx-arm64 win-x64; do \
 		echo "Building for $$rid..."; \
-		cd $(ORACLE_CLI_DIR) && dotnet publish OracleCli/OracleCli.fsproj \
+		cd "$(ORACLE_CLI_DIR)" && dotnet publish "OracleCli/OracleCli.fsproj" \
 			--configuration Release \
 			--runtime $$rid \
 			--self-contained true \
-			--output ../../$(DIST_DIR)/$$rid \
+			--output "../../$(DIST_DIR)/$$rid" \
 			-p:PublishSingleFile=true \
 			-p:PublishTrimmed=true \
 			-p:TrimMode=partial \
@@ -99,15 +99,15 @@ build-all: $(DIST_DIR) ## Build Oracle CLI for all major platforms
 
 test: ## Run Oracle CLI tests
 	@echo "Running Oracle CLI tests..."
-	cd $(ORACLE_CLI_DIR) && dotnet test --configuration Release --verbosity minimal
+	cd "$(ORACLE_CLI_DIR)" && dotnet test --configuration Release --verbosity minimal
 
 test-verbose: ## Run Oracle CLI tests with verbose output
 	@echo "Running Oracle CLI tests (verbose)..."
-	cd $(ORACLE_CLI_DIR) && dotnet test --configuration Release --verbosity detailed
+	cd "$(ORACLE_CLI_DIR)" && dotnet test --configuration Release --verbosity detailed
 
 clean: ## Clean build artifacts and dist directory
 	@echo "Cleaning Oracle CLI build artifacts..."
-	cd $(ORACLE_CLI_DIR) && dotnet clean
+	cd "$(ORACLE_CLI_DIR)" && dotnet clean
 	rm -rf $(DIST_DIR)
 	@echo "✅ Cleaned"
 

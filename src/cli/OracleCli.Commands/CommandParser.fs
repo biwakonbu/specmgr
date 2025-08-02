@@ -15,8 +15,10 @@ let parseDocsSignArgs (args: string list) : Result<string * string option * stri
             loop path message (pattern :: excludePatterns) rest
         | "-m" :: msg :: rest ->
             loop path (Some msg) excludePatterns rest
-        | pathArg :: rest when path.IsNone ->
+        | pathArg :: rest when path.IsNone && not pathArg.StartsWith("-") ->
             loop (Some pathArg) message excludePatterns rest
+        | pathArg :: _ when pathArg.StartsWith("-") ->
+            Error $"Unknown option: {pathArg}"
         | _ -> Error "Invalid arguments for docs-sign command"
     
     loop None None [] args
