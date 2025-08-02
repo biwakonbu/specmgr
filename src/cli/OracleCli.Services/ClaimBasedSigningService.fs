@@ -47,8 +47,12 @@ let getSignerFromGitConfig (workingDir: string) : Result<SignerInfo, string> =
             Role = name
             SigningReason = "Digital signature for specification integrity"
         }
-    | Error emailErr, _ -> Error $"Failed to get user.email: {emailErr}"
-    | _, Error nameErr -> Error $"Failed to get user.name: {nameErr}"
+    | Error emailErr, Error nameErr -> 
+        Error $"Failed to get git config: user.email ({emailErr}), user.name ({nameErr})"
+    | Error emailErr, _ -> 
+        Error $"Failed to get user.email: {emailErr}"
+    | _, Error nameErr -> 
+        Error $"Failed to get user.name: {nameErr}"
 
 /// Normalize file path to project root relative path (Unix-style)
 let normalizeToProjectPath (filePath: string) (projectRoot: string) : Result<string, string> =

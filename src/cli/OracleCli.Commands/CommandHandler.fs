@@ -7,6 +7,26 @@ open OracleCli.Commands
 open OracleCli.Services.ClaimBasedSigningService
 open OracleCli.Services.GitService
 
+/// Format signature dates to UTC string format
+let private formatSignatureDates (claims: SignatureClaims) : string * string =
+    let issuedAt = DateTimeOffset.FromUnixTimeSeconds(claims.IssuedAt)
+    let expiresAt = DateTimeOffset.FromUnixTimeSeconds(claims.ExpiresAt)
+    let validFromStr = issuedAt.ToString "yyyy-MM-dd HH:mm:ss UTC"
+    let expiresAtStr = expiresAt.ToString "yyyy-MM-dd HH:mm:ss UTC"
+    (validFromStr, expiresAtStr)
+
+/// Generate signature file path in .oracle/signatures/ directory
+let private getSignatureFilePath (gitRoot: string) (filePath: string) : string =
+    let signatureDir = Path.Combine(gitRoot, ".oracle", "signatures")
+    Directory.CreateDirectory(signatureDir) |> ignore
+    let signatureFileName = $"{Path.GetFileNameWithoutExtension(filePath)}.claim-signature"
+    Path.Combine(signatureDir, signatureFileName)
+
+/// Generate success message for claim-based signature creation
+let private generateSuccessMessage (claims: SignatureClaims) (filePath: string) (signatureFilePath: string) (commitHash: string) : string =
+    let validFromStr, expiresAtStr = formatSignatureDates claims
+    $"✅ Claim-based signature created successfully!\n\nIssuer: {claims.Issuer}\nSubject: {claims.Subject}\nVersion: {claims.Version}\nFile: {filePath}\nSignature File: {signatureFilePath}\nSigner: {claims.SignerEmail} ({claims.SignerRole})\nReason: {claims.SigningReason}\nIssued: {validFromStr}\nExpires: {expiresAtStr}\nProject Root: {claims.ProjectRoot}\nDocuments: {claims.Documents.Length} file(s)\nGit Commit: {commitHash}\n\n🔐 Document is now digitally signed with claim-based signature."
+
 /// Get all .md files in directory recursively
 let getMarkdownFilesRecursively (directory: string) (excludePatterns: string list) : string list =
     let allMarkdownFiles = 
@@ -51,10 +71,7 @@ let signSingleFile (context: CommandContext) (filePath: string) (customMessage: 
                             | Error err -> Error err
                             | Ok claims ->
                                 let fileName = Path.GetFileName filePath
-                                let issuedAt = DateTimeOffset.FromUnixTimeSeconds(claims.IssuedAt)
-                                let expiresAt = DateTimeOffset.FromUnixTimeSeconds(claims.ExpiresAt)
-                                let validFromStr = issuedAt.ToString "yyyy-MM-dd HH:mm:ss UTC"
-                                let expiresAtStr = expiresAt.ToString "yyyy-MM-dd HH:mm:ss UTC"
+                                let validFromStr, expiresAtStr = formatSignatureDates claims
                                 Ok $"[DRY RUN] Would create claim-based signature:\n\nIssuer: {claims.Issuer}\nSubject: {claims.Subject}\nVersion: {claims.Version}\nFile: {filePath}\nSigner: {claims.SignerEmail} ({claims.SignerRole})\nReason: {claims.SigningReason}\nIssued: {validFromStr}\nExpires: {expiresAtStr}\nProject Root: {claims.ProjectRoot}\nDocuments: {claims.Documents.Length} file(s)\n\nGit commit message would be:\ndocs: digitally sign {fileName} (claim-based)"
                         else
                             // Generate claim-based signature
@@ -65,11 +82,7 @@ let signSingleFile (context: CommandContext) (filePath: string) (customMessage: 
                                 | Error err -> Error $"Signature generation failed: {err}"
                                 | Ok signature ->
                                     // Save signature to .oracle/signatures/ directory
-                                    let relativeFilePath = Path.GetRelativePath(gitRoot, filePath).Replace("\\", "/")
-                                    let signatureDir = Path.Combine(gitRoot, ".oracle", "signatures")
-                                    Directory.CreateDirectory(signatureDir) |> ignore
-                                    let signatureFileName = $"{Path.GetFileNameWithoutExtension(filePath)}.claim-signature"
-                                    let signatureFilePath = Path.Combine(signatureDir, signatureFileName)
+                                    let signatureFilePath = getSignatureFilePath gitRoot filePath
                                     
                                     try
                                         File.WriteAllText(signatureFilePath, signature.Raw)
@@ -84,11 +97,7 @@ let signSingleFile (context: CommandContext) (filePath: string) (customMessage: 
                                         match commitSignatureFiles gitRoot [signatureFilePath] commitMessage with
                                         | Error err -> Error $"Git commit failed: {err}"
                                         | Ok commitHash ->
-                                            let issuedAt = DateTimeOffset.FromUnixTimeSeconds(claims.IssuedAt)
-                                            let expiresAt = DateTimeOffset.FromUnixTimeSeconds(claims.ExpiresAt)
-                                            let validFromStr = issuedAt.ToString "yyyy-MM-dd HH:mm:ss UTC"
-                                            let expiresAtStr = expiresAt.ToString "yyyy-MM-dd HH:mm:ss UTC"
-                                            let successMessage = $"✅ Claim-based signature created successfully!\n\nIssuer: {claims.Issuer}\nSubject: {claims.Subject}\nVersion: {claims.Version}\nFile: {filePath}\nSignature File: {signatureFilePath}\nSigner: {claims.SignerEmail} ({claims.SignerRole})\nReason: {claims.SigningReason}\nIssued: {validFromStr}\nExpires: {expiresAtStr}\nProject Root: {claims.ProjectRoot}\nDocuments: {claims.Documents.Length} file(s)\nGit Commit: {commitHash}\n\n🔐 Document is now digitally signed with claim-based signature."
+                                            let successMessage = generateSuccessMessage claims filePath signatureFilePath commitHash
                                             
                                             if context.Verbose then
                                                 let claimsDisplay = 
