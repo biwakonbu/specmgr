@@ -325,5 +325,9 @@ let ``Service integration should work with all command types`` () =
         | DocsSign (path, _customMessage, _excludePatterns) -> 
             Assert.NotEmpty(path)
             // customMessage and excludePatterns can be None/empty or Some/present
+        | Verify pathOption ->
+            match pathOption with
+            | Some path -> Assert.NotEmpty(path)
+            | None -> () // No path is valid for recent commits check
         | Help -> Assert.True(true)
     )

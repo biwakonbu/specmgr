@@ -27,6 +27,141 @@ let private generateSuccessMessage (claims: SignatureClaims) (filePath: string) 
     let validFromStr, expiresAtStr = formatSignatureDates claims
     $"✅ Claim-based signature created successfully!\n\nIssuer: {claims.Issuer}\nSubject: {claims.Subject}\nVersion: {claims.Version}\nFile: {filePath}\nSignature File: {signatureFilePath}\nSigner: {claims.SignerEmail} ({claims.SignerRole})\nReason: {claims.SigningReason}\nIssued: {validFromStr}\nExpires: {expiresAtStr}\nProject Root: {claims.ProjectRoot}\nDocuments: {claims.Documents.Length} file(s)\nGit Commit: {commitHash}\n\n🔐 Document is now digitally signed with claim-based signature."
 
+/// Find signature file path for a given specification file
+let private findSignatureFilePath (gitRoot: string) (filePath: string) : string option =
+    let signatureDir = Path.Combine(gitRoot, ".oracle", "signatures")
+    let signatureFileName = $"{Path.GetFileNameWithoutExtension(filePath)}.claim-signature"
+    let signatureFilePath = Path.Combine(signatureDir, signatureFileName)
+    
+    if File.Exists signatureFilePath then
+        Some signatureFilePath
+    else
+        None
+
+/// Verify a single file's digital signature
+let private verifySingleFile (filePath: string) : Result<string, string> =
+    try
+        // Validate file exists
+        if not (File.Exists filePath) then
+            Error $"File not found: {filePath}"
+        else
+            // Get git root directory
+            match getGitRootDirectory filePath with
+            | Error gitErr -> Error $"Git repository required for signature verification: {gitErr}"
+            | Ok gitRoot ->
+                // Find signature file
+                match findSignatureFilePath gitRoot filePath with
+                | None ->
+                    let fileName = Path.GetFileName filePath
+                    Ok $"❌ No signature found for file: {fileName}\nStatus: UNSIGNED - File has not been digitally signed"
+                | Some signatureFilePath ->
+                    // Get secret key from environment
+                    let secretKey = Environment.GetEnvironmentVariable "ORACLE_SECRET_KEY"
+                    if String.IsNullOrWhiteSpace secretKey then
+                        Error "ORACLE_SECRET_KEY environment variable is required for signature verification"
+                    else
+                        // Read and parse signature
+                        let signatureContent = File.ReadAllText signatureFilePath
+                        match parseClaimBasedSignature signatureContent with
+                        | Error parseErr -> Error $"Failed to parse signature file: {parseErr}"
+                        | Ok signature ->
+                            // Verify signature
+                            match verifyClaimBasedSignature signature secretKey gitRoot with
+                            | Error verifyErr -> Error $"Signature verification failed: {verifyErr}"
+                            | Ok (isValid, claims) ->
+                                let fileName = Path.GetFileName filePath
+                                let validFromStr, expiresAtStr = formatSignatureDates claims
+                                
+                                if isValid then
+                                    Ok $"✅ Signature verification PASSED\nFile: {fileName}\nSigner: {claims.SignerEmail} ({claims.SignerRole})\nSigned: {validFromStr}\nExpires: {expiresAtStr}\nStatus: Valid - No tampering detected"
+                                else
+                                    Ok $"❌ Signature verification FAILED\nFile: {fileName}\nStatus: TAMPERED - Content has been modified\nSigner: {claims.SignerEmail} ({claims.SignerRole})\nOriginal Signature Date: {validFromStr}"
+    with
+    | ex -> Error $"Verification failed: {ex.Message}"
+
+/// Get files changed in recent commits (up to 3 commits back)
+let private getRecentlyChangedMarkdownFiles (projectRoot: string) : Result<string list, string> =
+    try
+        // Use git to get files changed in last 3 commits
+        let startInfo = System.Diagnostics.ProcessStartInfo()
+        startInfo.FileName <- "git"
+        startInfo.ArgumentList.Add("diff")
+        startInfo.ArgumentList.Add("--name-only")
+        startInfo.ArgumentList.Add("HEAD~3..HEAD")
+        startInfo.WorkingDirectory <- projectRoot
+        startInfo.RedirectStandardOutput <- true
+        startInfo.RedirectStandardError <- true
+        startInfo.UseShellExecute <- false
+        startInfo.CreateNoWindow <- true
+        
+        use proc = System.Diagnostics.Process.Start(startInfo)
+        if proc = null then
+            Error "Failed to start git process"
+        else
+            proc.WaitForExit()
+            
+            if proc.ExitCode = 0 then
+                let output = proc.StandardOutput.ReadToEnd()
+                let changedFiles = 
+                    output.Split([|'\n'|], StringSplitOptions.RemoveEmptyEntries)
+                    |> Array.filter (fun file -> file.EndsWith(".md"))
+                    |> Array.map (fun file -> Path.Combine(projectRoot, file))
+                    |> Array.filter File.Exists
+                    |> Array.toList
+                
+                if changedFiles.IsEmpty then
+                    Ok []
+                else
+                    Ok changedFiles
+            else
+                let error = proc.StandardError.ReadToEnd()
+                Error $"Git command failed: {error}"
+    with
+    | ex -> Error $"Failed to get recent commits: {ex.Message}"
+
+/// Verify recently changed files (last 3 commits)
+let private verifyRecentChanges (context: CommandContext) : Result<string, string> =
+    try
+        // Get current git root
+        let currentDir = Environment.CurrentDirectory
+        match getGitRootDirectory currentDir with
+        | Error gitErr -> Error $"Git repository required: {gitErr}"
+        | Ok gitRoot ->
+            match getRecentlyChangedMarkdownFiles gitRoot with
+            | Error err -> Error err
+            | Ok [] ->
+                Ok "📋 No markdown files changed in recent 3 commits\nStatus: Nothing to verify"
+            | Ok changedFiles ->
+                let results = 
+                    changedFiles
+                    |> List.map (fun file ->
+                        let relativePath = Path.GetRelativePath(gitRoot, file)
+                        match verifySingleFile file with
+                        | Ok result when result.Contains("✅") ->
+                            $"- ✅ {relativePath} (signature valid)"
+                        | Ok result when result.Contains("❌ No signature") ->
+                            $"- ⚠️  {relativePath} (unsigned)"
+                        | Ok result when result.Contains("❌ Signature verification FAILED") ->
+                            $"- ❌ {relativePath} (signature verification failed)"
+                        | Error err ->
+                            $"- ❌ {relativePath} (error: {err})"
+                        | _ ->
+                            $"- ❓ {relativePath} (unknown status)"
+                    )
+                
+                let header = [
+                    "Oracle CLI - Recent Changes Verification (Last 3 Commits)"
+                    "=========================================================="
+                    $"Repository: {gitRoot}"
+                    $"Files checked: {changedFiles.Length}"
+                    ""
+                ]
+                
+                let allLines = header @ results
+                Ok (String.concat "\n" allLines)
+    with
+    | ex -> Error $"Recent changes verification failed: {ex.Message}"
+
 /// Get all .md files in directory recursively
 let getMarkdownFilesRecursively (directory: string) (excludePatterns: string list) : string list =
     let allMarkdownFiles = 
@@ -113,6 +248,62 @@ let signSingleFile (context: CommandContext) (filePath: string) (customMessage: 
     | ex -> Error $"Command execution failed: {ex.Message}"
 
 
+/// Verify all signature files in a directory
+let private verifyAllFilesInDirectory (directoryPath: string) : Result<string, string> =
+    try
+        if not (Directory.Exists directoryPath) then
+            Error $"Directory not found: {directoryPath}"
+        else
+            let markdownFiles = getMarkdownFilesRecursively directoryPath []
+            
+            if markdownFiles.IsEmpty then
+                Ok $"No .md files found in directory: {directoryPath}"
+            else
+                // Verify each file and collect results
+                let (verifiedFiles, failedFiles, unsignedFiles, resultLines) =
+                    markdownFiles
+                    |> List.fold (fun (verified, failed, unsigned, lines) file ->
+                        let relativePath = Path.GetRelativePath(directoryPath, file)
+                        match verifySingleFile file with
+                        | Ok result when result.Contains("✅") ->
+                            let line = $"- ✅ {relativePath} (signature valid)"
+                            (file :: verified, failed, unsigned, line :: lines)
+                        | Ok result when result.Contains("❌ No signature") ->
+                            let line = $"- ⚠️  {relativePath} (unsigned)"
+                            (verified, failed, file :: unsigned, line :: lines)
+                        | Ok result when result.Contains("❌ Signature verification FAILED") ->
+                            let line = $"- ❌ {relativePath} (signature verification failed - tampered)"
+                            (verified, file :: failed, unsigned, line :: lines)
+                        | Error err ->
+                            let line = $"- ❌ {relativePath} (error - {err})"
+                            (verified, file :: failed, unsigned, line :: lines)
+                        | _ ->
+                            let line = $"- ❓ {relativePath} (unknown status)"
+                            (verified, failed, file :: unsigned, line :: lines)
+                    ) ([], [], [], [])
+                
+                let verifiedCount = List.length verifiedFiles
+                let failedCount = List.length failedFiles
+                let unsignedCount = List.length unsignedFiles
+                
+                // Build result string
+                let header = [
+                    "Oracle CLI - Directory Signature Verification Results"
+                    "===================================================="
+                    $"Directory: {directoryPath}"
+                    $"Files processed: {markdownFiles.Length}"
+                ]
+                
+                let footer = [
+                    ""
+                    $"Summary: {verifiedCount} valid, {failedCount} failed, {unsignedCount} unsigned"
+                ]
+                
+                let allLines = header @ (List.rev resultLines) @ footer
+                Ok (String.concat "\n" allLines)
+    with
+    | ex -> Error $"Directory verification failed: {ex.Message}"
+
 /// Execute docs-sign command with auto-detection
 let executeDocsSignCommand (context: CommandContext) (path: string) (customMessage: string option) (excludePatterns: string list) : Result<string, string> =
     try
@@ -180,6 +371,17 @@ let executeCommand (context: CommandContext) (command: OracleCommand) : Result<s
     match command with
     | DocsSign (path, customMessage, excludePatterns) ->
         executeDocsSignCommand context path customMessage excludePatterns
+    | Verify None ->
+        // No path provided - check recent commits
+        verifyRecentChanges context
+    | Verify (Some path) ->
+        // Path provided - check if it's file or directory
+        if File.Exists path then
+            verifySingleFile path
+        elif Directory.Exists path then
+            verifyAllFilesInDirectory path
+        else
+            Error $"Path not found: {path}"
     | FindSpec _query ->
         Error "FindSpec command not implemented yet"
     | CheckImpl (_codePath, _specPath) ->
@@ -209,6 +411,7 @@ COMMANDS:
     watch <code>                   Watch code file for changes and validate
     ask <question>                 Ask questions about specifications
     docs-sign <path>               Digitally sign a specification file or directory
+    verify [path]                  Verify digital signatures (no path = recent commits, path = file/directory)
     help                           Show this help message
 
 For more information, see: https://github.com/biwakonbu/specmgr"""
