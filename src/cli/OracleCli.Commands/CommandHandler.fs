@@ -29,7 +29,7 @@ let signSingleFile (context: CommandContext) (filePath: string) (customMessage: 
         let specPath = SpecificationPath filePath
         
         // Validate file exists and is a specification
-        if not (File.Exists(filePath)) then
+        if not (File.Exists filePath) then
             Error $"Specification file not found: {filePath}"
         elif not (Paths.isValidSpecificationPath specPath) then
             Error $"Invalid specification file format. Expected .yaml, .yml, or .md file: {filePath}"
@@ -45,7 +45,7 @@ let signSingleFile (context: CommandContext) (filePath: string) (customMessage: 
                 | Error signerErr -> Error signerErr
                 | Ok signerInfo ->
                     // Get secret key from environment
-                    let secretKey = Environment.GetEnvironmentVariable("ORACLE_SECRET_KEY")
+                    let secretKey = Environment.GetEnvironmentVariable "ORACLE_SECRET_KEY"
                     if String.IsNullOrWhiteSpace secretKey then
                         Error "ORACLE_SECRET_KEY environment variable is required for digital signing"
                     else
@@ -91,10 +91,10 @@ let signSingleFile (context: CommandContext) (filePath: string) (customMessage: 
 let executeDocsSignCommand (context: CommandContext) (path: string) (customMessage: string option) (excludePatterns: string list) : Result<string, string> =
     try
         // Auto-detect if path is file or directory
-        if File.Exists(path) then
+        if File.Exists path then
             // Single file signing
             signSingleFile context path customMessage
-        elif Directory.Exists(path) then
+        elif Directory.Exists path then
             // Directory batch signing
             let markdownFiles = getMarkdownFilesRecursively path excludePatterns
             
