@@ -39,7 +39,7 @@ let private findSignatureFilePath (gitRoot: string) (filePath: string) : string 
         None
 
 /// Verify a single file's digital signature
-let private verifySingleFile (context: CommandContext) (filePath: string) : Result<string, string> =
+let private verifySingleFile (filePath: string) : Result<string, string> =
     try
         // Validate file exists
         if not (File.Exists filePath) then
@@ -80,7 +80,7 @@ let private verifySingleFile (context: CommandContext) (filePath: string) : Resu
     | ex -> Error $"Verification failed: {ex.Message}"
 
 /// Get files changed in recent commits (up to 3 commits back)
-let private getRecentlyChangedMarkdownFiles (context: CommandContext) (projectRoot: string) : Result<string list, string> =
+let private getRecentlyChangedMarkdownFiles (projectRoot: string) : Result<string list, string> =
     try
         // Use git to get files changed in last 3 commits
         let startInfo = System.Diagnostics.ProcessStartInfo()
@@ -127,7 +127,7 @@ let private verifyRecentChanges (context: CommandContext) : Result<string, strin
         match getGitRootDirectory currentDir with
         | Error gitErr -> Error $"Git repository required: {gitErr}"
         | Ok gitRoot ->
-            match getRecentlyChangedMarkdownFiles context gitRoot with
+            match getRecentlyChangedMarkdownFiles gitRoot with
             | Error err -> Error err
             | Ok [] ->
                 Ok "📋 No markdown files changed in recent 3 commits\nStatus: Nothing to verify"
@@ -136,7 +136,7 @@ let private verifyRecentChanges (context: CommandContext) : Result<string, strin
                     changedFiles
                     |> List.map (fun file ->
                         let relativePath = Path.GetRelativePath(gitRoot, file)
-                        match verifySingleFile context file with
+                        match verifySingleFile file with
                         | Ok result when result.Contains("✅") ->
                             $"- ✅ {relativePath} (signature valid)"
                         | Ok result when result.Contains("❌ No signature") ->
@@ -249,7 +249,7 @@ let signSingleFile (context: CommandContext) (filePath: string) (customMessage: 
 
 
 /// Verify all signature files in a directory
-let private verifyAllFilesInDirectory (context: CommandContext) (directoryPath: string) : Result<string, string> =
+let private verifyAllFilesInDirectory (directoryPath: string) : Result<string, string> =
     try
         if not (Directory.Exists directoryPath) then
             Error $"Directory not found: {directoryPath}"
@@ -264,7 +264,7 @@ let private verifyAllFilesInDirectory (context: CommandContext) (directoryPath: 
                     markdownFiles
                     |> List.fold (fun (verified, failed, unsigned, lines) file ->
                         let relativePath = Path.GetRelativePath(directoryPath, file)
-                        match verifySingleFile context file with
+                        match verifySingleFile file with
                         | Ok result when result.Contains("✅") ->
                             let line = $"- ✅ {relativePath} (signature valid)"
                             (file :: verified, failed, unsigned, line :: lines)
@@ -377,9 +377,9 @@ let executeCommand (context: CommandContext) (command: OracleCommand) : Result<s
     | Verify (Some path) ->
         // Path provided - check if it's file or directory
         if File.Exists path then
-            verifySingleFile context path
+            verifySingleFile path
         elif Directory.Exists path then
-            verifyAllFilesInDirectory context path
+            verifyAllFilesInDirectory path
         else
             Error $"Path not found: {path}"
     | FindSpec _query ->
