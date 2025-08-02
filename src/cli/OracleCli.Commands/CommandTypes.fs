@@ -11,7 +11,7 @@ type OracleCommand =
     | ListSpecs of tag: string option
     | Watch of CodePath
     | Ask of Query
-    | DocsSign of SpecificationPath * string option
+    | DocsSign of string * string option * exclude: string list * useClaimsBased: bool
     | Help
 
 /// Command execution context

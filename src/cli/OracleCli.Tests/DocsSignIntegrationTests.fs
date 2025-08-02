@@ -20,10 +20,12 @@ let ``parseCommand should parse docs-sign command with default signer`` () =
     
     // Assert
     match result with
-    | Ok (DocsSign (SpecificationPath path, customMessage)) ->
+    | Ok (DocsSign (path, customMessage, excludePatterns, true)) ->
         Assert.Equal("test.yaml", path)
         // Custom message should be None for basic command
         Assert.True customMessage.IsNone
+        // Exclude patterns should be empty for basic command
+        Assert.Empty excludePatterns
     | _ -> Assert.True(false, "Expected DocsSign command")
 
 [<Fact>]
@@ -36,11 +38,49 @@ let ``parseCommand should parse docs-sign command with custom message`` () =
     
     // Assert
     match result with
-    | Ok (DocsSign (SpecificationPath path, customMessage)) ->
+    | Ok (DocsSign (path, customMessage, excludePatterns, true)) ->
         Assert.Equal("test.yaml", path)
         // Custom message should be present
         Assert.True customMessage.IsSome
+        // Exclude patterns should be empty
+        Assert.Empty excludePatterns
         Assert.Equal("Custom commit message", customMessage.Value)
+    | _ -> Assert.True(false, "Expected DocsSign command")
+
+[<Fact>]
+let ``parseCommand should parse docs-sign command with exclude patterns`` () =
+    // Arrange
+    let args = [| "docs-sign"; "docs/"; "--exclude"; "*.draft.md"; "--exclude"; "README.md" |]
+    
+    // Act
+    let result = parseCommand args
+    
+    // Assert
+    match result with
+    | Ok (DocsSign (path, customMessage, excludePatterns, true)) ->
+        Assert.Equal("docs/", path)
+        Assert.True customMessage.IsNone
+        Assert.Equal(2, excludePatterns.Length)
+        Assert.Contains("*.draft.md", excludePatterns)
+        Assert.Contains("README.md", excludePatterns)
+    | _ -> Assert.True(false, "Expected DocsSign command")
+
+[<Fact>]
+let ``parseCommand should parse docs-sign command with both exclude and message`` () =
+    // Arrange
+    let args = [| "docs-sign"; "docs/"; "--exclude"; "*.draft.md"; "-m"; "Batch signing" |]
+    
+    // Act
+    let result = parseCommand args
+    
+    // Assert
+    match result with
+    | Ok (DocsSign (path, customMessage, excludePatterns, true)) ->
+        Assert.Equal("docs/", path)
+        Assert.True customMessage.IsSome
+        Assert.Equal("Batch signing", customMessage.Value)
+        Assert.Single(excludePatterns)
+        Assert.Contains("*.draft.md", excludePatterns)
     | _ -> Assert.True(false, "Expected DocsSign command")
 
 [<Fact>]

@@ -73,7 +73,7 @@ let executeOracleCommand (config: ServiceConfig) (command: OracleCommand) : Resu
     | Help -> 
         handleHelp ()
         Ok ()
-    | DocsSign (_specPath, _customMessage) ->
+    | DocsSign (_path, _customMessage, _excludePatterns, _useClaimsBased) ->
         match executeCommandWithValidation context command with
         | Ok message ->
             printfn "%s" message

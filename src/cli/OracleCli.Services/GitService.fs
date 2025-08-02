@@ -159,3 +159,34 @@ let getGitRootDirectory (startPath: string) : Result<string, string> =
     match findGitRoot startPath with
     | Some gitRoot -> Ok gitRoot
     | None -> Error "Not inside a git repository"
+
+/// Commit multiple signature files to git (for claim-based signatures)
+let commitSignatureFiles (workingDir: string) (signatureFilePaths: string list) (commitMessage: string) : Result<string, string> =
+    try
+        if not (isGitRepository workingDir) then
+            Error "Not a git repository"
+        else
+            // Add all signature files to git
+            let addResults = 
+                signatureFilePaths 
+                |> List.map (addFileToGit workingDir)
+            
+            // Check if all files were added successfully
+            let failedAdds = 
+                addResults 
+                |> List.choose (function | Error err -> Some err | Ok _ -> None)
+            
+            if not failedAdds.IsEmpty then
+                let errorMessage = String.concat "; " failedAdds
+                Error $"Failed to add signature files to git: {errorMessage}"
+            else
+                // Create and execute commit
+                match executeGitCommandSafe workingDir ["commit"; "-m"; commitMessage] with
+                | Error err -> Error $"Git commit failed: {err}"
+                | Ok _output ->
+                    // Get the exact commit hash using git rev-parse HEAD
+                    match executeGitCommandSafe workingDir ["rev-parse"; "HEAD"] with
+                    | Error err -> Error $"Failed to get commit hash: {err}"
+                    | Ok commitHash -> Ok (commitHash.Trim())
+    with
+    | ex -> Error $"Git commit operation failed: {ex.Message}"
