@@ -5,8 +5,54 @@ open System.IO
 open System.Text
 open System.Text.Json
 open System.Security.Cryptography
+open System.Diagnostics
 open OracleCli.Core
-// open OracleCli.Services.GitService  // Not needed yet
+
+/// Execute git command safely to get configuration values
+let private executeGitConfig (workingDir: string) (configKey: string) : Result<string, string> =
+    try
+        let startInfo = ProcessStartInfo()
+        startInfo.FileName <- "git"
+        startInfo.ArgumentList.Add("config")
+        startInfo.ArgumentList.Add(configKey)
+        startInfo.WorkingDirectory <- workingDir
+        startInfo.RedirectStandardOutput <- true
+        startInfo.RedirectStandardError <- true
+        startInfo.UseShellExecute <- false
+        startInfo.CreateNoWindow <- true
+        
+        use proc = Process.Start(startInfo)
+        if proc = null then
+            Error "Failed to start git process"
+        else
+            proc.WaitForExit()
+            
+            let output = proc.StandardOutput.ReadToEnd().Trim()
+            let error = proc.StandardError.ReadToEnd().Trim()
+            
+            if proc.ExitCode = 0 && not (String.IsNullOrWhiteSpace(output)) then
+                Ok output
+            else
+                Error $"Git config '{configKey}' not found or empty"
+                
+    with
+    | ex -> Error $"Failed to execute git config: {ex.Message}"
+
+/// Get signer information from git config
+let getSignerFromGitConfig (workingDir: string) : Result<SignerInfo, string> =
+    match executeGitConfig workingDir "user.email", executeGitConfig workingDir "user.name" with
+    | Ok email, Ok name ->
+        Ok {
+            Email = email
+            Role = name
+            SigningReason = "Digital signature for specification integrity"
+        }
+    | Error emailErr, Error nameErr -> 
+        Error $"Failed to get git config: user.email ({emailErr}), user.name ({nameErr})"
+    | Error emailErr, _ -> 
+        Error $"Failed to get user.email: {emailErr}"
+    | _, Error nameErr -> 
+        Error $"Failed to get user.name: {nameErr}"
 
 /// Normalize file path to project root relative path (Unix-style)
 let normalizeToProjectPath (filePath: string) (projectRoot: string) : Result<string, string> =
